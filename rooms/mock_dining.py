@@ -105,8 +105,7 @@ def main():
     back = glimpse_layer()
     with drawing_on(back), world(X0):
         kitchen_back()
-    if not hc.FLIP:
-        screen.blit(fade_x(back, RW + .4, RW + 3.4), (0, 0))
+    screen.blit(fade_x(back, RW + .4, RW + 3.4), (0, 0))
     wall_shell(OFF_WHITE)
     wall_trim(cornice=False, col=WHITE, open_E=True)
     ext = exterior_layer({"W": side_garden}, haze=(150, 172, 190))
@@ -121,8 +120,7 @@ def main():
     front = glimpse_layer()
     with drawing_on(front), world(X0):
         kitchen_front()
-    if not hc.FLIP:
-        screen.blit(fade_x(front, RW + .3, RW + 3.6, z_ref=70), (0, 0))
+    screen.blit(fade_x(front, RW + .3, RW + 3.6, z_ref=70), (0, 0))
     ghost_near_walls(OFF_WHITE, doors_S=[F.D_FRENCH], cornice=False, open_E=True,
                      extra_polys=french_door_polys() + beam_polys())
     finish("Hide and Seek - Dining Room (mock-up)", OUT, subtitle="Ground Floor - dining half of the Kitchen + Dining Room")

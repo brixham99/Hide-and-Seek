@@ -133,6 +133,13 @@ def island(x0, y0, x1, y1, h=96):
     box(x0 + .08, y0 + .08, x1 - .08, y1 - .08, 0, 8, (110, 112, 110), ol=False)
     box(x0 + .05, y0 + .05, x1 - .05, y1 - .05, 8, h - 12, PALE_GREY)
     Y = y1 - .049
+    if hc.FLIP:
+        # tongue-and-groove on the south end, the face this camera sees
+        yy = y0 + 0.06
+        u = x0 + 0.2
+        while u < x1 - 0.2:
+            qy(yy, u, u + 0.05, 16, h - 20, shade(PALE_GREY, KY * 0.82))
+            u += 0.16
     v = y0 + .05
     while v < y1 - .05:
         line((x1 - .049, v, 10), (x1 - .049, v, h - 14), shade(PALE_GREY, KX * .8), 1)
@@ -188,32 +195,64 @@ def kitchen_run_floor():
     sink_top(13.7, 14.6)
 
 
+def _shaker(x0, x1, y, z0, z1, n=None):
+    """Door panels and a handle on a south-facing cabinet front."""
+    span = x1 - x0
+    count = n if n is not None else (1 if span < 1.15 else 2)
+    w = span / count
+    for i in range(count):
+        a = x0 + i * w + 0.05
+        b = x0 + (i + 1) * w - 0.05
+        if b - a < 0.12:
+            continue
+        qy(y, a, b, z0, z1, shade(CAB, KY * 0.92))
+        qy(y - 0.012, a + 0.06, b - 0.06, z0 + 5, z1 - 5, shade(CAB, KY * 1.05))
+        fl_ellipse((a + b) / 2, y - 0.02, 0.018, 0.032, (64, 64, 68), (z0 + z1) / 2)
+
+
 def kitchen_seen_from_south():
-    """The garden-wall front, the sage cupboard and the boot-door side, which
-    the usual camera looks at from behind and the opposite view looks straight at."""
+    """Fronts of the garden-wall run, which the usual camera sees from behind."""
     if not hc.FLIP:
         return
-    y = RD - 0.02
-    qy(y, 10.2, 16.25, 94, 140, shade((160, 168, 166), KY))          # grey splashback
-    xx = 10.28
-    while xx < 16.15:
-        qy(y - 0.008, xx, xx + 0.26, 98, 114, shade((214, 216, 214), KY))
-        qy(y - 0.008, xx, xx + 0.26, 118, 134, shade((214, 216, 214), KY))
-        xx += 0.32
-    # sage two-door cupboard on the west wall, doors facing into the room
-    a, b, x = 3.3, 4.6, KD_LEN - 0.03
-    qx(x, a, b, 4, 148, shade((150, 176, 164), KX))
-    mid = (a + b) / 2
-    qx(x - 0.01, a + 0.1, mid - 0.05, 16, 136, shade((176, 196, 184), KX))
-    qx(x - 0.01, mid + 0.05, b - 0.1, 16, 136, shade((176, 196, 184), KX))
-    fl_ellipse(x - 0.012, mid - 0.12, 0.02, 0.04, (60, 60, 64), 80)
-    fl_ellipse(x - 0.012, mid + 0.12, 0.02, 0.04, (60, 60, 64), 80)
-    # round grey clock, and a red extinguisher beside the boot door
-    cyl(KD_LEN - 0.1, 2.35, 0.32, 148, 154, (150, 152, 148))
-    cyl(KD_LEN - 0.14, 1.75, 0.07, 16, 72, (176, 36, 34))
-    # recessed spots in the ceiling
-    for xx, yy in ((11.0, 2.4), (12.4, 4.8), (13.6, 2.2), (14.6, 5.2), (15.4, 3.4)):
-        cyl(xx, yy, 0.07, WALL_H - 8, WALL_H - 3, (255, 244, 214))
+    y = RUN - 0.02
+    # grey metro splashback, in the existing gap between worktop and wall cupboards
+    qy(RD - 0.02, 9.5, 16.3, CH + 2, 140, shade((156, 164, 162), KY))
+    xx = 9.55
+    while xx < 16.2:
+        qy(RD - 0.03, xx, min(16.2, xx + 0.24), CH + 6, CH + 20, shade((220, 222, 220), KY))
+        qy(RD - 0.03, xx, min(16.2, xx + 0.24), CH + 24, 138, shade((220, 222, 220), KY))
+        xx += 0.30
+    # shaker doors on the base run, in the spans the units already occupy
+    _shaker(12.65, 13.6, y, 12, 78, n=1)          # the bay beside the sink: dishwasher
+    qy(y - 0.015, 12.85, 13.4, 28, 62, shade((186, 190, 192), KY))
+    _shaker(14.7, 16.25, y, 12, 78)
+    # burgundy range: two oven doors and a handle, on its existing front
+    rx0, rx1 = 10.95, 12.55
+    mid = (rx0 + rx1) / 2
+    for a, b in ((rx0 + 0.1, mid - 0.05), (mid + 0.05, rx1 - 0.1)):
+        qy(y, a, b, 8, 72, shade((120, 28, 36), KY))
+        qy(y - 0.012, a + 0.08, b - 0.08, 16, 64, shade((28, 26, 28), KY))
+        fl_ellipse((a + b) / 2, y - 0.02, 0.04, 0.02, (190, 176, 140), 36)
+    # wall cabinets and the hood, door panels on the face toward the room
+    _shaker(10.35, 10.9, RD - 0.58, 148, 220, n=1)
+    _shaker(12.6, 13.15, RD - 0.58, 148, 220, n=1)
+    qy(RD - 0.8, rx0 + 0.15, rx1 - 0.15, 172, 194, shade(CAB, KY))   # hood skirt
+    # sage cupboard on the west wall, doors facing into the room
+    a, b, x = 3.3, 4.6, KD_LEN - 0.04
+    qx(x, a, b, 4, 148, shade((148, 174, 162), KX))
+    midy = (a + b) / 2
+    qx(x - 0.012, a + 0.1, midy - 0.05, 16, 136, shade((176, 196, 184), KX))
+    qx(x - 0.012, midy + 0.05, b - 0.1, 16, 136, shade((176, 196, 184), KX))
+    fl_ellipse(x - 0.02, midy - 0.14, 0.02, 0.04, (60, 60, 64), 78)
+    fl_ellipse(x - 0.02, midy + 0.14, 0.02, 0.04, (60, 60, 64), 78)
+    # grey clock, extinguisher by the boot door, a white ledged door standing open
+    cyl(KD_LEN - 0.12, 2.35, 0.3, 150, 156, (148, 150, 146))
+    cyl(KD_LEN - 0.16, 1.7, 0.07, 14, 70, (176, 36, 34))
+    qx(KD_LEN - 0.55, 0.28, 1.42, 4, 172, shade((244, 242, 236), KX))
+    for zz in (28, 78, 128):
+        qx(KD_LEN - 0.57, 0.36, 1.34, zz, zz + 7, shade((228, 224, 214), KX))
+    for xx, yy in ((11.2, 2.6), (12.6, 5.0), (14.2, 2.4), (15.2, 4.6)):
+        cyl(xx, yy, 0.06, WALL_H - 7, WALL_H - 3, (255, 244, 214))
 
 
 def kitchen_run_hung():

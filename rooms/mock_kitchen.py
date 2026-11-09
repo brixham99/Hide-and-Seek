@@ -110,7 +110,9 @@ def main():
     back = glimpse_layer()
     with drawing_on(back):
         dining_back()
-    if not hc.FLIP:   # the dining half sits outside this view; flipped, it spills out of the box
+    if hc.FLIP:
+        screen.blit(fade_x(back, -0.25, -2.2), (0, 0))
+    else:
         screen.blit(fade_x(back, -1.0, -6.5), (0, 0))
     wall_shell(OFF_WHITE, open_W=True)
     hall = exterior_layer({"N": hall_beyond}, haze=(226, 222, 212))
@@ -121,7 +123,9 @@ def main():
     front = glimpse_layer()
     with drawing_on(front):
         dining_front()
-    if not hc.FLIP:
+    if hc.FLIP:
+        screen.blit(fade_x(front, -0.2, -2.0, z_ref=70), (0, 0))
+    else:
         screen.blit(fade_x(front, -1.4, -7.0, z_ref=70), (0, 0))
     with world(X0):
         F.kitchen_south_wall()
@@ -142,7 +146,31 @@ def main():
     screen.blit(hung, (0, 0))
     ghost_near_walls(OFF_WHITE, doors_E=[BOOT_DOOR], windows_S=[WIN2, WIN1], window_z=(112, 208), window_cols=2,
                      cornice=False, curtains=None, open_W=True, extra_polys=near_wall_extras())
+    if hc.FLIP:
+        garden_windows()
+        crisp_top()
     finish("Hide and Seek - Kitchen (mock-up)", OUT, subtitle="Ground Floor - kitchen half of the Kitchen + Dining Room", copies=COPIES)
+
+
+def _north_garden(side, rnd):
+    hc.ext_lawn(side, -2, 20, 0.2, 6, rnd)
+    hc.ext_hedge(side, -2, 20, 3.2, 3.8, h=80, rnd=rnd)
+
+
+def garden_windows():
+    """The two garden-wall windows, now on the far wall, with the hedge outside."""
+    ext = hc.exterior_layer({"N": _north_garden})
+    for a, b in (WIN2, WIN1):
+        pts = [P(a, RD, 112), P(b, RD, 112), P(b, RD, 208), P(a, RD, 208)]
+        hc.show_through(ext, pts, tint_a=16)
+
+
+def crisp_top():
+    """A continuous top edge so the far walls meet at the corner."""
+    cream = shade((236, 232, 224), KY)
+    qy(RD, 0.05, RW, WALL_H - 14, WALL_H, cream)
+    qx(RW, 0.05, RD, WALL_H - 14, WALL_H, shade((236, 232, 224), KX))
+    qy(RD, RW - 0.12, RW, 0, WALL_H, shade(OFF_WHITE, KY))
 
 
 if __name__ == "__main__":

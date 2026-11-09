@@ -1433,7 +1433,12 @@ def _fade_content(layer, z_ref, tone):
     y0, y1 = int(rows[0]), int(rows[-1]) + 1
     sx = (np.arange(x0, x1)[:, None] / S - OX) / HW
     sy = (np.arange(y0, y1)[None, :] / S - OY + z_ref) / HH
-    xe = np.maximum((sx + sy) / 2, np.broadcast_to(sx, (x1 - x0, y1 - y0)))
+    xd = (sx + sy) / 2
+    if FLIP:
+        # the layer was drawn through the spun projection, so recover room x
+        xe = RW - xd
+    else:
+        xe = np.maximum(xd, np.broadcast_to(sx, (x1 - x0, y1 - y0)))
     t = np.clip(tone(xe), 0, 1)
     t = t * t * (3 - 2 * t)
     a[x0:x1, y0:y1] = (a[x0:x1, y0:y1] * t).astype(np.uint8)

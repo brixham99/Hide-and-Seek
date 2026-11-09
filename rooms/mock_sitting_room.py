@@ -279,14 +279,15 @@ def hearth():
 
 
 def tv_cabinet(x0, x1, d=.55, h=50):
-    """Sage low cabinet in the west alcove; the TV faces south, so we see its back."""
+    """Teal cabinet in the west alcove (left of the fireplace when you face it),
+    with the television standing on it, clear of the chimney breast."""
     y0 = RD - d
     box(x0, y0, x1, RD - .02, 0, h, SAGE_CAB, top=shade(SAGE_CAB, 1.1))
-    tx0, tx1, ty = x0 + .2, x1 - .2, RD - .3
-    box((tx0 + tx1) / 2 - .3, ty - .1, (tx0 + tx1) / 2 + .3, ty + .1, h, h + 4, BLACK)
-    box((tx0 + tx1) / 2 - .05, ty, (tx0 + tx1) / 2 + .05, ty + .06, h + 4, h + 16, BLACK)
-    box(tx0, ty, tx1, ty + .07, h + 12, h + 112, BLACK, top=(40, 40, 44))
-    qy(ty + .072, tx0 + .35, tx1 - .35, h + 30, h + 90, (34, 34, 36))
+    tx0, tx1 = x0 + .18, x1 - .18
+    ty = y0 + .12
+    box(tx0, ty, tx1, ty + .1, h, h + 8, BLACK)
+    box(tx0 + .15, ty + .02, tx1 - .15, ty + .08, h + 8, h + 62, BLACK, top=(28, 30, 32))
+    qy(ty + .02, tx0 + .28, tx1 - .28, h + 16, h + 54, (18, 22, 26))
 
 
 def fireplace_front():
@@ -370,7 +371,7 @@ def main():
     coffee_table()
     place_sprite("archie", 2.4, 4.55)
     pink_sofa(2.05, 5.35)
-    tv_cabinet(4.95, 6.95)
+    tv_cabinet(5.3, 6.85)
     north_wall_hung()
     fireplace_front()
     ghost_near_walls(WALL, doors_E=[HALL_DOOR], curtains=None)
