@@ -43,7 +43,8 @@ PANEL_H = 100
 
 
 def boot_room_beyond(side, rnd):
-    floor_flagstones(x0=-3, y0=-4, x1=6, y1=0, seed=5)
+    import glimpses
+    glimpses.boot_from_office()
 
 
 def walls():

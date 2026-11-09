@@ -55,15 +55,9 @@ def drive_side(side, rnd):
 
 
 def kitchen_side(side, rnd):
-    """Beyond the end-wall door: the kitchen's warm flagstones and the island."""
-    floor_flagstones(cols=((196, 170, 128), (182, 156, 116), (204, 182, 140), (172, 148, 112)), seed=11, row=0.7,
-                     x0=-9, y0=-4, x1=0, y1=9)
-    box(-2.9, -2.3, -1.95, 0.3, 0, 80, (232, 228, 214))
-    box(-2.95, -2.35, -1.9, 0.35, 80, 88, (176, 130, 84))          # oak worktop
-    for yy in (-1.8, -1.0, -0.2):
-        for lx, ly in ((-1.72, yy + .02), (-1.6, yy + .14)):
-            box(lx, ly, lx + .035, ly + .035, 0, 54, (60, 50, 44), ol=False)
-        box(-1.8, yy - .04, -1.52, yy + .22, 54, 60, (150, 106, 66))
+    """Beyond the kitchen door: slate floor, the island and the west-end run."""
+    import glimpses
+    glimpses.kitchen_from_boot()
 
 
 # ---------------------------------------------------------------- furniture
@@ -243,7 +237,12 @@ def main():
     # near walls: Study door + pantry doorway (y = RD), WC/garage plank door (x = RW)
     WE = lambda u, z: P(RW + .08, u, z)
     wc = plank_door_face(WE, *WC_DOOR, DOOR_H, SAGE_DOOR, KX, hinge="right")
-    ghost_near_walls(SAGE_WALL, doors_S=[PANTRY, STUDY], doors_E=[WC_DOOR], cornice=False, extra_polys=list(wc) + beam_ends())
+    import glimpses
+    ghost_near_walls(SAGE_WALL, doors_S=[PANTRY, STUDY], doors_E=[WC_DOOR], cornice=False,
+                     extra_polys=list(wc) + beam_ends(),
+                     openings=[("S", *PANTRY, glimpses.utility_from_boot, (244, 244, 242)),
+                               ("S", *STUDY, glimpses.office_from_boot, (220, 218, 214)),
+                               ("E", *WC_DOOR, glimpses.wc_from_boot, (22, 88, 98))])
     img = finish("Hide and Seek - Boot Room (mock-up)", OUT)
     # close-up of the window and the external door
     a = P(WINDOW[0] - .3, 0, WINDOW[3] + 20)

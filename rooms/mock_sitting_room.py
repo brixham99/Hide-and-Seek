@@ -330,7 +330,6 @@ def pink_sofa(y0, y1):
 def main():
     background()
     floor_boards()
-    threshold("E", *HALL_DOOR, (170, 150, 120))
     rug(1.7, 1.5, 5.5, 5.0)
     hearth()
     wall_shell(WALL)
@@ -352,7 +351,9 @@ def main():
     pink_sofa(2.05, 5.35)
     tv_cabinet(4.95, 6.95)
     north_wall_hung()
-    ghost_near_walls(WALL, doors_E=[HALL_DOOR], curtains=None)
+    import glimpses
+    ghost_near_walls(WALL, doors_E=[HALL_DOOR], curtains=None,
+                     openings=[("E", *HALL_DOOR, glimpses.hall_from_sitting, (196, 190, 204))])
     finish("Hide and Seek - Sitting Room (mock-up)", OUT)
 
 
