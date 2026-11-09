@@ -343,6 +343,7 @@ def stamp(tex, x0, y0, x1, y1, z=0.0, mask="rect"):
         return
     S, OX, OY, HW, HH = hc.S, hc.OX, hc.OY, hc.HW, hc.HH
     X_OFF = hc.X_OFF
+    Y_OFF = hc.Y_OFF
     corners = [hc.P(x, y, z) for x, y in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))]
     xs = [p[0] for p in corners]
     ys = [p[1] for p in corners]
@@ -359,7 +360,7 @@ def stamp(tex, x0, y0, x1, y1, z=0.0, mask="rect"):
     xmy = (sx[:, None] - OX) / HW
     xpy = (sy[None, :] - OY + z) / HH
     wx = (xpy + xmy) / 2 + X_OFF
-    wy = (xpy - xmy) / 2
+    wy = (xpy - xmy) / 2 + Y_OFF
     m = (wx >= x0) & (wx <= x1) & (wy >= y0) & (wy <= y1)
     if mask == "ellipse":
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2

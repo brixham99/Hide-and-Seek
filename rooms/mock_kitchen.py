@@ -47,23 +47,15 @@ SAGE_CUPBOARD = F.K_SAGE
 
 # ------------------------------------------------------------- rooms seen through doorways
 def hall_beyond(side, rnd):
-    """The stair hall through the hall door: boards, and the door itself open into the hall."""
-    for i in range(12):
-        qz(0, -1.0, -i * .27 - .27, 3.0, -i * .27, shade((150, 112, 74), .9 + .1 * (i % 2)))
-    a = HALL_DOOR[0] + .05
-    col = (238, 236, 230)
-    h = DOOR_H - 3
-    poly([P(a, 0, 0), P(a, -1.2, 0), P(a, -1.2, h), P(a, 0, h)], shade(col, KX))
-    for z0, z1 in ((14, 80), (96, 170)):
-        poly([P(a + .01, -.15, z0), P(a + .01, -1.05, z0), P(a + .01, -1.05, z1), P(a + .01, -.15, z1)], shade(col, KX * .93))
-    box(a - .02, -1.25, a + .04, -1.2, 0, h, col, ol=False)
+    """The stair hall through the hall door, in the hall's own tiles."""
+    import glimpses
+    glimpses.hall_from_kitchen()
 
 
 def drawing_room_beyond(side, rnd):
-    """The Drawing Room through its door: pine boards and the red rug's corner."""
-    for i in range(14):
-        qz(0, 5.0, -i * .27 - .27, 10.0, -i * .27, shade(art.lerp(PINE1_, PINE2_, (i * 37 % 10) / 10), 1.0))
-    qz(.5, 6.0, -3.2, 9.0, -1.4, (178, 86, 80))
+    """The snug through its door: green walls, boards, the red rug."""
+    import glimpses
+    glimpses.drawing_from_kitchen()
 
 
 def beam_polys():
@@ -141,8 +133,10 @@ def main():
         F.kitchen_run_hung()
     hung.set_alpha(96)
     screen.blit(hung, (0, 0))
+    import glimpses
     ghost_near_walls(OFF_WHITE, doors_E=[BOOT_DOOR], windows_S=[WIN2, WIN1], window_z=(112, 208), window_cols=2,
-                     cornice=False, curtains=None, open_W=True, extra_polys=near_wall_extras())
+                     cornice=False, curtains=None, open_W=True, extra_polys=near_wall_extras(),
+                     openings=[("E", *BOOT_DOOR, glimpses.boot_from_kitchen, (150, 142, 128))])
     finish("Hide and Seek - Kitchen (mock-up)", OUT, subtitle="Ground Floor - kitchen half of the Kitchen + Dining Room", copies=COPIES)
 
 

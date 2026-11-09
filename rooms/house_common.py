@@ -100,6 +100,7 @@ def _note_occluder(x0, y0, x1, y1, z0, z1):
     if screen is not _room_screen:
         return
     x0, x1 = (x0 - X_OFF), (x1 - X_OFF)
+    y0, y1 = (y0 - Y_OFF), (y1 - Y_OFF)
     if x1 < x0:
         x0, x1 = x1, x0
     if y1 < y0:
@@ -178,11 +179,33 @@ def _stamp_face(buf, corners, kind, val):
 
 
 X_OFF = 0.0                            # world -> local x shift while drawing in world coords (see world())
+Y_OFF = 0.0                            # same for y (a doorway glimpse of another room)
 
 
 def P(x, y, z=0.0):
     x = x - X_OFF
+    y = y - Y_OFF
     return ((OX + (x - y) * HW) * S, (OY + (x + y) * HH - z) * S)
+
+
+class placed:
+    """Temporarily treat coordinates as local to another room.
+
+    dx, dy are added to the current offsets. Pass (origin_here - origin_there)
+    so a point in the other room's own tiles lands on this canvas in the right place.
+    """
+    def __init__(self, dx, dy=0.0):
+        self.dx, self.dy = dx, dy
+
+    def __enter__(self):
+        global X_OFF, Y_OFF
+        self.prev = (X_OFF, Y_OFF)
+        X_OFF += self.dx
+        Y_OFF += self.dy
+
+    def __exit__(self, *a):
+        global X_OFF, Y_OFF
+        X_OFF, Y_OFF = self.prev
 
 
 class world:
@@ -827,6 +850,59 @@ def doorway_back(side, a, b, view, h=DOOR_H, col=WHITE):
     architrave(side, a, b, h, col)
 
 
+def opening_polygon(side, a, b, h=DOOR_H):
+    """Screen quad of a doorway. side is the engine wall: N/W back, S/E near."""
+    if side == "N":
+        return [wall_pt("N", a, 0), wall_pt("N", b, 0), wall_pt("N", b, h), wall_pt("N", a, h)]
+    if side == "W":
+        return [wall_pt("W", a, 0), wall_pt("W", b, 0), wall_pt("W", b, h), wall_pt("W", a, h)]
+    if side == "S":
+        return [P(a, RD, 0), P(b, RD, 0), P(b, RD, h), P(a, RD, h)]
+    return [P(RW, a, 0), P(RW, b, 0), P(RW, b, h), P(RW, a, h)]
+
+
+def reveal(side, a, b, draw, h=DOOR_H):
+    """Run `draw` (neighbour geometry, in its own tiles via `placed`) and show
+    it only through this doorway, so the frame and the wall clip it."""
+    layer = pygame.Surface(screen.get_size(), depth=24)
+    layer.fill((22, 18, 20))
+    with drawing_on(layer):
+        draw()
+    show_through(layer, opening_polygon(side, a, b, h), tint_a=0)
+
+
+def reveal_near(side, a, b, draw, depth=1.55, fill=(232, 228, 216)):
+    """Neighbour past a near (ghost) wall.
+
+    The next room continues toward the camera, so its floor lies just outside
+    the wall. The vertical door quad is filled with that room's wall colour
+    (anything tall enough to project into the hole is drawn on top of it).
+    Both are clipped to the opening; the ghost wall drawn afterwards hides spill.
+    """
+    layer = pygame.Surface(screen.get_size(), depth=24)
+    layer.fill(fill)
+    with drawing_on(layer):
+        draw()
+    # The vertical hole is the wall itself; the neighbour's floor projects just
+    # outside it. Painting the hole with the fill colour reads as a shut door.
+    if side == "S":
+        pts = [P(a - 0.05, RD - 0.02, 0), P(b + 0.05, RD - 0.02, 0),
+               P(b + 0.08, RD + depth, 0), P(a - 0.08, RD + depth, 0)]
+    else:
+        pts = [P(RW - 0.02, a - 0.05, 0), P(RW - 0.02, b + 0.05, 0),
+               P(RW + depth, b + 0.08, 0), P(RW + depth, a - 0.08, 0)]
+    show_through(layer, pts, tint_a=0)
+
+
+def back_opening(side, a, b, draw, h=DOOR_H, col=WHITE):
+    """Open doorway in a back wall: neighbour through the hole, architrave on top."""
+    layer = pygame.Surface(screen.get_size(), depth=24)
+    layer.fill((22, 18, 20))
+    with drawing_on(layer):
+        draw()
+    doorway_back(side, a, b, layer, h=h, col=col)
+
+
 def glazed_door_back(side, a, b, ext, col=SAGE, h=DOOR_H, panes=(2, 3), glass_z=(96, 176), cat_flap=True, hinge="left"):
     """Half-glazed external door on a back wall: real glass onto the exterior
     layer (show_through), glazing bars, panelled lower half, cat flap, black ironmongery."""
@@ -862,8 +938,11 @@ def glazed_door_back(side, a, b, ext, col=SAGE, h=DOOR_H, panes=(2, 3), glass_z=
 
 def ghost_near_walls(wall_col=GREEN, trim_col=WHITE, doors_S=(), doors_E=(), windows_E=(), windows_S=(),
                      frame_col=WHITE, cornice=True, extra_polys=(), curtains=PINK, open_E=False,
-                     open_W=False, window_z=(52, 206), window_cols=3):
+                     open_W=False, window_z=(52, 206), window_cols=3, openings=()):
     """Haunted Mansion's see-through front edge for any room.
+    openings: (side, a, b, draw) neighbour views, painted into the doorway holes
+    before the wall so the wall and its frame clip them. side "S" is y = RD,
+    side "E" is x = RW.
     doors_*: (a, b) doorways on the near wall y = RD ("S") / x = RW ("E"), each
     drawn with the engine's ghost door frame (game.door_frame_polys at
     GHOST_FRAME_ALPHA); windows_*: (u0, u1) sashes drawn faintly.
@@ -871,6 +950,10 @@ def ghost_near_walls(wall_col=GREEN, trim_col=WHITE, doors_S=(), doors_E=(), win
     open_E: no wall at x = RW at all (an open-plan join onto the next view of the same room);
     open_W: the back-left side is open instead (drop the near wall's corner post at x = 0).
     window_z / window_cols: sill/head height and vertical bars of the faint near-wall windows."""
+    for spec in openings:
+        side, a, b, draw = spec[:4]
+        fill = spec[4] if len(spec) > 4 else (232, 228, 216)
+        reveal_near(side, a, b, draw, fill=fill)
     z0, z1 = window_z
     t = 0.08
     WS = lambda u, z, n: P(u, RD + n, z)

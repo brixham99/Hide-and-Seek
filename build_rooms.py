@@ -98,15 +98,14 @@ def build(view):
                 return orig_pl(polys) if polys else (pygame.Surface((1, 1), pygame.SRCALPHA), (0, 0))
 
             patch(hc.HMG, "polys_layer", polys_layer)
-        if view == "drawing":                      # its east-wall door to the hall: an open doorway
-            patch(mod, "panel_door_W", lambda a, b: back_doorway("W", a, b, (84, 54, 36)))
-        elif view == "boot":
+        if view == "boot":
             patch(mod, "kitchen_leaf", lambda *a, **k: None)
             patch(mod, "plank_door_face", lambda *a, **k: [])          # the WC door on the ghost wall
         elif view in ("office", "utility"):
             patch(mod, "door_leaf", lambda *a, **k: None)
         elif view == "wc":
-            patch(mod, "door", lambda: back_doorway("W", *mod.DOOR, (120, 112, 100)))
+            import glimpses
+            patch(mod, "door", lambda: hc.back_opening("W", *mod.DOOR, glimpses.boot_from_wc))
         elif view == "hall":
             patch(mod, "drawing_door_polys", lambda: [])
         mod.main()
@@ -127,7 +126,7 @@ def build_all(quiet=False):
 
 
 # Bump when saved room images must be rebuilt (macOS alpha-safe canvas).
-CACHE_REV = "2"
+CACHE_REV = "3"
 
 
 def cache_ok():

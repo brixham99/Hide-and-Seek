@@ -226,13 +226,7 @@ def balustrade():
 
 # ------------------------------------------------------------- near walls
 def kitchen_glimpse():
-    a, b = KITCHEN_DOOR
-    floor_slate(a - .1, RD, b + .1, RD + 1.0, seed=8)
-    shadow = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
-    for kk in range(8):
-        t0, t1 = kk / 8, (kk + 1) / 8
-        pygame.draw.polygon(shadow, (8, 8, 9, int(40 + 215 * t1)), [P(a - .1, RD + t0), P(b + .1, RD + t0), P(b + .1, RD + t1), P(a - .1, RD + t1)])
-    screen.blit(shadow, (0, 0))
+    """The kitchen is drawn into the doorway itself (see ghost_near_walls openings)."""
 
 
 def west_wall_hung():
@@ -281,7 +275,10 @@ def main():
     paint.chandelier(1.55, 2.05, 248)
     place_sprite("archie", 2.05, 4.9)
     west_wall_hung()
-    ghost_near_walls(WALL, doors_S=[KITCHEN_DOOR], doors_E=[DRAWING_DOOR], extra_polys=drawing_door_polys())
+    import glimpses
+    ghost_near_walls(WALL, doors_S=[KITCHEN_DOOR], doors_E=[DRAWING_DOOR], extra_polys=drawing_door_polys(),
+                     openings=[("S", *KITCHEN_DOOR, glimpses.kitchen_from_hall, (232, 228, 216)),
+                               ("E", *DRAWING_DOOR, glimpses.drawing_from_hall, (46, 82, 72))])
     img = finish("Hide and Seek - Hall (mock-up)", OUT)
     if not ARGS:      # close-up of the front door and the Sitting Room doorway
         pts = [P(0, SITTING_DOOR[1] + .35, 0), P(0, SITTING_DOOR[1] + .35, WALL_H + 8), P(FRONT_DOOR[1] + .5, 0, WALL_H + 8),

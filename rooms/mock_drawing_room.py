@@ -333,14 +333,14 @@ def main():
         print(OUT)
         return
     floor_boards()
-    threshold("S", *HALL_DOOR, (170, 150, 120))
     rug(1.25, 1.05, 6.05, 6.55)
     wall_shell(GREEN)
     ext = exterior_layer({"N": garden_side})
     sash_window("N", 2.55, 3.95, ext)
     photo_grid_N(4.55, 112, seed=2)
     painting_landscape_N(0.55, 1.6, 140, 188)
-    panel_door_W(0.4, 1.85)
+    import glimpses
+    back_opening("W", 0.4, 1.85, glimpses.hall_from_drawing)
     wall_trim()
     cy0, cy1, cd = chimney()
     cupboards(cy1, 6.85, cd)
@@ -356,7 +356,8 @@ def main():
     piano(RW - .9, RW - .02, 3.9, 6.15)
     tv_stand(0.85, 3.55, RD - .75, RD - .05)
     place_sprite("archie", 3.55, 4.3)
-    ghost_near_walls(GREEN, doors_S=[HALL_DOOR], windows_E=[SIDE_WIN])
+    ghost_near_walls(GREEN, doors_S=[HALL_DOOR], windows_E=[SIDE_WIN],
+                     openings=[("S", *HALL_DOOR, glimpses.kitchen_from_drawing, (232, 228, 216))])
     finish("Hide and Seek - Drawing Room (mock-up)", OUT,
            copies=() if ARGS else ("shots/hs_drawing_room_mock.png",))
 

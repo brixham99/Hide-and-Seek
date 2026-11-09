@@ -42,7 +42,8 @@ CH = 90
 
 
 def boot_room_beyond(side, rnd):
-    floor_flagstones(x0=-2, y0=-4, x1=7, y1=0, seed=5)
+    import glimpses
+    glimpses.boot_from_utility()
 
 
 def door_leaf():
