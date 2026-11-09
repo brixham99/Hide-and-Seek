@@ -373,15 +373,18 @@ def stamp(tex, x0, y0, x1, y1, z=0.0, mask="rect"):
     tx = np.clip((u * (tw - 1)).astype(np.int32), 0, tw - 1)
     ty = np.clip((v * (th - 1)).astype(np.int32), 0, th - 1)
     col = np.zeros((sw, sh, 3), np.uint8)
-    al = np.zeros((sw, sh), np.uint8)
     col[m] = tex[ty[m], tx[m]]
-    al[m] = 255
-    out = pygame.Surface((sw, sh), pygame.SRCALPHA)
-    pygame.surfarray.blit_array(out, col)
-    pa = pygame.surfarray.pixels_alpha(out)
-    pa[:] = al
-    del pa
-    screen.blit(out, (ix0, iy0))
+    # Write the floor pixels straight into the canvas. An SRCALPHA blit onto a
+    # macOS surface that itself has alpha clears every pixel whose source alpha
+    # is 0, which erases the room inside the floor's bounding box.
+    rgb = pygame.surfarray.pixels3d(screen)
+    view = rgb[ix0:ix1, iy0:iy1]
+    view[m] = col[m]
+    del rgb
+    if screen.get_masks()[3]:
+        aa = pygame.surfarray.pixels_alpha(screen)
+        aa[ix0:ix1, iy0:iy1][m] = 255
+        del aa
 
 
 def chandelier(x, y, z=236):

@@ -107,15 +107,15 @@ class Game:
             self.pad = pygame.joystick.Joystick(0)
         self.log = []                # (room, view) changes, for the tests
         self._fg = {vid: _fg_crop(m["fg"]) for vid, m in self.views.items()}
-        self._layers = [pygame.Surface((WIN_W, WIN_H), 0, 24) for _ in range(2)]
+        # 24-bit, no per-pixel alpha. On macOS the window surface has alpha, and
+        # blitting the ghost walls (mostly transparent) straight onto it zeroes
+        # the room. Dirty display.update also drops every pixel outside the
+        # rectangle, because that back buffer is not kept. Compose here, then
+        # one opaque blit and a full flip.
+        self._layers = [pygame.Surface((WIN_W, WIN_H), depth=24) for _ in range(2)]
+        self.frame = self._layers[0]
         self._labels = {}
         self._hint = self._make_hint()
-        self._presented = None       # view tuple last painted in full
-        self._prev_body = None       # screen rect Archie occupied last frame
-        self._label_surf = None
-        self._label_rect = pygame.Rect(0, 0, 0, 0)
-        self._hint_rect = pygame.Rect(0, 0, 0, 0)
-        self._hint_at = (0, 0)
 
     # ---------------------------------------------------------------- input
     def read_input(self):
@@ -197,7 +197,6 @@ class Game:
         self.view = house.view_for(room, x)
         self.trans = ("fade", 0.0, snap, old, self.view)
         self.log.append((room, self.view[0]))
-        self._presented = None
 
     # ---------------------------------------------------------------- drawing
     def to_screen(self, view, x, y, z=0.0):
@@ -262,19 +261,26 @@ class Game:
         src = pygame.Rect(hit.x - fr.x, hit.y - fr.y, hit.w, hit.h)
         surf.blit(crop, hit.topleft, src)
 
-    def _compose(self, layer, view, alpha=255, player=True, offset=(0, 0)):
-        """Full frame into `layer` (used while the view is sliding or fading)."""
+    def _paint_view(self, target, view, player=True):
+        """One room onto a 24-bit surface: background, Archie, ghost walls."""
         m = self.views[view[0]]
-        layer.set_alpha(None)
-        layer.fill((8, 8, 9))
-        layer.blit(m["bg"], (0, 0))
+        target.blit(m["bg"], (0, 0))
         if player:
-            self.draw_archie(layer, view)
-        self._blit_fg(layer, view)
-        layer.set_alpha(None if alpha >= 255 else alpha)
-        self.screen.blit(layer, offset)
-        if alpha < 255:
-            layer.set_alpha(None)
+            self.draw_archie(target, view)
+        self._blit_fg(target, view)
+
+    def _hud_on(self, target):
+        name = house.label(self.room, self.view)
+        label = self._make_label(name)
+        target.blit(label, (16, 14))
+        hint_at = (WIN_W - self._hint.get_width() - 16, WIN_H - self._hint.get_height() - 14)
+        target.blit(self._hint, hint_at)
+
+    def _flip(self):
+        """Opaque copy of the finished frame. Never a per-pixel-alpha blit."""
+        self._hud_on(self.frame)
+        self.screen.blit(self.frame, (0, 0))
+        pygame.display.flip()
 
     def _make_label(self, name):
         if name in self._labels:
@@ -299,79 +305,37 @@ class Game:
         box.blit(txt, (0, 0))
         return box
 
-    def _hud(self):
-        name = house.label(self.room, self.view)
-        label = self._make_label(name)
-        self._label_surf = label
-        self.screen.blit(label, (16, 14))
-        self._label_rect = pygame.Rect(16, 14, *label.get_size())
-        self._hint_at = (WIN_W - self._hint.get_width() - 16, WIN_H - self._hint.get_height() - 14)
-        self.screen.blit(self._hint, self._hint_at)
-        self._hint_rect = pygame.Rect(self._hint_at, self._hint.get_size())
-        return self._label_rect, self._hint_rect
-
-    def _restore(self, rect):
-        bg = self.views[self.view[0]]["bg"]
-        r = rect.clip(bg.get_rect())
-        if r.w == 0:
-            return
-        self.screen.blit(bg, r.topleft, r)
-        self._blit_fg(self.screen, self.view, r)
-
-    def _present_full(self):
-        self.screen.fill((8, 8, 9))
-        self.screen.blit(self.views[self.view[0]]["bg"], (0, 0))
-        body = self.draw_archie(self.screen, self.view)
-        self._blit_fg(self.screen, self.view)
-        self._hud()
-        pygame.display.flip()
-        self._presented = self.view
-        self._prev_body = body
-
-    def _present_dirty(self):
-        old = self._prev_body
-        if old is not None:
-            self._restore(old)
-        body = self.draw_archie(self.screen, self.view)
-        # ghost walls sit in front of him; put back any he overlapped
-        self._blit_fg(self.screen, self.view, body.union(old) if old is not None else body)
-        dirty = [r for r in (old, body) if r is not None and r.w]
-        # the plaque is translucent: only repaint it when a restore wiped it
-        for rect, surf, at in ((self._label_rect, self._label_surf, (16, 14)),
-                               (self._hint_rect, self._hint, self._hint_at)):
-            if old is not None and (old.colliderect(rect) or body.colliderect(rect)):
-                self.screen.blit(surf, at)
-                dirty.append(rect)
-        pygame.display.update(dirty)
-        self._prev_body = body
-
     def draw_view(self, view, offset=(0, 0), alpha=255, player=True):
-        self._compose(self._layers[0], view, alpha=alpha, player=player, offset=offset)
+        """Paint one view into the 24-bit frame (used by the transition below)."""
+        layer = self._layers[1]
+        layer.set_alpha(None)
+        layer.fill((8, 8, 9))
+        self._paint_view(layer, view, player=player)
+        layer.set_alpha(None if alpha >= 255 else alpha)
+        self.frame.blit(layer, offset)
+        if alpha < 255:
+            layer.set_alpha(None)
 
     def draw(self):
+        self.frame.set_alpha(None)
+        self.frame.fill((8, 8, 9))
         if self.trans and self.trans[0] == "slide":
             _, t, _, a, b = self.trans
             e = t * t * (3 - 2 * t)
             # the same world point sits at different screen spots in the two halves
             pa, pb = self.to_screen(a, self.x, self.y), self.to_screen(b, self.x, self.y)
             d = (pb[0] - pa[0], pb[1] - pa[1])
-            self._compose(self._layers[0], a, player=False, offset=(round(-d[0] * e), round(-d[1] * e)))
-            self._compose(self._layers[1], b, alpha=int(255 * e), offset=(round(d[0] * (1 - e)), round(d[1] * (1 - e))))
-            self._hud()
-            pygame.display.flip()
-            self._presented = None
+            self.draw_view(a, offset=(round(-d[0] * e), round(-d[1] * e)), player=False)
+            self.draw_view(b, offset=(round(d[0] * (1 - e)), round(d[1] * (1 - e))), alpha=int(255 * e))
         elif self.trans and self.trans[0] == "fade":
             _, t, snap, a, b = self.trans
-            self._compose(self._layers[0], b)
+            self._paint_view(self.frame, b)
             snap.set_alpha(int(255 * (1 - t)))
-            self.screen.blit(snap, (0, 0))
-            self._hud()
-            pygame.display.flip()
-            self._presented = None
-        elif self._presented != self.view:
-            self._present_full()
+            self.frame.blit(snap, (0, 0))
+            snap.set_alpha(None)
         else:
-            self._present_dirty()
+            self._paint_view(self.frame, self.view)
+        self._flip()
 
 
 def main():

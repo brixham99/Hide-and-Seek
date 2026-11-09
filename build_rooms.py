@@ -59,7 +59,12 @@ def build(view):
         fg.append(layer)
 
     def finish(*a, **k):
-        img = pygame.transform.smoothscale(hc.screen, (hc.WIN_W, hc.WIN_H))
+        scaled = pygame.transform.smoothscale(hc.screen, (hc.WIN_W, hc.WIN_H))
+        # smoothscale can come back with per-pixel alpha on macOS. The vignette
+        # overlay is transparent in the middle; blitting it onto an alpha
+        # surface stores that 0 and the floor is saved invisible.
+        img = pygame.Surface((hc.WIN_W, hc.WIN_H), depth=24)
+        img.blit(scaled, (0, 0))
         hc.vignette(img)
         pygame.image.save(img, os.path.join(CACHE, f"{view}_bg.png"))
         top = pygame.Surface((hc.WIN_W, hc.WIN_H), pygame.SRCALPHA)
@@ -117,9 +122,18 @@ def build_all(quiet=False):
     os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
     for v in VIEWS:
         build(v)
+    with open(os.path.join(CACHE, "REV"), "w") as f:
+        f.write(CACHE_REV + "\n")
+
+
+# Bump when saved room images must be rebuilt (macOS alpha-safe canvas).
+CACHE_REV = "2"
 
 
 def cache_ok():
+    rev = os.path.join(CACHE, "REV")
+    if not os.path.exists(rev) or open(rev).read().strip() != CACHE_REV:
+        return False
     return all(os.path.exists(os.path.join(CACHE, f"{v}{ext}"))
                for v in VIEWS for ext in ("_bg.png", "_fg.png", ".json", "_depth.npy"))
 
