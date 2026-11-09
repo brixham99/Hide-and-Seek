@@ -125,7 +125,8 @@ class Game:
             self.log.append((self.room, v[0]))
 
     def change_room(self, room, x, y):
-        snap = self.screen.copy()
+        snap = pygame.Surface((WIN_W, WIN_H), 0, 24)
+        snap.blit(self.screen, (0, 0))
         old = self.view
         self.room, self.x, self.y = room, x, y
         self.view = house.view_for(room, x)
@@ -140,7 +141,9 @@ class Game:
 
     def draw_view(self, view, offset=(0, 0), alpha=255, player=True):
         m = self.views[view[0]]
-        layer = pygame.Surface((WIN_W, WIN_H)).convert()
+        # plain RGB layer: on macOS convert() gives a format with alpha, and the
+        # foreground blit then zeroes it, so the room vanished
+        layer = pygame.Surface((WIN_W, WIN_H), 0, 24)
         layer.blit(m["bg"], (0, 0))
         if player:
             self.draw_archie(layer, view)
