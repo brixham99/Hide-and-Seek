@@ -1,0 +1,12 @@
+# built room images and screenshots
+cache/
+shots/
+*.png.tmp
+# Python
+__pycache__/
+*.pyc
+# virtual environments
+venv/
+.venv/
+venv-*/
+env/
