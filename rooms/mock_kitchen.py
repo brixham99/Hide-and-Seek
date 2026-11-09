@@ -139,38 +139,66 @@ def main():
     with world(X0):
         F.kitchen_run_floor()
         F.kitchen_seen_from_south()
-    hung = glimpse_layer()
-    with drawing_on(hung), world(X0):
-        F.kitchen_run_hung()
-    hung.set_alpha(96)
-    screen.blit(hung, (0, 0))
-    ghost_near_walls(OFF_WHITE, doors_E=[BOOT_DOOR], windows_S=[WIN2, WIN1], window_z=(112, 208), window_cols=2,
+    if not hc.FLIP:
+        hung = glimpse_layer()
+        with drawing_on(hung), world(X0):
+            F.kitchen_run_hung()
+        hung.set_alpha(96)
+        screen.blit(hung, (0, 0))
+    # In the opposite view these windows are on the far wall, so they are real
+    # sashes (garden_windows) rather than holes cut in the ghost wall.
+    ghost_near_walls(OFF_WHITE, doors_E=[BOOT_DOOR], windows_S=() if hc.FLIP else [WIN2, WIN1],
+                     window_z=(112, 208), window_cols=2,
                      cornice=False, curtains=None, open_W=True, extra_polys=near_wall_extras())
     if hc.FLIP:
         garden_windows()
-        crisp_top()
+        with world(X0):
+            F.kitchen_north_wall_front()
     finish("Hide and Seek - Kitchen (mock-up)", OUT, subtitle="Ground Floor - kitchen half of the Kitchen + Dining Room", copies=COPIES)
 
 
 def _north_garden(side, rnd):
-    hc.ext_lawn(side, -2, 20, 0.2, 6, rnd)
-    hc.ext_hedge(side, -2, 20, 3.2, 3.8, h=80, rnd=rnd)
+    """Lawn, path and hedge outside the garden wall (side 'S', y past RD)."""
+    hc.ext_lawn(side, -3, 22, 0.15, 6.5, rnd)
+    hc.ext_paving(side, -3, 22, 0.2, 1.15, rnd)
+    hc.ext_border(side, -3, 22, 1.2, 1.7, rnd)
+    hc.ext_picket_fence(side, -3, 22, 2.05, h=40)
+    hc.ext_hedge(side, -3, 22, 3.05, 3.65, h=100, rnd=rnd)
+    hc.ext_shrub(side, 1.1, 2.35, r=0.32, h=48, rnd=random.Random(4))
+    hc.ext_shrub(side, 6.6, 2.45, r=0.36, h=52, rnd=random.Random(7))
+
+
+def _sash_on_north(u0, u1, ext, z0=112, z1=208):
+    """A white sash on the garden wall, glass opening onto `ext`."""
+    def W(u, z, n=0.0):
+        return P(u, RD - n, z)
+
+    def quad(a, b, za, zb, col, n=0.0):
+        poly([W(a, za, n), W(b, za, n), W(b, zb, n), W(a, zb, n)], col)
+
+    # Glass first, on the wall. A filled frame drawn before it would sit closer
+    # to the camera and hide the garden.
+    hc.show_through(ext, [W(u0, z0), W(u1, z0), W(u1, z1), W(u0, z1)], tint_a=12)
+    frame = shade(WHITE, KY)
+    n = 0.02
+    quad(u0 - 0.07, u0, z0 - 7, z1 + 7, frame, n)
+    quad(u1, u1 + 0.07, z0 - 7, z1 + 7, frame, n)
+    quad(u0 - 0.07, u1 + 0.07, z1, z1 + 7, frame, n)
+    quad(u0 - 0.07, u1 + 0.07, z0 - 7, z0, frame, n)
+    bar = shade((248, 248, 246), 1.02)
+    mid = (z0 + z1) / 2
+    for za, zb in ((z0, z0 + 4), (mid - 2.5, mid + 2.5), (z1 - 4, z1)):
+        quad(u0, u1, za, zb, bar, n=0.028)
+    for uu in (u0, (u0 + u1) / 2 - 0.02, u1 - 0.05):
+        quad(uu, uu + 0.05, z0, z1, bar, n=0.028)
+    quad(u0 - 0.1, u1 + 0.1, z0 - 9, z0 - 4, shade(WHITE, 1.04), n=0.045)
 
 
 def garden_windows():
-    """The two garden-wall windows, now on the far wall, with the hedge outside."""
-    ext = hc.exterior_layer({"N": _north_garden})
+    """The two garden-wall windows, with lawn, path and hedge inside the frame."""
+    ext = hc.exterior_layer({"S": _north_garden}, haze=(156, 190, 216))
     for a, b in (WIN2, WIN1):
-        pts = [P(a, RD, 112), P(b, RD, 112), P(b, RD, 208), P(a, RD, 208)]
-        hc.show_through(ext, pts, tint_a=16)
-
-
-def crisp_top():
-    """A continuous top edge so the far walls meet at the corner."""
-    cream = shade((236, 232, 224), KY)
-    qy(RD, 0.05, RW, WALL_H - 14, WALL_H, cream)
-    qx(RW, 0.05, RD, WALL_H - 14, WALL_H, shade((236, 232, 224), KX))
-    qy(RD, RW - 0.12, RW, 0, WALL_H, shade(OFF_WHITE, KY))
+        _sash_on_north(a, b, ext)
 
 
 if __name__ == "__main__":

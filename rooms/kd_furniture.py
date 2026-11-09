@@ -7,11 +7,13 @@ of the kitchen are the same objects. Call inside `with hc.world(view_x0):`.
 import math
 import random
 
+import pygame
+
 import house_common as hc
 from house_common import (P, poly, line, qx, qy, qz, box, cyl, cone, fl_ellipse, shade, art,  # noqa: F401
                           KX, KY, KT, WALL_H, DOOR_H, BRASS, OAK, WHITE, CREAM, GRANITE, STEEL,
                           PINE_TOP, BURGUNDY, PALE_GREY, OFF_WHITE, turned_leg, bar_stool,
-                          farmhouse_table, ladder_chair, KD_LEN, KD_DEP, KD_SPLIT)
+                          farmhouse_table, ladder_chair, KD_LEN, KD_DEP, KD_SPLIT, S)
 
 RD = KD_DEP
 CD, CH = 1.02, 92                      # counter depth (tiles), worktop height
@@ -60,13 +62,6 @@ def range_cooker(x0, x1):
     box(x0, RUN - .02, x1, RD, 0, CH, BURGUNDY, top=(30, 28, 30))
     for i in range(5):
         fl_ellipse(x0 + .3 + i * (x1 - x0 - .6) / 4, RD - CD * .5, .11, .09, (62, 60, 62), CH + .5)
-
-
-def hood_and_cabinets(x0, x1, cl, cr):
-    box(cl, RD - .6, x0 - .02, RD, 142, WALL_H, CAB)
-    box(x1 + .02, RD - .6, cr, RD, 142, WALL_H, CAB)
-    box(x0, RD - .78, x1, RD, 168, 198, CAB)
-    box(x0 + .25, RD - .55, x1 - .25, RD, 198, WALL_H, CAB)
 
 
 def drawer_unit(x0, x1):
@@ -211,17 +206,11 @@ def _shaker(x0, x1, y, z0, z1, n=None):
 
 
 def kitchen_seen_from_south():
-    """Fronts of the garden-wall run, which the usual camera sees from behind."""
+    """Fronts of the floor-standing run, which the usual camera sees from behind.
+    Wall-hung pieces are drawn later, after the garden wall itself."""
     if not hc.FLIP:
         return
     y = RUN - 0.02
-    # grey metro splashback, in the existing gap between worktop and wall cupboards
-    qy(RD - 0.02, 9.5, 16.3, CH + 2, 140, shade((156, 164, 162), KY))
-    xx = 9.55
-    while xx < 16.2:
-        qy(RD - 0.03, xx, min(16.2, xx + 0.24), CH + 6, CH + 20, shade((220, 222, 220), KY))
-        qy(RD - 0.03, xx, min(16.2, xx + 0.24), CH + 24, 138, shade((220, 222, 220), KY))
-        xx += 0.30
     # shaker doors on the base run, in the spans the units already occupy
     _shaker(12.65, 13.6, y, 12, 78, n=1)          # the bay beside the sink: dishwasher
     qy(y - 0.015, 12.85, 13.4, 28, 62, shade((186, 190, 192), KY))
@@ -233,10 +222,6 @@ def kitchen_seen_from_south():
         qy(y, a, b, 8, 72, shade((120, 28, 36), KY))
         qy(y - 0.012, a + 0.08, b - 0.08, 16, 64, shade((28, 26, 28), KY))
         fl_ellipse((a + b) / 2, y - 0.02, 0.04, 0.02, (190, 176, 140), 36)
-    # wall cabinets and the hood, door panels on the face toward the room
-    _shaker(10.35, 10.9, RD - 0.58, 148, 220, n=1)
-    _shaker(12.6, 13.15, RD - 0.58, 148, 220, n=1)
-    qy(RD - 0.8, rx0 + 0.15, rx1 - 0.15, 172, 194, shade(CAB, KY))   # hood skirt
     # sage cupboard on the west wall, doors facing into the room
     a, b, x = 3.3, 4.6, KD_LEN - 0.04
     qx(x, a, b, 4, 148, shade((148, 174, 162), KX))
@@ -245,20 +230,123 @@ def kitchen_seen_from_south():
     qx(x - 0.012, midy + 0.05, b - 0.1, 16, 136, shade((176, 196, 184), KX))
     fl_ellipse(x - 0.02, midy - 0.14, 0.02, 0.04, (60, 60, 64), 78)
     fl_ellipse(x - 0.02, midy + 0.14, 0.02, 0.04, (60, 60, 64), 78)
-    # grey clock, extinguisher by the boot door, a white ledged door standing open
-    cyl(KD_LEN - 0.12, 2.35, 0.3, 150, 156, (148, 150, 146))
+    # extinguisher by the boot door, and the white ledged door standing open
     cyl(KD_LEN - 0.16, 1.7, 0.07, 14, 70, (176, 36, 34))
     qx(KD_LEN - 0.55, 0.28, 1.42, 4, 172, shade((244, 242, 236), KX))
     for zz in (28, 78, 128):
         qx(KD_LEN - 0.57, 0.36, 1.34, zz, zz + 7, shade((228, 224, 214), KX))
-    for xx, yy in ((11.2, 2.6), (12.6, 5.0), (14.2, 2.4), (15.2, 4.6)):
-        cyl(xx, yy, 0.06, WALL_H - 7, WALL_H - 3, (255, 244, 214))
+
+
+def _metro(x0, x1, z0, z1, y):
+    """Grey metro tiles and grout, one flat coat on the wall plane."""
+    grout = shade((186, 188, 186), KY)
+    tile = shade((146, 152, 150), KY)
+    qy(y, x0, x1, z0, z1, grout)
+    tw, th = 0.28, 9.0
+    row = 0
+    z = z0 + 1.1
+    while z < z1 - 1.6:
+        x = x0 - (tw * 0.5 if row % 2 else 0)
+        zt = min(z1 - 1.0, z + th - 1.3)
+        while x < x1:
+            a, b = max(x0 + 0.012, x + 0.01), min(x1 - 0.012, x + tw - 0.01)
+            if b - a > 0.05:
+                qy(y - 0.003, a, b, z, zt, tile)
+            x += tw
+        z += th
+        row += 1
+
+
+def _wall_cab(x0, x1, z0=146, z1=214):
+    y0 = RD - 0.40
+    box(x0, y0, x1, RD - 0.012, z0, z1, CAB)
+    _shaker(x0, x1, y0, z0 + 6, z1 - 6)
+
+
+def _cubby(x0, x1, z0=146, z1=214):
+    """Open shelf beside the hood, books facing the room."""
+    y0 = RD - 0.34
+    box(x0, y0, x0 + 0.045, RD - 0.012, z0, z1, CAB)
+    box(x1 - 0.045, y0, x1, RD - 0.012, z0, z1, CAB)
+    qy(RD - 0.014, x0, x1, z0, z1, shade((226, 220, 208), KY))
+    rnd = random.Random(int(x0 * 17))
+    spines = [(160, 42, 40), (40, 70, 120), (210, 180, 70), (56, 108, 68), (36, 36, 40), (176, 96, 58)]
+    for zz in (z0 + 6, z0 + 28, z0 + 50):
+        box(x0 + 0.045, y0 + 0.02, x1 - 0.045, RD - 0.016, zz, zz + 3, shade(CAB, 0.94))
+        u = x0 + 0.07
+        while u < x1 - 0.1:
+            bw = 0.055
+            box(u, y0 + 0.06, u + bw, RD - 0.06, zz + 3, zz + 3 + rnd.uniform(14, 20), rnd.choice(spines), ol=False)
+            u += bw + 0.008
+
+
+def _hood(x0, x1):
+    """Extractor over the range: white canopy, dark filter, chimney to the cornice."""
+    box(x0 + 0.05, RD - 0.68, x1 - 0.05, RD - 0.012, 162, 198, (244, 244, 240))
+    qy(RD - 0.68, x0 + 0.16, x1 - 0.16, 168, 190, shade((40, 42, 46), KY))
+    qy(RD - 0.69, x0 + 0.08, x1 - 0.08, 160, 165, shade((186, 188, 190), KY))
+    box(x0 + 0.32, RD - 0.36, x1 - 0.32, RD - 0.012, 198, 220, (244, 244, 240))
+
+
+def _pans(x0, x1, z=116):
+    """A rail of pans under the plate rack, flat on the wall."""
+    y = RD - 0.05
+    qy(y, x0, x1, z, z + 3, shade((64, 64, 68), KY))
+    u = x0 + 0.18
+    while u < x1 - 0.12:
+        r = 0.11
+        pts = [P(u + r * math.cos(a), y - 0.004, z - 6 + r * 48 * math.sin(a))
+               for a in (2 * math.pi * i / 16 for i in range(16))]
+        poly(pts, (48, 50, 54))
+        qy(y - 0.006, u - 0.02, u + 0.02, z - 22, z - 8, shade((70, 70, 74), KY))
+        u += 0.34
+
+
+def _west_clock(y=6.95, z=164, r=0.48):
+    """Large grey wall clock on the west wall, at the far (north) end."""
+    x = KD_LEN - 0.02
+    rz = r * 60
+    ring = [P(x, y + r * math.cos(a), z + rz * math.sin(a)) for a in (i * math.pi / 16 for i in range(32))]
+    face = [P(x - 0.004, y + r * 0.82 * math.cos(a), z + rz * 0.82 * math.sin(a)) for a in (i * math.pi / 16 for i in range(32))]
+    poly(ring, shade((118, 120, 118), KX))
+    poly(face, shade((226, 226, 220), KX))
+    for i in range(12):
+        a = i * math.pi / 6 - math.pi / 2
+        pygame.draw.circle(hc.screen, (40, 40, 42), P(x - 0.006, y + r * 0.66 * math.cos(a), z + rz * 0.66 * math.sin(a)), max(1, int(1.4 * S)))
+    c = P(x - 0.008, y, z)
+    pygame.draw.line(hc.screen, (30, 30, 32), c, P(x - 0.01, y + r * 0.08, z + rz * 0.48), max(1, int(2 * S)))
+    pygame.draw.line(hc.screen, (30, 30, 32), c, P(x - 0.01, y + r * 0.42, z - rz * 0.12), max(1, int(S)))
+
+
+def kitchen_north_wall_front():
+    """What the opposite camera sees on the garden wall: shaker cabinets, the
+    hood, cubbies, metro tiles, and the plate rack at the far (west) end.
+    Drawn after that wall, flush on it."""
+    if not hc.FLIP:
+        return
+    y = RD - 0.012
+    # splashback on the wall, behind the worktop, stopping at the windows
+    _metro(9.50, 13.42, CH + 1, 144, y)          # between the two windows
+    _metro(13.55, 14.62, CH + 1, 108, y)         # under the sink window, up to the sill
+    _metro(14.78, 16.22, CH + 1, 124, y)         # under the plate rack
+    _wall_cab(9.52, 10.30)
+    _cubby(10.34, 10.90)
+    _hood(10.98, 12.52)
+    _cubby(12.58, 13.08)
+    _wall_cab(13.12, 13.42, z0=146, z1=214)
+    plate_rack(14.85, 16.22, z0=130, z1=208, d=0.30)
+    _pans(14.95, 16.05)
+    _west_clock()
 
 
 def kitchen_run_hung():
-    """Wall-hung on the garden wall: hood, wall cabinets, plate rack."""
-    hood_and_cabinets(10.95, 12.55, 10.3, 13.2)
-    plate_rack(14.8, 16.3)
+    """Wall-hung on the garden wall, seen from behind in the usual view."""
+    # the same spans the opposite view shows the fronts of
+    box(9.52, RD - 0.42, 10.92, RD, 146, 216, CAB)
+    box(12.58, RD - 0.42, 13.42, RD, 146, 216, CAB)
+    box(10.98, RD - 0.70, 12.52, RD, 162, 200, CAB)
+    box(11.28, RD - 0.38, 12.22, RD, 200, 220, CAB)
+    plate_rack(14.85, 16.22, z0=130, z1=208, d=0.30)
 
 
 # ================================================================= dining

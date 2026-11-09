@@ -530,8 +530,15 @@ class drawing_on:
 
 
 def out_pt(side, u, t, z=GROUND_Z):
-    """World point outside back wall `side`: u along the wall, t tiles out from it."""
-    return (u, -t, z) if side == "N" else (-t, u, z)
+    """World point outside a wall: u along the wall, t tiles out from it.
+    "N" is the south wall (y = 0), "W" the east wall (x = 0), "S" the north
+    wall (y = RD). The north wall faces the other way, so the iso shear
+    that lands a window on the ground runs with +t instead of -t."""
+    if side == "N":
+        return (u, -t, z)
+    if side == "S":
+        return (u + t, RD + t, z)
+    return (-t, u, z)
 
 
 def out_quad(side, u0, u1, t0, t1, col, z=GROUND_Z, ol=None):
@@ -599,17 +606,30 @@ def ext_picket_fence(side, u0, u1, t, h=46, col=(236, 234, 226)):
         p0, p1 = P(*out_pt(side, u, t, GROUND_Z)), P(*out_pt(side, u + w, t, GROUND_Z))
         p2, p3 = P(*out_pt(side, u + w, t, GROUND_Z + h)), P(*out_pt(side, u, t, GROUND_Z + h))
         tip = P(*out_pt(side, u + w / 2, t, GROUND_Z + h + 7))
-        poly([p0, p1, p2, tip, p3], shade(col, KY if side == "N" else KX), shade(col, .55))
+        poly([p0, p1, p2, tip, p3], shade(col, KY if side != "W" else KX), shade(col, .55))
         u += 0.17
     for k in (0, 1):     # posts
         uu = u0 + (u1 - u0) * k
-        box(*([uu - .05, -t - .05, uu + .05, -t + .05] if side == "N" else [-t - .05, uu - .05, -t + .05, uu + .05]),
-            GROUND_Z, GROUND_Z + h + 8, col)
+        if side == "S":
+            x, y, _ = out_pt(side, uu, t)
+            box(x - .05, y - .05, x + .05, y + .05, GROUND_Z, GROUND_Z + h + 8, col)
+        else:
+            box(*([uu - .05, -t - .05, uu + .05, -t + .05] if side == "N" else [-t - .05, uu - .05, -t + .05, uu + .05]),
+                GROUND_Z, GROUND_Z + h + 8, col)
 
 
 def ext_hedge(side, u0, u1, t0, t1, h=70, col=(36, 102, 42), rnd=None):
-    b = [u0, -t1, u1, -t0] if side == "N" else [-t1, u0, -t0, u1]
-    box(b[0], b[1], b[2], b[3], GROUND_Z, GROUND_Z + h, col)
+    if side == "S":
+        # a sheared slab, so it lands in the north-wall windows rather than
+        # an axis-aligned box on the wrong side of the house
+        z0, z1 = GROUND_Z, GROUND_Z + h
+        poly([P(*out_pt(side, u0, t0, z0)), P(*out_pt(side, u1, t0, z0)),
+              P(*out_pt(side, u1, t0, z1)), P(*out_pt(side, u0, t0, z1))], col)
+        poly([P(*out_pt(side, u0, t0, z1)), P(*out_pt(side, u1, t0, z1)),
+              P(*out_pt(side, u1, t1, z1)), P(*out_pt(side, u0, t1, z1))], shade(col, 1.12))
+    else:
+        b = [u0, -t1, u1, -t0] if side == "N" else [-t1, u0, -t0, u1]
+        box(b[0], b[1], b[2], b[3], GROUND_Z, GROUND_Z + h, col)
     rnd = rnd or random.Random(1)
     for _ in range(int((u1 - u0) * 10)):
         u = rnd.uniform(u0, u1)
