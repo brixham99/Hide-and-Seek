@@ -285,7 +285,7 @@ def _near_plane(pts):
     return (on_x or on_y) and max(zs) - min(zs) > 140
 
 
-def _tri_fill(target, a, b, c, da, db, dc, col, alpha):
+def _tri_fill(target, a, b, c, da, db, dc, col, alpha, zwrite=True):
     xs, ys = (a[0], b[0], c[0]), (a[1], b[1], c[1])
     x0 = max(0, int(math.floor(min(xs))))
     y0 = max(0, int(math.floor(min(ys))))
@@ -311,7 +311,8 @@ def _tri_fill(target, a, b, c, da, db, dc, col, alpha):
     m &= depth >= sub - 1e-4
     if not np.any(m):
         return
-    sub[m] = depth[m]
+    if zwrite:
+        sub[m] = depth[m]
     rgb = pygame.surfarray.pixels3d(target)
     rgb[x0:x1, y0:y1][m] = col
     del rgb
@@ -321,7 +322,7 @@ def _tri_fill(target, a, b, c, da, db, dc, col, alpha):
         del aa
 
 
-def _fill_poly(target, pts, col, alpha):
+def _fill_poly(target, pts, col, alpha, zwrite=True):
     infs = [_pinf.get(p) for p in pts]
     if any(i is None for i in infs) or len(pts) < 3:
         pygame.draw.polygon(target, col, pts)
@@ -329,20 +330,18 @@ def _fill_poly(target, pts, col, alpha):
     col = tuple(int(c) for c in col[:3])
     ds = [i[3] for i in infs]
     for i in range(1, len(pts) - 1):
-        _tri_fill(target, pts[0], pts[i], pts[i + 1], ds[0], ds[i], ds[i + 1], col, alpha)
+        _tri_fill(target, pts[0], pts[i], pts[i + 1], ds[0], ds[i], ds[i + 1], col, alpha, zwrite)
 
 
 def poly(pts, col, outline=None, w=1):
     if _flip_draw():
         near = _near_plane(pts) and _fg_surf is not None
-        # big faces are the see-through wall; frames and furniture edges stay solid
-        area = 0.0
-        for i in range(len(pts)):
-            ax, ay = pts[i]
-            bx, by = pts[(i + 1) % len(pts)]
-            area += ax * by - bx * ay
-        ghost = near and abs(area) > 90000
-        _fill_poly(_fg_surf if near else screen, pts, col, 42 if ghost else 255)
+        # Near walls are the ghost layer: a light tint, and they must not
+        # block the furniture drawn on the room behind them.
+        if near:
+            _fill_poly(_fg_surf, pts, col, 36, zwrite=False)
+        else:
+            _fill_poly(screen, pts, col, 255, zwrite=True)
         return
     pygame.draw.polygon(screen, col, pts)
     if outline:
@@ -371,10 +370,12 @@ KY, KX, KT = 0.90, 0.72, 1.04          # light: +y faces brighter than +x faces
 
 def box(x0, y0, x1, y1, z0, z1, col, top=None, ol=True, faces="xyz"):
     o = (lambda c: shade(c, 0.55)) if ol else (lambda c: None)
+    # The opposite view looks at the faces the usual camera never sees.
+    y_face, x_face = (y0, x0) if FLIP else (y1, x1)
     if "y" in faces:
-        c = shade(col, KY); qy(y1, x0, x1, z0, z1, c, o(c))
+        c = shade(col, KY); qy(y_face, x0, x1, z0, z1, c, o(c))
     if "x" in faces:
-        c = shade(col, KX); qx(x1, y0, y1, z0, z1, c, o(c))
+        c = shade(col, KX); qx(x_face, y0, y1, z0, z1, c, o(c))
     if "z" in faces:
         c = top or shade(col, KT); qz(z1, x0, y0, x1, y1, c, o(c))
     if "x" in faces or "y" in faces or "z" in faces:
@@ -760,7 +761,9 @@ def show_through(ext, pts, tint=(214, 230, 236), tint_a=22, glare=True):
 
 def _present_opening(view, x0, y0, pts):
     """Paste a masked opening onto the flipped room, in front of whatever is
-    farther away, and cut it out of the ghost wall when the wall is near."""
+    farther away. A window in a near (ghost) wall must not paint over the room."""
+    if _near_plane(pts):
+        return
     infs = [_pinf.get(p) for p in pts]
     if any(i is None for i in infs):
         screen.blit(view, (x0, y0))
@@ -1472,15 +1475,22 @@ def union_jack(Wf, u0, u1, z0, z1, k=1.0):
 
 def hung_layer(alpha=96):
     """Context for things hung on a ghost near wall (they face away): draw inside,
-    then they are blitted faint, like the wall itself."""
+    then they are blitted faint, like the wall itself. In the opposite view those
+    walls face the camera, so the same objects are drawn solid on the room."""
     class _Hung:
         def __enter__(self):
+            if FLIP:
+                self.skip = True
+                return screen
+            self.skip = False
             self.layer = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
             self.ctx = drawing_on(self.layer)
             self.ctx.__enter__()
             return self.layer
 
         def __exit__(self, *a):
+            if self.skip:
+                return False
             self.ctx.__exit__(*a)
             self.layer.set_alpha(alpha)
             screen.blit(self.layer, (0, 0))

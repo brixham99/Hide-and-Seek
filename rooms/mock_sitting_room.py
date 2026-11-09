@@ -289,6 +289,25 @@ def tv_cabinet(x0, x1, d=.55, h=50):
     qy(ty + .072, tx0 + .35, tx1 - .35, h + 30, h + 90, (34, 34, 36))
 
 
+def fireplace_front():
+    """The south face of the chimney: dark painted breast, brick opening, mantel,
+    candles and the print. The usual view looks at the back of this wall."""
+    if not hc.FLIP:
+        return
+    x0, x1, d = BREAST
+    y = RD - d
+    grey = (96, 98, 102)
+    qy(y, x0 - 0.05, x1 + 0.05, 0, WALL_H, shade(grey, KY))
+    qy(y - 0.01, x0 + 0.35, x1 - 0.35, 6, 86, (150, 78, 62))          # exposed brick
+    qy(y - 0.02, x0 + 0.55, x1 - 0.55, 10, 70, (36, 34, 32))           # the opening
+    box(x0 - 0.12, y - 0.18, x1 + 0.12, y + 0.02, 92, 106, (236, 232, 224))
+    for xx, col in ((x0 + 0.25, (40, 36, 34)), (x0 + 0.55, (230, 220, 190)),
+                    (x1 - 0.7, (190, 150, 80)), (x1 - 0.35, (230, 220, 190))):
+        cyl(xx, y - 0.08, 0.045, 106, 128, col)
+    qy(y - 0.02, x0 + 0.5, x1 - 0.5, 128, 198, (36, 32, 30))           # frame
+    qy(y - 0.03, x0 + 0.68, x1 - 0.68, 138, 188, (126, 146, 112))      # the print
+
+
 def north_wall_hung():
     """Faint (the ghost wall's room-facing side faces away): chimney breast, mantel,
     alcove shelves with books. The fire, surround, sepia picture and sign are on its
@@ -353,6 +372,7 @@ def main():
     pink_sofa(2.05, 5.35)
     tv_cabinet(4.95, 6.95)
     north_wall_hung()
+    fireplace_front()
     ghost_near_walls(WALL, doors_E=[HALL_DOOR], curtains=None)
     finish("Hide and Seek - Sitting Room (mock-up)", OUT)
 

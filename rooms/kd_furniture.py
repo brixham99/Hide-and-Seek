@@ -188,6 +188,34 @@ def kitchen_run_floor():
     sink_top(13.7, 14.6)
 
 
+def kitchen_seen_from_south():
+    """The garden-wall front, the sage cupboard and the boot-door side, which
+    the usual camera looks at from behind and the opposite view looks straight at."""
+    if not hc.FLIP:
+        return
+    y = RD - 0.02
+    qy(y, 10.2, 16.25, 94, 140, shade((160, 168, 166), KY))          # grey splashback
+    xx = 10.28
+    while xx < 16.15:
+        qy(y - 0.008, xx, xx + 0.26, 98, 114, shade((214, 216, 214), KY))
+        qy(y - 0.008, xx, xx + 0.26, 118, 134, shade((214, 216, 214), KY))
+        xx += 0.32
+    # sage two-door cupboard on the west wall, doors facing into the room
+    a, b, x = 3.3, 4.6, KD_LEN - 0.03
+    qx(x, a, b, 4, 148, shade((150, 176, 164), KX))
+    mid = (a + b) / 2
+    qx(x - 0.01, a + 0.1, mid - 0.05, 16, 136, shade((176, 196, 184), KX))
+    qx(x - 0.01, mid + 0.05, b - 0.1, 16, 136, shade((176, 196, 184), KX))
+    fl_ellipse(x - 0.012, mid - 0.12, 0.02, 0.04, (60, 60, 64), 80)
+    fl_ellipse(x - 0.012, mid + 0.12, 0.02, 0.04, (60, 60, 64), 80)
+    # round grey clock, and a red extinguisher beside the boot door
+    cyl(KD_LEN - 0.1, 2.35, 0.32, 148, 154, (150, 152, 148))
+    cyl(KD_LEN - 0.14, 1.75, 0.07, 16, 72, (176, 36, 34))
+    # recessed spots in the ceiling
+    for xx, yy in ((11.0, 2.4), (12.4, 4.8), (13.6, 2.2), (14.6, 5.2), (15.4, 3.4)):
+        cyl(xx, yy, 0.07, WALL_H - 8, WALL_H - 3, (255, 244, 214))
+
+
 def kitchen_run_hung():
     """Wall-hung on the garden wall: hood, wall cabinets, plate rack."""
     hood_and_cabinets(10.95, 12.55, 10.3, 13.2)

@@ -59,6 +59,10 @@ def drawing_room_beyond(side, rnd):
 
 
 def beam_polys():
+    # In the opposite view this ceiling beam lands across the room. The open
+    # side is already an open edge; the beam is only drawn in the usual view.
+    if hc.FLIP:
+        return []
     c = (238, 236, 230)
     a, b, z0 = -.16, .16, WALL_H - 20
     return [(shade(c, KT), [P(a, 0, WALL_H), P(b, 0, WALL_H), P(b, RD, WALL_H), P(a, RD, WALL_H)]),
@@ -106,7 +110,8 @@ def main():
     back = glimpse_layer()
     with drawing_on(back):
         dining_back()
-    screen.blit(fade_x(back, -1.0, -6.5), (0, 0))
+    if not hc.FLIP:   # the dining half sits outside this view; flipped, it spills out of the box
+        screen.blit(fade_x(back, -1.0, -6.5), (0, 0))
     wall_shell(OFF_WHITE, open_W=True)
     hall = exterior_layer({"N": hall_beyond}, haze=(226, 222, 212))
     drawing = exterior_layer({"N": drawing_room_beyond}, haze=shade(GREEN, KY))
@@ -116,7 +121,8 @@ def main():
     front = glimpse_layer()
     with drawing_on(front):
         dining_front()
-    screen.blit(fade_x(front, -1.4, -7.0, z_ref=70), (0, 0))
+    if not hc.FLIP:
+        screen.blit(fade_x(front, -1.4, -7.0, z_ref=70), (0, 0))
     with world(X0):
         F.kitchen_south_wall()
         F.kitchen_island_and_stools()
@@ -128,6 +134,7 @@ def main():
     screen.blit(hung, (0, 0))
     with world(X0):
         F.kitchen_run_floor()
+        F.kitchen_seen_from_south()
     hung = glimpse_layer()
     with drawing_on(hung), world(X0):
         F.kitchen_run_hung()
