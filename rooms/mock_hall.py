@@ -115,42 +115,15 @@ def sitting_beyond(side, rnd):
 
 # ------------------------------------------------------------- floor
 def boards():
-    rnd = random.Random(14)
+    import paint
+    paint.stamp(paint.timber(RW, RD, 14, BOARD1, BOARD2, along="y", plank=0.27), 0, 0, RW, RD, 0)
     floor_slab(BOARD2)
-    bw = .27
-    for i in range(int(math.ceil(RW / bw))):
-        x0, x1 = i * bw, min(RW, (i + 1) * bw)
-        y = -rnd.uniform(0, 2)
-        while y < RD:
-            L = rnd.uniform(2, 4)
-            a, b = max(0, y), min(RD, y + L)
-            qz(0, x0, a, x1, b, shade(art.lerp(BOARD1, BOARD2, rnd.random()), rnd.uniform(.9, 1.08)))
-            if a > 0:
-                line((x0, a, 0), (x1, a, 0), shade(BOARD2, .55), 1)
-            y += L
-        line((x0, 0, 0), (x0, RD, 0), shade(BOARD2, .55), 1)
 
 
 def runner(x0, x1, y0, y1):
-    """Long Persian-style runner: cream border, deep red field, navy/green medallions."""
-    z = .6
-    for i in range(int((x1 - x0) / .05) + 1):                    # fringes at both ends
-        xx = x0 + i * .05
-        line((xx, y0 - .08, z), (xx, y0, z), (232, 224, 204), 1)
-        line((xx, y1, z), (xx, y1 + .08, z), (232, 224, 204), 1)
-    for inset, col in ((0, (226, 214, 184)), (.08, (40, 50, 86)), (.12, (226, 214, 184)), (.16, (150, 34, 38))):
-        qz(z, x0 + inset, y0 + inset, x1 - inset, y1 - inset, col)
-    cx = (x0 + x1) / 2
-    w = (x1 - x0) / 2 - .24
-    y = y0 + .55
-    k = 0
-    while y < y1 - .5:
-        for r, col in ((1.0, (40, 50, 86)), (.75, (60, 110, 76)), (.5, (226, 214, 184)), (.28, (150, 34, 38))):
-            poly([P(cx + w * r * math.cos(a), y + .42 * r * math.sin(a), z) for a in (2 * math.pi * i / 4 for i in range(4))], col)
-        for s in (-1, 1):
-            fl_ellipse(cx + s * w * .9, y + .55, .05, .05, (226, 214, 184), z, n=10)
-        y += 1.1
-        k += 1
+    """Long Persian runner: cream border, deep red field, navy and green medallions."""
+    import paint
+    paint.stamp(paint.rug(x1 - x0, y1 - y0, "hall", seed=4), x0, y0, x1, y1, 0.6)
 
 
 # ------------------------------------------------------------- walls
@@ -225,6 +198,10 @@ def stairs():
     poly([st(Y0 + RUN, 6), st(RD, 6), st(RD, -14), st(Y0 + RUN, -14)], shade(white, KX * 1.06))
     poly([st(Y0 + RUN + .2, 2), st(RD - .2, 2), st(RD - .2, -10), st(Y0 + RUN + .2, -10)], shade(white, KX * .92))
     poly([st(Y0 + RUN + .23, 0), st(RD - .23, 0), st(RD - .23, -8), st(Y0 + RUN + .23, -8)], shade(white, KX * 1.0))
+    # each tread is its own occluder so a person at the foot isn't hidden by the landing
+    for i in range(NSTEP):
+        y = Y0 + i * RUN
+        occlude(0, y, SW, min(RD - .01, y + RUN), 0, tread_z(i))
 
 
 def balustrade():
@@ -300,6 +277,8 @@ def main():
     wall_trim()
     stairs()
     balustrade()
+    import paint
+    paint.chandelier(1.55, 2.05, 248)
     place_sprite("archie", 2.05, 4.9)
     west_wall_hung()
     ghost_near_walls(WALL, doors_S=[KITCHEN_DOOR], doors_E=[DRAWING_DOOR], extra_polys=drawing_door_polys())

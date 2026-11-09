@@ -156,13 +156,8 @@ def island(x0, y0, x1, y1, h=96):
             poly([P(xx, Y + .01, zz + 12), P(xx + .32, Y + .01, zz + 12), P(xx + .28, Y + .01, zz + 22), P(xx + .04, Y + .01, zz + 22)], shade(c, KY * 1.1))
             xx += .42
     box(x0 - .08, y0 - .08, x1 + .08, y1 + .08, h - 12, h, PINE_TOP, top=shade(PINE_TOP, 1.06))
-    for i in range(1, 6):
-        yy = y0 - .08 + (y1 - y0 + .16) * i / 6
-        line((x0 - .08, yy, h), (x1 + .08, yy, h), shade(PINE_TOP, .78), 1)
-    rnd = random.Random(12)
-    for _ in range(14):
-        gx, gy = rnd.uniform(x0, x1 - .5), rnd.uniform(y0, y1)
-        line((gx, gy, h), (gx + rnd.uniform(.3, .9), gy, h), shade(PINE_TOP, .88), 1)
+    import paint
+    paint.stamp(paint.pine_top(x1 - x0 + .16, y1 - y0 + .16, seed=12), x0 - .08, y0 - .08, x1 + .08, y1 + .08, h)
     cyl(x0 + (x1 - x0) * .45, (y0 + y1) / 2, .26, h, h + 10, (196, 150, 90), top=(214, 170, 100))
 
 

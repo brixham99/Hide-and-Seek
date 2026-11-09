@@ -239,19 +239,9 @@ def corner_sofa():
 
 # ------------------------------------------------------------- centre
 def rug(x0, y0, x1, y1):
-    z = .6
-    qz(z, x0, y0, x1, y1, (214, 206, 186))
-    qz(z, x0 + .12, y0 + .12, x1 - .12, y1 - .12, (120, 140, 170))
-    qz(z, x0 + .2, y0 + .2, x1 - .2, y1 - .2, (226, 218, 198))
-    rnd = random.Random(31)
-    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
-    for r, col in ((1.2, (150, 166, 190)), (1.0, (226, 218, 198)), (.7, (130, 150, 180)), (.45, (220, 200, 170))):
-        poly([P(cx + r * 1.2 * math.cos(a) * (1 + .08 * math.cos(8 * a)), cy + r * math.sin(a) * (1 + .08 * math.cos(8 * a)), z)
-              for a in (2 * math.pi * i / 72 for i in range(72))], col)
-    for _ in range(70):                                             # faded motifs
-        fx, fy = rnd.uniform(x0 + .3, x1 - .3), rnd.uniform(y0 + .3, y1 - .3)
-        if ((fx - cx) / 1.5) ** 2 + ((fy - cy) / 1.25) ** 2 > 1:
-            fl_ellipse(fx, fy, .07, .05, rnd.choice([(160, 176, 196), (200, 186, 160), (176, 190, 206)]), z, n=10)
+    """Faded cream and blue rug under the marble table (photo 1)."""
+    import paint
+    paint.stamp(paint.rug(x1 - x0, y1 - y0, "sitting", seed=31), x0, y0, x1, y1, 0.6)
 
 
 def coffee_table():
@@ -264,10 +254,8 @@ def coffee_table():
     for i in range(-3, 4):
         line((cx + i * .1, cy - r * .6, 12.5), (cx + i * .1, cy + r * .6, 12.5), shade(LIGHT_OAK, .65), 1)
     cyl(cx, cy, r, h - 6, h, (226, 226, 222), top=(240, 240, 238))              # marble top
-    rnd = random.Random(2)
-    for _ in range(6):
-        a = rnd.uniform(0, 6.28)
-        line((cx + r * .2 * math.cos(a), cy + r * .2 * math.sin(a), h), (cx + r * .7 * math.cos(a + .5), cy + r * .7 * math.sin(a + .5), h), (200, 200, 204), 1)
+    import paint
+    paint.stamp(paint.marble(180, seed=2), cx - r, cy - r, cx + r, cy + r, h, mask="ellipse")
     box(cx - .22, cy - .06, cx - .02, cy + .06, h, h + 4, (30, 30, 32), ol=False)    # game controller
     fl_ellipse(cx + .2, cy + .05, .15, .15, (200, 220, 226), h + 1)                 # bowl of glass paperweights
     for dx, dy, col in ((.16, .02, (60, 120, 200)), (.24, .08, (200, 80, 90)), (.2, .12, (90, 180, 120))):

@@ -65,11 +65,13 @@ TERRACOTTA = (176, 84, 56)
 
 screen = None
 _inited = False
+_room_screen = None          # the room canvas; glimpse/exterior layers are not this
+_occluders = []              # (x0, y0, x1, y1, z0, z1) in view-local tiles
 
 
 def init_room(rw, rd, ox=None, oy=None):
     """Set the room size (tiles) and screen origin, and make the 2x canvas."""
-    global RW, RD, OX, OY, screen, _inited
+    global RW, RD, OX, OY, screen, _inited, _room_screen, _occluders
     RW, RD = rw, rd
     OX = ox if ox is not None else 640 - (rw - rd) * HW / 2
     if oy is None:     # centre the room (walls + floor) vertically
@@ -81,7 +83,95 @@ def init_room(rw, rd, ox=None, oy=None):
         pygame.display.set_mode((WIN_W, WIN_H))
         _inited = True
     screen = pygame.Surface((WIN_W * S, WIN_H * S)).convert()
+    _room_screen = screen
+    _occluders = []
     return screen
+
+
+def _note_occluder(x0, y0, x1, y1, z0, z1):
+    """Remember a solid volume so the game can hide Archie behind it.
+
+    Coordinates are whatever `box` was given (world x under `world()`); they are
+    stored in the view's local frame, matching game.to_screen.
+    """
+    if screen is not _room_screen:
+        return
+    x0, x1 = (x0 - X_OFF), (x1 - X_OFF)
+    if x1 < x0:
+        x0, x1 = x1, x0
+    if y1 < y0:
+        y0, y1 = y1, y0
+    w, d, h = x1 - x0, y1 - y0, z1 - z0
+    if w < 0.08 or d < 0.08:
+        return
+    tall = h >= 16 and min(w, d) >= 0.12
+    top = z1 >= 24 and w * d >= 0.28 and h >= 3
+    if not (tall or top):
+        return
+    if x1 < -0.4 or y1 < -0.4 or x0 > RW + 0.6 or y0 > RD + 0.6:
+        return
+    _occluders.append((x0, y0, x1, y1, z0, z1))
+
+
+def occlude(x0, y0, x1, y1, z0, z1):
+    """Mark a volume the character should render behind (stairs, and so on)."""
+    _note_occluder(x0, y0, x1, y1, z0, z1)
+
+
+def raster_depth():
+    """Per-pixel occluder depth (view-local x + y) at the final 1280x720 frame.
+
+    0 means nothing solid (floor, empty backdrop). Larger values are closer to
+    the camera. Returns a float32 array indexed [x, y].
+    """
+    buf = np.zeros((WIN_W, WIN_H), np.float32)
+    for x0, y0, x1, y1, z0, z1 in _occluders:
+        _stamp_face(buf, [(x0, y1, z0), (x1, y1, z0), (x1, y1, z1), (x0, y1, z1)], "y", y1)
+        _stamp_face(buf, [(x1, y0, z0), (x1, y1, z0), (x1, y1, z1), (x1, y0, z1)], "x", x1)
+        _stamp_face(buf, [(x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)], "z", z1)
+    return buf
+
+
+def _proj1(x, y, z):
+    return (OX + (x - y) * HW, OY + (x + y) * HH - z)
+
+
+def _stamp_face(buf, corners, kind, val):
+    poly = [_proj1(*c) for c in corners]
+    area = 0.0
+    for i in range(4):
+        ax, ay = poly[i]
+        bx, by = poly[(i + 1) % 4]
+        area += ax * by - bx * ay
+    if abs(area) < 8:
+        return
+    sign = 1.0 if area > 0 else -1.0
+    xs = [p[0] for p in poly]
+    ys = [p[1] for p in poly]
+    x0 = max(0, int(math.floor(min(xs))))
+    y0 = max(0, int(math.floor(min(ys))))
+    x1 = min(buf.shape[0], int(math.ceil(max(xs))) + 1)
+    y1 = min(buf.shape[1], int(math.ceil(max(ys))) + 1)
+    if x1 - x0 < 1 or y1 - y0 < 1:
+        return
+    gx = np.arange(x0, x1, dtype=np.float32)[:, None] + 0.5
+    gy = np.arange(y0, y1, dtype=np.float32)[None, :] + 0.5
+    m = np.ones((x1 - x0, y1 - y0), dtype=bool)
+    for i in range(4):
+        ax, ay = poly[i]
+        bx, by = poly[(i + 1) % 4]
+        cross = (bx - ax) * (gy - ay) - (by - ay) * (gx - ax)
+        m &= cross * sign >= -0.75
+    if not m.any():
+        return
+    if kind == "z":
+        d = (gy - OY + val) / HH
+    elif kind == "y":
+        d = 2 * val + (gx - OX) / HW
+    else:
+        d = 2 * val - (gx - OX) / HW
+    region = buf[x0:x1, y0:y1]
+    region[:] = np.where(m & (d > region), d, region)
 
 
 X_OFF = 0.0                            # world -> local x shift while drawing in world coords (see world())
@@ -141,6 +231,8 @@ def box(x0, y0, x1, y1, z0, z1, col, top=None, ol=True, faces="xyz"):
         c = shade(col, KX); qx(x1, y0, y1, z0, z1, c, o(c))
     if "z" in faces:
         c = top or shade(col, KT); qz(z1, x0, y0, x1, y1, c, o(c))
+    if "x" in faces or "y" in faces or "z" in faces:
+        _note_occluder(x0, y0, x1, y1, z0, z1)
 
 
 def fl_ellipse(cx, cy, rx, ry, col, z=0.0, n=24, ol=None):
@@ -160,6 +252,9 @@ def cyl(cx, cy, r, z0, z1, col, top=None):
     pygame.draw.rect(screen, shade(col, 0.75), (l, yt, rr - l, yb - yt))
     pygame.draw.rect(screen, shade(col, 0.9), (l, yt, (rr - l) * 0.45, yb - yt))
     poly(tp, top or shade(col, 1.1), shade(col, 0.5))
+    if r >= 0.16 and z1 >= 22:
+        rr = r * 0.9
+        _note_occluder(cx - rr, cy - rr, cx + rr, cy + rr, min(z0, z1), max(z0, z1))
 
 
 def cone(cx, cy, r0, r1, z0, z1, col):
@@ -177,36 +272,32 @@ def cone(cx, cy, r0, r1, z0, z1, col):
 
 
 # ================================================================== room shell
+_BG = {}
+
+
 def background():
-    top, bot = np.array((24, 24, 27)), np.array((8, 8, 9))
-    k = np.linspace(0, 1, WIN_H * S)[:, None]
-    col = top[None, :] * (1 - k) + bot[None, :] * k
-    pygame.surfarray.blit_array(screen, np.repeat(col[None, :, :], WIN_W * S, axis=0).astype(np.uint8))
+    """Vertical night gradient. Built once per canvas size and blitted."""
+    key = screen.get_size()
+    if key not in _BG:
+        h = key[1]
+        top, bot = np.array((28, 27, 32), np.float32), np.array((8, 8, 10), np.float32)
+        k = np.linspace(0, 1, h, dtype=np.float32)[:, None]
+        col = (top * (1 - k) + bot * k).astype(np.uint8)
+        strip = pygame.Surface((1, h))
+        pygame.surfarray.blit_array(strip, col[None, :, :])
+        full = pygame.Surface(key)
+        pygame.transform.scale(strip, key, full)
+        _BG[key] = full
+    screen.blit(_BG[key], (0, 0))
 
 
 def floor_boards(c1=None, c2=None, bw=0.27, seed=4):
-    """Floorboards running along x (the Drawing Room's pine)."""
-    PINE1, PINE2 = c1 or PINE1_, c2 or PINE2_
-    rnd = random.Random(seed)
-    floor_slab(PINE2)
-    n = int(math.ceil(RD / bw))
-    for i in range(n):
-        y0, y1 = i * bw, min(RD, (i + 1) * bw)
-        x = -rnd.uniform(0, 2.5)
-        while x < RW:
-            L = rnd.uniform(2.2, 4.5)
-            a, b = max(0, x), min(RW, x + L)
-            c = shade(art.lerp(PINE1, PINE2, rnd.random()), rnd.uniform(0.9, 1.07))
-            qz(0, a, y0, b, y1, c)
-            # a little grain
-            for _ in range(2):
-                gy = rnd.uniform(y0 + .04, y1 - .04)
-                ga = rnd.uniform(a, b)
-                line((ga, gy, 0), (min(b, ga + rnd.uniform(.4, 1.2)), gy, 0), shade(c, 0.9), 1)
-            if a > 0:
-                line((a, y0, 0), (a, y1, 0), shade(PINE2, 0.5), 1)
-            x += L
-        line((0, y0, 0), (RW, y0, 0), shade(PINE2, 0.55), 1)
+    """Painted pine boards running along x (Drawing Room, Sitting Room)."""
+    import paint
+    c1 = c1 or PINE1_
+    c2 = c2 or PINE2_
+    paint.stamp(paint.timber(RW, RD, seed, c1, c2, along="x", plank=bw), 0, 0, RW, RD, 0)
+    floor_slab(c2)
 
 
 def wall_shell(col=None, open_W=False):
@@ -424,12 +515,24 @@ def ext_barn(side, u0, u1, t0, t1, h=150, roof=60):
 
 def ext_house_shadow(side, u0, u1, depth=1.2):
     """The house's own soft shadow on the ground at the foot of the wall."""
+    bands = []
     for k in range(6):
         t0, t1 = depth * k / 6, depth * (k + 1) / 6
-        layer = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
         pts = [P(*out_pt(side, u, t)) for u, t in ((u0, t0), (u1, t0), (u1, t1), (u0, t1))]
-        pygame.draw.polygon(layer, (0, 0, 0, int(70 * (1 - k / 6))), pts)
-        screen.blit(layer, (0, 0))
+        bands.append((pts, int(70 * (1 - k / 6))))
+    xs = [p[0] for pts, _a in bands for p in pts]
+    ys = [p[1] for pts, _a in bands for p in pts]
+    if not xs:
+        return
+    x0, y0 = int(min(xs)) - 2, int(min(ys)) - 2
+    w = int(max(xs)) - x0 + 4
+    h = int(max(ys)) - y0 + 4
+    if w < 2 or h < 2:
+        return
+    layer = pygame.Surface((w, h), pygame.SRCALPHA)
+    for pts, a in bands:
+        pygame.draw.polygon(layer, (0, 0, 0, a), [(p[0] - x0, p[1] - y0) for p in pts])
+    screen.blit(layer, (x0, y0))
 
 
 def exterior_layer(spec, haze=(150, 170, 186)):
@@ -563,18 +666,38 @@ def panel_door_W(v0, v1):
     qx(0.012, v1 - w * .14, v1 - w * .06, 92, 96, (22, 22, 22))
 
 
+_VIG = {}
+_GRADE = {}
+
+
 def vignette(surf):
     w, h = surf.get_size()
-    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    cx, cy = w * 0.5, h * 0.5
-    d = np.sqrt(((xx - cx) / (w * 0.62)) ** 2 + ((yy - cy) / (h * 0.72)) ** 2)
-    a = 70 * np.clip(d, 0, 1) ** 2.2
-    s = pygame.Surface((w, h), pygame.SRCALPHA, 32)
-    s.fill((6, 6, 8, 0))
-    al = pygame.surfarray.pixels_alpha(s)
-    al[:] = np.clip(a, 0, 255).astype(np.uint8).T
-    del al
-    surf.blit(s, (0, 0))
+    key = (w, h)
+    if key not in _VIG:
+        yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+        cx, cy = w * 0.5, h * 0.46
+        d = np.sqrt(((xx - cx) / (w * 0.62)) ** 2 + ((yy - cy) / (h * 0.70)) ** 2)
+        a = 96 * np.clip(d, 0, 1) ** 2.05
+        s = pygame.Surface((w, h), pygame.SRCALPHA, 32)
+        s.fill((6, 5, 8, 0))
+        al = pygame.surfarray.pixels_alpha(s)
+        al[:] = np.clip(a, 0, 255).astype(np.uint8).T
+        del al
+        _VIG[key] = s
+    if key not in _GRADE:
+        # warm ceiling bounce, a little deeper toward the floor
+        t = np.linspace(0, 1, h, dtype=np.float32)
+        r = (255 - 22 * t).astype(np.uint8)
+        g = (244 - 26 * t).astype(np.uint8)
+        b = (220 - 18 * t).astype(np.uint8)
+        col = np.stack([r, g, b], axis=1)
+        strip = pygame.Surface((1, h))
+        pygame.surfarray.blit_array(strip, col[None, :, :])
+        full = pygame.Surface((w, h))
+        pygame.transform.scale(strip, (w, h), full)
+        _GRADE[key] = full
+    surf.blit(_GRADE[key], (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+    surf.blit(_VIG[key], (0, 0))
 
 
 
@@ -587,44 +710,21 @@ def floor_slab(col):
 
 def floor_flagstones(cols=((128, 118, 104), (112, 104, 94), (138, 126, 108), (104, 98, 90)), seed=5, row=0.85, z=0.0,
                      x0=0.0, y0=0.0, x1=None, y1=None, grout=None):
-    """Irregular stone flags laid in courses along x, staggered."""
+    """Worn flagstones (Boot Room, and the glimpses beyond it)."""
+    import paint
     x1 = RW if x1 is None else x1
     y1 = RD if y1 is None else y1
-    rnd = random.Random(seed)
     if z == 0.0 and (x0, y0) == (0.0, 0.0):
         floor_slab(cols[1])
-    g = grout or shade(cols[1], 0.62)
-    qz(z, x0, y0, x1, y1, g)
-    y = y0
-    while y < y1 - 1e-6:
-        h = min(y1 - y, row * rnd.uniform(.75, 1.25))
-        x = x0 - rnd.uniform(0, .6)
-        while x < x1:
-            L = rnd.uniform(.8, 1.5)
-            a, b = max(x0, x + .025), min(x1, x + L - .025)
-            if b > a:
-                c = shade(rnd.choice(cols), rnd.uniform(.93, 1.07))
-                qz(z, a, y + .025, b, y + h - .025, c)
-                for _ in range(2):    # a little texture
-                    fx, fy = rnd.uniform(a, b), rnd.uniform(y + .05, y + h - .05)
-                    fl_ellipse(fx, fy, rnd.uniform(.05, .18), rnd.uniform(.03, .1), shade(c, rnd.choice((.94, 1.05))), z)
-            x += L
-        y += h
+    paint.stamp(paint.flagstones(x1 - x0, y1 - y0, seed, cols, row), x0, y0, x1, y1, z)
 
 
 def floor_tiles(col=TERRACOTTA, size=0.5, x0=0.0, y0=0.0, x1=None, y1=None, z=0.0, seed=2):
     """Square quarry tiles (terracotta) with pale grout."""
-    rnd = random.Random(seed)
+    import paint
     x1 = RW if x1 is None else x1
     y1 = RD if y1 is None else y1
-    qz(z, x0, y0, x1, y1, shade(col, .6))
-    y = y0
-    while y < y1 - 1e-6:
-        x = x0
-        while x < x1 - 1e-6:
-            qz(z, x + .02, y + .02, min(x1, x + size) - .02, min(y1, y + size) - .02, shade(col, rnd.uniform(.88, 1.08)))
-            x += size
-        y += size
+    paint.stamp(paint.quarry(x1 - x0, y1 - y0, seed, col, size), x0, y0, x1, y1, z)
 
 
 def threshold(side, a, b, col, depth=0.8, k0=0.75):
@@ -937,26 +1037,10 @@ BURGUNDY = (104, 28, 38)
 
 def floor_slate(x0=0.0, y0=0.0, x1=None, y1=None, seed=8, z=0.0):
     """Multicoloured riven slate (ochre, rust, grey-green) in staggered courses."""
+    import paint
     x1 = RW if x1 is None else x1
     y1 = RD if y1 is None else y1
-    rnd = random.Random(seed)
-    qz(z, x0, y0, x1, y1, (70, 64, 52))
-    y = y0
-    while y < y1 - 1e-6:
-        h = min(y1 - y, rnd.choice((.62, .72, .8)))
-        x = x0 - rnd.uniform(0, .7)
-        while x < x1:
-            L = rnd.choice((.7, .85, 1.0, 1.2))
-            a, b = max(x0, x + .025), min(x1, x + L - .025)
-            if b > a:
-                c = shade(art.lerp(rnd.choice(SLATE), (128, 120, 100), .22), rnd.uniform(.93, 1.05))
-                qz(z, a, y + .025, b, y + h - .025, c)
-                for _ in range(2):    # riven mottling, the odd darker/greener patch
-                    fx, fy = rnd.uniform(a + .1, b - .1), rnd.uniform(y + .1, y + h - .1)
-                    m = art.lerp(c, rnd.choice(SLATE), .25)
-                    fl_ellipse(fx, fy, rnd.uniform(.08, .2), rnd.uniform(.05, .11), shade(m, rnd.uniform(.95, 1.03)), z)
-            x += L
-        y += h
+    paint.stamp(paint.slate(x1 - x0, y1 - y0, seed, SLATE), x0, y0, x1, y1, z)
 
 
 def floor_edge_S(x0, x1, col):
@@ -1005,9 +1089,8 @@ def farmhouse_table(x0, y0, x1, y1, h=74, col=(196, 150, 96)):
         turned_leg(lx, ly, 0, h - 8, shade(col, .85), .07)
     box(x0 + .1, y0 + .1, x1 - .1, y1 - .1, h - 16, h - 6, shade(col, .85), ol=False)
     box(x0, y0, x1, y1, h - 6, h, col, top=shade(col, 1.08))
-    for i in range(1, 4):
-        yy = y0 + (y1 - y0) * i / 4
-        line((x0, yy, h), (x1, yy, h), shade(col, .8), 1)
+    import paint
+    paint.stamp(paint.pine_top(x1 - x0, y1 - y0, seed=7, c1=shade(col, 1.15), c2=shade(col, 0.78)), x0, y0, x1, y1, h)
 
 
 def ladder_chair(x, y, facing="E", col=(236, 234, 228)):
@@ -1036,36 +1119,39 @@ def glimpse_layer():
     return pygame.Surface(screen.get_size(), pygame.SRCALPHA)
 
 
+def _fade_content(layer, z_ref, tone):
+    """Multiply the alpha of the non-empty part of `layer`. `tone(sx, sy) -> t`."""
+    w, h = layer.get_size()
+    a = pygame.surfarray.pixels_alpha(layer)
+    cols = np.flatnonzero(a.any(axis=1))
+    rows = np.flatnonzero(a.any(axis=0))
+    if len(cols) == 0:
+        del a
+        return layer
+    x0, x1 = int(cols[0]), int(cols[-1]) + 1
+    y0, y1 = int(rows[0]), int(rows[-1]) + 1
+    sx = (np.arange(x0, x1)[:, None] / S - OX) / HW
+    sy = (np.arange(y0, y1)[None, :] / S - OY + z_ref) / HH
+    xe = np.maximum((sx + sy) / 2, np.broadcast_to(sx, (x1 - x0, y1 - y0)))
+    t = np.clip(tone(xe), 0, 1)
+    t = t * t * (3 - 2 * t)
+    a[x0:x1, y0:y1] = (a[x0:x1, y0:y1] * t).astype(np.uint8)
+    del a
+    return layer
+
+
 def fade_x(layer, x_opaque, x_gone, z_ref=0):
     """Fade a layer by room x: fully there at x_opaque, gone at x_gone (either
     direction), using the same per-pixel x estimate as fade_beyond_E, taking
     floor pixels to be at height z_ref (use ~table height for furniture)."""
-    w, h = layer.get_size()
-    sx = (np.arange(w)[:, None] / S - OX) / HW
-    sy = (np.arange(h)[None, :] / S - OY + z_ref) / HH
-    xe = np.maximum((sx + sy) / 2, np.broadcast_to(sx, (w, h)))
-    t = np.clip((xe - x_gone) / (x_opaque - x_gone), 0, 1)
-    t = t * t * (3 - 2 * t)
-    a = pygame.surfarray.pixels_alpha(layer)
-    a[:] = (a * t).astype(np.uint8)
-    del a
-    return layer
+    return _fade_content(layer, z_ref, lambda xe: (xe - x_gone) / (x_opaque - x_gone))
 
 
 def fade_beyond_E(layer, xa, xb):
     """Fade a layer out with distance past the open E side: opaque up to world x = xa,
     gone by xb. x is estimated per pixel as max(floor x, back-wall u), which is exact
     for the floor and the y = 0 wall and close enough for furniture."""
-    w, h = layer.get_size()
-    sx = (np.arange(w)[:, None] / S - OX) / HW
-    sy = (np.arange(h)[None, :] / S - OY) / HH
-    xe = np.maximum((sx + sy) / 2, np.broadcast_to(sx, (w, h)))
-    t = np.clip((xb - xe) / (xb - xa), 0, 1)
-    t = t * t * (3 - 2 * t)
-    a = pygame.surfarray.pixels_alpha(layer)
-    a[:] = (a * t).astype(np.uint8)
-    del a
-    return layer
+    return _fade_content(layer, 0, lambda xe: (xb - xe) / (xb - xa))
 
 
 # ============================================================ small-room kit (Office, Utility)
