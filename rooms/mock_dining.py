@@ -35,11 +35,12 @@ GL = 3.8                                # how much of the kitchen is drawn beyon
 
 def side_garden(side, rnd):
     """Beyond the east wall: a paved path, lawn and the tall hedge."""
-    ext_tree(side, 6.0, 6.5, trunk=150, canopy=200, r=1.4, rnd=random.Random(7))
+    ext_tree(side, 6.0, 5.2, trunk=150, canopy=200, r=1.4, rnd=random.Random(7))
     ext_lawn(side, -10, 20, 0.8, 9, rnd)
-    ext_hedge(side, -10, 20, 2.4, 3.2, h=150, col=(56, 94, 48), rnd=random.Random(8))
-    ext_border(side, -10, 20, 2.1, 2.4, rnd)
-    ext_paving(side, -10, 20, 0.0, 0.8, rnd, col=(170, 160, 142), slab=0.5)
+    ext_hedge(side, -10, 20, 3.6, 4.4, h=130, col=(36, 102, 42), rnd=random.Random(8))
+    ext_picket_fence(side, -10, 20, 2.9)
+    ext_border(side, -10, 20, 1.7, 2.15, rnd)
+    ext_paving(side, -10, 20, 0.15, 1.55, rnd, col=(170, 160, 142), slab=0.5)
     ext_house_shadow(side, -10, 20, depth=1.0)
 
 

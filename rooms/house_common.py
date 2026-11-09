@@ -418,7 +418,7 @@ def out_quad(side, u0, u1, t0, t1, col, z=GROUND_Z, ol=None):
     poly(pts, col, ol)
 
 
-def ext_lawn(side, u0, u1, t0, t1, rnd, base=(92, 138, 62)):
+def ext_lawn(side, u0, u1, t0, t1, rnd, base=(68, 148, 54)):
     out_quad(side, u0, u1, t0, t1, base)
     w = 0.9                                         # mowing stripes running along the wall
     t = t0
@@ -486,7 +486,7 @@ def ext_picket_fence(side, u0, u1, t, h=46, col=(236, 234, 226)):
             GROUND_Z, GROUND_Z + h + 8, col)
 
 
-def ext_hedge(side, u0, u1, t0, t1, h=70, col=(58, 96, 50), rnd=None):
+def ext_hedge(side, u0, u1, t0, t1, h=70, col=(36, 102, 42), rnd=None):
     b = [u0, -t1, u1, -t0] if side == "N" else [-t1, u0, -t0, u1]
     box(b[0], b[1], b[2], b[3], GROUND_Z, GROUND_Z + h, col)
     rnd = rnd or random.Random(1)
@@ -561,11 +561,17 @@ def ext_house_shadow(side, u0, u1, depth=1.2):
     screen.blit(layer, (x0, y0))
 
 
-def exterior_layer(spec, haze=(150, 170, 186)):
+def exterior_layer(spec, haze=(168, 196, 214)):
     """Render the outside world for this room onto its own layer.
-    spec: {side: callable(side, rnd)} drawing that side's garden, far things first."""
-    ext = pygame.Surface(screen.get_size()).convert()
-    ext.fill(haze)                   # anything unpainted: distant haze
+    spec: {side: callable(side, rnd)} drawing that side's garden, far things first.
+
+    24-bit, like the room canvas. convert() on macOS is a per-pixel-alpha
+    surface; the house-shadow blit then stores its own alpha over the lawn,
+    and show_through drops those pixels. All that survives is this haze, so
+    every window looks plain grey.
+    """
+    ext = pygame.Surface(screen.get_size(), depth=24)
+    ext.fill(haze)                   # anything unpainted: distant sky
     with drawing_on(ext):
         for side, draw in spec.items():
             draw(side, random.Random(side))
@@ -593,7 +599,7 @@ def debug_exterior(ext, windows, floor=None):
     pygame.draw.lines(screen, (240, 240, 240), False, [P(0, RD), P(0, 0), P(RW, 0)], 2 * S)
 
 
-def show_through(ext, pts, tint=(214, 230, 236), tint_a=38, glare=True):
+def show_through(ext, pts, tint=(214, 230, 236), tint_a=22, glare=True):
     """Show the exterior layer through an opening (screen polygon `pts`):
     ext masked to the polygon, then a faint glass tint and reflection streaks."""
     xs, ys = [p[0] for p in pts], [p[1] for p in pts]
@@ -601,6 +607,12 @@ def show_through(ext, pts, tint=(214, 230, 236), tint_a=38, glare=True):
     w, h = int(max(xs)) - x0 + 2, int(max(ys)) - y0 + 2
     loc = [(x - x0, y - y0) for x, y in pts]
     view = pygame.Surface((w, h), pygame.SRCALPHA)
+    # Copy colour, not alpha. A shadow blitted onto an alpha exterior zeros
+    # the lawn; blitting that onto this view would leave the glass empty.
+    if ext.get_bitsize() != 24:
+        opaque = pygame.Surface(ext.get_size(), depth=24)
+        opaque.blit(ext, (0, 0))
+        ext = opaque
     view.blit(ext, (0, 0), (x0, y0, w, h))
     mask = pygame.Surface((w, h), pygame.SRCALPHA)
     mask.fill((255, 255, 255, 0))

@@ -356,8 +356,7 @@ def main():
     piano(RW - .9, RW - .02, 3.9, 6.15)
     tv_stand(0.85, 3.55, RD - .75, RD - .05)
     place_sprite("archie", 3.55, 4.3)
-    ghost_near_walls(GREEN, doors_S=[HALL_DOOR], windows_E=[SIDE_WIN],
-                     openings=[("S", *HALL_DOOR, glimpses.kitchen_from_drawing, (232, 228, 216))])
+    ghost_near_walls(GREEN, doors_S=[HALL_DOOR], windows_E=[SIDE_WIN])
     finish("Hide and Seek - Drawing Room (mock-up)", OUT,
            copies=() if ARGS else ("shots/hs_drawing_room_mock.png",))
 

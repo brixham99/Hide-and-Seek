@@ -59,20 +59,22 @@ TABLE = (3.1, 3.3, .55)       # coffee table centre, radius
 def east_side(side, rnd):
     """East: lawn, a tall hedge close by."""
     ext_lawn(side, -6, 12, 0, 12, rnd)
-    ext_hedge(side, -6, 12, 2.0, 2.7, h=96, rnd=rnd)
-    ext_border(side, -6, 12, 1.2, 1.6, rnd)
-    ext_paving(side, -6, 12, 0.1, 1.0, rnd)
+    ext_hedge(side, -6, 12, 3.2, 3.9, h=96, rnd=rnd)
+    ext_picket_fence(side, -6, 12, 2.5)
+    ext_border(side, -6, 12, 1.35, 1.75, rnd)
+    ext_paving(side, -6, 12, 0.15, 1.25, rnd)
     ext_house_shadow(side, -6, 12)
 
 
 def south_side(side, rnd):
     """South (front): lawn, a tree, shrubs, hedge further out."""
     ext_lawn(side, -6, 14, 0, 12, rnd)
-    ext_hedge(side, -6, 14, 4.2, 4.8, h=80, rnd=rnd)
-    ext_tree(side, 1.8, 2.8, trunk=120, canopy=170, r=1.1, rnd=random.Random(11))
-    ext_shrub(side, 3.6, 1.4, rnd=random.Random(12))
-    ext_border(side, -6, 14, 1.0, 1.4, rnd)
-    ext_paving(side, -6, 14, 0.1, 0.8, rnd)
+    ext_hedge(side, -6, 14, 4.2, 4.8, h=88, rnd=rnd)
+    ext_picket_fence(side, -6, 14, 3.35)
+    ext_tree(side, 1.8, 2.6, trunk=120, canopy=170, r=1.1, rnd=random.Random(11))
+    ext_shrub(side, 4.6, 2.0, rnd=random.Random(12))
+    ext_border(side, -6, 14, 1.55, 1.95, rnd)
+    ext_paving(side, -6, 14, 0.2, 1.45, rnd)
     ext_house_shadow(side, -6, 14)
 
 
@@ -351,9 +353,7 @@ def main():
     pink_sofa(2.05, 5.35)
     tv_cabinet(4.95, 6.95)
     north_wall_hung()
-    import glimpses
-    ghost_near_walls(WALL, doors_E=[HALL_DOOR], curtains=None,
-                     openings=[("E", *HALL_DOOR, glimpses.hall_from_sitting, (196, 190, 204))])
+    ghost_near_walls(WALL, doors_E=[HALL_DOOR], curtains=None)
     finish("Hide and Seek - Sitting Room (mock-up)", OUT)
 
 
