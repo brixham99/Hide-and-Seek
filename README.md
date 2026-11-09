@@ -37,8 +37,9 @@ build them yourself with `python3 build_rooms.py`.
 - A headless test walk that goes through every doorway both ways:
   `SDL_VIDEODRIVER=dummy python3 walk_test.py` (screenshots in `shots/`).
 
-Still to come: hiding and seeking, the stairs and upstairs, the garage, and
-Archie walking behind furniture.
+Archie is blocked by the walls and the furniture, and he is drawn behind
+anything closer to the camera than he is. Still to come: hiding and seeking,
+the stairs and upstairs, and the garage.
 
 ## Files
 

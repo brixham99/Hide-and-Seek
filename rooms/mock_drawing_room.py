@@ -244,66 +244,9 @@ def coffee_table(x0, y0, x1, y1, h=46):
 
 
 def rug(x0, y0, x1, y1):
-    """Big red/pink Persian-style rug, flat on the floor."""
-    z = 0.6
-    rnd = random.Random(12)
-    # fringe
-    for i in range(int((y1 - y0) / .05)):
-        yy = y0 + i * .05
-        line((x0 - .1, yy, z), (x0, yy, z), (232, 224, 204), 1)
-        line((x1, yy, z), (x1 + .1, yy, z), (232, 224, 204), 1)
-    bands = [(0, (140, 52, 50)), (.1, (204, 170, 130)), (.14, NAVY), (.30, (204, 170, 130)), (.34, (156, 60, 58)), (.40, RUG)]
-    for inset, col in bands:
-        qz(z, x0 + inset, y0 + inset, x1 - inset, y1 - inset, col)
-    # border motifs
-    m = .22
-    u = x0 + .25
-    while u < x1 - .25:
-        for yy in (y0 + m, y1 - m):
-            fl_ellipse(u, yy, .06, .05, (214, 120, 110), z)
-        u += .3
-    v = y0 + .25
-    while v < y1 - .25:
-        for xx in (x0 + m, x1 - m):
-            fl_ellipse(xx, v, .05, .06, (214, 120, 110), z)
-        v += .3
-    # field: a lattice of rosettes with leaves, round a lobed central medallion
-    fx0, fy0, fx1, fy1 = x0 + .5, y0 + .5, x1 - .5, y1 - .5
-    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
-    def rosette(px, py, r, petal, centre):
-        for i in range(6):
-            a = i * math.pi / 3
-            fl_ellipse(px + r * .55 * math.cos(a), py + r * .55 * math.sin(a), r * .38, r * .38, petal, z, n=12)
-        fl_ellipse(px, py, r * .32, r * .32, centre, z, n=12)
-    step = .3
-    j = 0
-    yy = fy0 + .18
-    while yy < fy1 - .1:
-        xx = fx0 + .18 + (step / 2 if j % 2 else 0)
-        while xx < fx1 - .1:
-            if ((xx - cx) / 1.45) ** 2 + ((yy - cy) / 1.25) ** 2 > 1:
-                k = rnd.random()
-                if k < .45:
-                    rosette(xx, yy, .095, (232, 206, 170), (150, 56, 56))
-                elif k < .75:
-                    rosette(xx, yy, .08, (64, 72, 106), (214, 160, 140))
-                else:
-                    fl_ellipse(xx, yy, .09, .035, (214, 150, 136), z, n=12)
-                    fl_ellipse(xx, yy, .035, .09, (214, 150, 136), z, n=12)
-            xx += step
-        yy += step * .5
-        j += 1
-    lob = lambda r, ax, ay: [P(cx + r * ax * math.cos(a) * (1 + .07 * math.cos(12 * a)), cy + r * ay * math.sin(a) * (1 + .07 * math.cos(12 * a)), z)
-                             for a in (2 * math.pi * i / 96 for i in range(96))]
-    for r, col in ((1.0, (232, 206, 170)), (.92, (64, 72, 106)), (.78, (196, 110, 100)), (.55, (232, 206, 170)), (.45, (150, 56, 56))):
-        poly(lob(r, 1.35, 1.15), col)
-    rosette(cx, cy, .32, (64, 72, 106), (232, 206, 170))
-    for i in range(8):
-        a = i * math.pi / 4
-        rosette(cx + .95 * math.cos(a), cy + .82 * math.sin(a), .1, (232, 206, 170), (150, 56, 56))
-    for (sx, sy) in ((fx0, fy0), (fx1, fy0), (fx0, fy1), (fx1, fy1)):
-        poly([P(sx, sy, z), P(sx + (cx - sx) * .3, sy, z), P(sx, sy + (cy - sy) * .3, z)], (64, 72, 106))
-        poly([P(sx, sy, z), P(sx + (cx - sx) * .18, sy, z), P(sx, sy + (cy - sy) * .18, z)], (196, 110, 100))
+    """Red and cream Persian rug (the snug, photos 10 and 12)."""
+    import paint
+    paint.stamp(paint.rug(x1 - x0, y1 - y0, "drawing", seed=12), x0, y0, x1, y1, 0.6)
 
 
 def dog_bed(x0, y0, x1, y1):
