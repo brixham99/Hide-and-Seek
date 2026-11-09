@@ -75,9 +75,19 @@ def path(g, goal):
     return [(d, n * G) for d, n in segs]
 
 
+def screen_facing(world_facing, flipped):
+    """Facing stored on Archie is the way he faces on screen. In the opposite
+    view that is the reverse of the world direction, so Up still walks into
+    the picture."""
+    if flipped:
+        return {"E": "W", "W": "E", "S": "N", "N": "S"}[world_facing]
+    return world_facing
+
+
 def walk(g, segs, shot=None):
     for (dx, dy), L in segs:
-        face(g, {(1, 0): "E", (-1, 0): "W", (0, 1): "S", (0, -1): "N"}[(dx, dy)])
+        world = {(1, 0): "E", (-1, 0): "W", (0, 1): "S", (0, -1): "N"}[(dx, dy)]
+        face(g, screen_facing(world, g.flipped))
         tx, ty = g.x + dx * L, g.y + dy * L
         for _ in range(int(L / (game.SPEED * DT)) + 3):
             rem = abs(tx - g.x) + abs(ty - g.y)
@@ -125,7 +135,7 @@ def through(g, to_room):
     frm = g.room
     if not go_to(g, x, y):
         return False
-    face(g, {"S": "N", "N": "S", "E": "W", "W": "E"}[wall])
+    face(g, screen_facing({"S": "N", "N": "S", "E": "W", "W": "E"}[wall], g.flipped))
     for _ in range(120):
         step(g, 0, 1)
         if g.room != frm:
@@ -147,13 +157,9 @@ def snap(g, name):
     print("  saved", p)
 
 
-def main():
-    os.makedirs(SHOTS, exist_ok=True)
-    pygame.init()
-    screen = pygame.display.set_mode((game.WIN_W, game.WIN_H))
-    g = game.Game(screen)
+def run(g):
     step(g)
-    print("walk:")
+    print("walk:" if not g.flipped else "opposite view:")
     go_to(g, 2.4, 2.6)
     snap(g, "1_hall")
     through(g, "sitting")
@@ -189,6 +195,19 @@ def main():
             g.x, g.y = nearest_free(a[0], rm["rw"] / 2, rm["rd"] / 2) if a[0] != "kd" else nearest_free("kd", 9.5, 2.5)
             g.view = house.view_for(g.room, g.x)
             through(g, b[0])
+def main():
+    os.makedirs(SHOTS, exist_ok=True)
+    pygame.init()
+    screen = pygame.display.set_mode((game.WIN_W, game.WIN_H))
+    g = game.Game(screen)
+    run(g)
+    g.flipped = True
+    g._hint = g._make_hint()
+    g.room, g.x, g.y, g.facing = "hall", 1.6, 1.2, "N"
+    g.view = house.view_for(g.room, g.x)
+    g.trans = None
+    g.moving = False
+    run(g)
     print("RESULT:", "all connections OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
