@@ -25,6 +25,8 @@ import math
 import random
 import sys
 
+import pygame
+
 import house_common as hc
 hc.init_room(hc.KD_LEN - hc.KD_SPLIT, hc.KD_DEP, ox=700)
 from house_common import *  # noqa: E402,F401,F403
@@ -87,9 +89,26 @@ def near_wall_extras():
 GL = 8.2                               # the whole dining half is drawn, fading out
 
 
+def _clip_past_east(layer):
+    """The opposite view puts the open dining side on the right. Anything past
+    the east end of the garden wall is outside the room box, so drop it."""
+    if not hc.FLIP:
+        return layer
+    limit = int((hc.OX + hc.RW * hc.HW) * hc.S) + 1
+    alpha = pygame.surfarray.pixels_alpha(layer)
+    if limit < alpha.shape[0]:
+        alpha[limit:, :] = 0
+    del alpha
+    return layer
+
+
 def dining_back():
     floor_slate(-GL, 0, 0, RD, seed=21)
-    floor_edge_S(-GL, 0, SLATE[1])
+    # That floor edge runs along the garden wall. In the opposite view the
+    # garden wall is the far one, so the edge would hang out past the east
+    # corner, beside the window. The usual view looks at it as the near lip.
+    if not hc.FLIP:
+        floor_edge_S(-GL, 0, SLATE[1])
     qy(0, -GL, 0, 0, WALL_H, shade(OFF_WHITE, KY))
     qy(.001, -GL, 0, 0, 13, shade(WHITE, KY))
     poly([P(-GL, 0, WALL_H), P(0, 0, WALL_H), P(0, -.28, WALL_H), P(-GL, -.28, WALL_H)], (60, 58, 54))
@@ -99,8 +118,12 @@ def dining_front():
     with world(X0):            # (the dresser on the far south wall is left out: it would sit under the caption)
         F.round_rug((F.D_FRENCH[0] + F.D_FRENCH[1]) / 2, 7.5)
         F.dining_table_set()
-        F.peninsula_chairs()
-        F.peninsula()
+        # The breakfast bar meets the garden wall on the dining side of the
+        # beam. From the opposite kitchen camera that end lands outside the
+        # room, past the east window. The dining view still draws it.
+        if not hc.FLIP:
+            F.peninsula_chairs()
+            F.peninsula()
 
 
 def main():
@@ -111,7 +134,7 @@ def main():
     with drawing_on(back):
         dining_back()
     if hc.FLIP:
-        screen.blit(fade_x(back, -0.25, -2.2), (0, 0))
+        screen.blit(_clip_past_east(fade_x(back, -0.25, -2.2)), (0, 0))
     else:
         screen.blit(fade_x(back, -1.0, -6.5), (0, 0))
     wall_shell(OFF_WHITE, open_W=True)
@@ -124,7 +147,7 @@ def main():
     with drawing_on(front):
         dining_front()
     if hc.FLIP:
-        screen.blit(fade_x(front, -0.2, -2.0, z_ref=70), (0, 0))
+        screen.blit(_clip_past_east(fade_x(front, -0.2, -2.0, z_ref=70)), (0, 0))
     else:
         screen.blit(fade_x(front, -1.4, -7.0, z_ref=70), (0, 0))
     with world(X0):

@@ -177,7 +177,7 @@ def build_all(quiet=False):
 
 
 # Bump when saved room images must be rebuilt (opposite view added).
-CACHE_REV = "8"
+CACHE_REV = "9"
 
 
 def cache_ok():
