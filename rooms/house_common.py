@@ -82,7 +82,10 @@ def init_room(rw, rd, ox=None, oy=None):
         pygame.init()
         pygame.display.set_mode((WIN_W, WIN_H))
         _inited = True
-    screen = pygame.Surface((WIN_W * S, WIN_H * S)).convert()
+    # 24-bit, no per-pixel alpha. On macOS convert() matches a display format that
+    # HAS alpha, and any later SRCALPHA blit (floors, vignette) then stores
+    # source alpha into the canvas and the room interior is saved transparent.
+    screen = pygame.Surface((WIN_W * S, WIN_H * S), depth=24)
     _room_screen = screen
     _occluders = []
     return screen
@@ -696,6 +699,9 @@ def vignette(surf):
         full = pygame.Surface((w, h))
         pygame.transform.scale(strip, (w, h), full)
         _GRADE[key] = full
+    # Destination must be 24-bit (no per-pixel alpha). Blitting this overlay onto
+    # a surface that has alpha replaces the destination alpha, and the centre
+    # of the vignette is 0, so the floor is stored fully transparent.
     surf.blit(_GRADE[key], (0, 0), special_flags=pygame.BLEND_RGB_MULT)
     surf.blit(_VIG[key], (0, 0))
 
