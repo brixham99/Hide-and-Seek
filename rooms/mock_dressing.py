@@ -21,6 +21,7 @@ import sys
 import house_common as hc
 hc.init_room(5.3, 4.0)
 from house_common import *  # noqa: E402,F401,F403
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_dressing_mock.png"
@@ -115,30 +116,27 @@ def wardrobe_east(full):
     """East-wall run. Full-height when that wall is far; a low plinth when near."""
     x0, x1, y0, y1 = 0.0, WD, 0.0, RD
     if full:
-        box(x0, y0, x1, y1, 0, WALL_H, WARD, top=shade(WARD, 1.05))
-        _shaker_x(x1 + 0.01, y0, y1, knobs=True)
+        iso_paint.paint_box(x0, y0, x1, y1, 0, WALL_H, "dressing_ward", front="W", col=WARD)
     else:
-        box(x0, y0, x1, y1, 0, PLINTH_H, WARD, top=shade(WARD, 1.06))
+        iso_paint.paint_box(x0, y0, x1, y1, 0, PLINTH_H, "dressing_ward", front="W", col=WARD)
 
 
 def wardrobe_south(full):
     """South-wall run, east of the master door."""
     x0, x1, y0, y1 = WD, 3.02, 0.0, WD
     if full:
-        box(x0, y0, x1, y1, 0, WALL_H, WARD, top=shade(WARD, 1.05))
-        _shaker_y(y1 + 0.01, x0, x1, knobs=True)
+        iso_paint.paint_box(x0, y0, x1, y1, 0, WALL_H, "dressing_ward", front="N", col=WARD)
     else:
-        box(x0, y0, x1, y1, 0, PLINTH_H, WARD, top=shade(WARD, 1.06))
+        iso_paint.paint_box(x0, y0, x1, y1, 0, PLINTH_H, "dressing_ward", front="N", col=WARD)
 
 
 def wardrobe_north(full):
     """North-wall run, east of the ensuite door."""
     x0, x1, y0, y1 = WD, 3.62, RD - WD, RD
     if full:
-        box(x0, y0, x1, y1, 0, WALL_H, WARD, top=shade(WARD, 1.05))
-        _shaker_y(y0 - 0.01, x0, x1, knobs=True)
+        iso_paint.paint_box(x0, y0, x1, y1, 0, WALL_H, "dressing_ward", front="S", col=WARD)
     else:
-        box(x0, y0, x1, y1, 0, PLINTH_H, WARD, top=shade(WARD, 1.06))
+        iso_paint.paint_box(x0, y0, x1, y1, 0, PLINTH_H, "dressing_ward", front="S", col=WARD)
 
 
 def near_wardrobe_ghosts():
@@ -165,7 +163,7 @@ def master_door_ghost():
 def wicker_basket():
     """Wicker basket on the floor by the ensuite doorway."""
     x0, x1, y0, y1 = 3.78, 4.20, 2.88, 3.28
-    box(x0, y0, x1, y1, 0, 28, WICKER, top=shade(WICKER, 0.85))
+    iso_paint.paint_box(x0, y0, x1, y1, 0, 28, "wicker", front="S", col=WICKER)
     box(x0 + 0.04, y0 + 0.04, x1 - 0.04, y1 - 0.04, 28, 36, shade(WICKER, 1.08), top=shade(WICKER, 0.7))
     # a hint of white linen peeking out
     box(x0 + 0.12, y0 + 0.14, x0 + 0.28, y1 - 0.14, 36, 48, (232, 228, 220), ol=False)
@@ -176,7 +174,7 @@ def radiator():
     if not hc.FLIP:
         return
     a, b = WIN_W
-    box(RW - 0.16, a + 0.10, RW - 0.03, b - 0.10, 0, 38, WHITE_, top=shade(WHITE_, 1.04))
+    iso_paint.paint_box(RW - 0.16, a + 0.10, RW - 0.03, b - 0.10, 0, 38, "hall_radiator", front="E", col=WHITE_)
 
 
 def floral_drapes_west():

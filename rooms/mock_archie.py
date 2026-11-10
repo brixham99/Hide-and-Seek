@@ -19,6 +19,7 @@ import sys
 import house_common as hc
 hc.init_room(6.4, 6.4)
 from house_common import *  # noqa: E402,F401,F403
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_archie_mock.png"
@@ -57,12 +58,9 @@ def iron_bed():
     x0, x1 = RW - 1.72, RW - 0.10
     y0, y1 = 2.50, 5.50
     # mattress and white duvet
-    box(x0 + 0.06, y0 + 0.08, x1 - 0.06, y1 - 0.08, 30, 48, (240, 238, 232), top=shade((240, 238, 232), 1.05))
+    iso_paint.paint_box(x0 + 0.06, y0 + 0.08, x1 - 0.06, y1 - 0.08, 30, 48, "bed_cream", front="E", col=(240, 238, 232))
     # grey/white patterned throw over the foot half
-    box(x0 + 0.08, y0 + 0.10, x1 - 0.08, y0 + 1.55, 48.2, 53, (176, 174, 178), top=shade((186, 184, 188), 1.04))
-    for i in range(6):
-        yy = y0 + 0.16 + i * 0.22
-        box(x0 + 0.10, yy, x1 - 0.10, yy + 0.07, 53.1, 54.5, (230, 228, 224) if i % 2 else (150, 148, 152), ol=False)
+    iso_paint.paint_box(x0 + 0.08, y0 + 0.10, x1 - 0.08, y0 + 1.55, 48.2, 53, "bed_throw_grey", front="E", col=(176, 174, 178))
     # a slim under-bed drawer, set back so it does not read as a separate ottoman
     box(x0 + 0.45, y0 + 0.70, x1 - 0.12, y0 + 1.25, 18, 29, (90, 62, 40), ol=False)
     # foot rail (south) and head rail (north)
@@ -81,7 +79,7 @@ def iron_bed():
 
 def bedside():
     # just east of the bed-head, toward the window
-    box(RW - 2.15, 5.45, RW - 1.78, 6.15, 0, 54, (86, 52, 34), top=shade((110, 72, 46), 1.08))
+    iso_paint.paint_box(RW - 2.15, 5.45, RW - 1.78, 6.15, 0, 54, "up_oak", front="S", col=(86, 52, 34))
     box(RW - 2.10, 5.52, RW - 1.83, 6.08, 54, 58, (72, 44, 28), ol=False)
 
 
@@ -89,8 +87,8 @@ def teddy_and_basket():
     """Wicker basket and a big teddy at the foot of the bed."""
     # open wicker basket
     bx0, bx1, by0, by1 = RW - 1.70, RW - 0.72, 1.72, 2.38
-    box(bx0, by0, bx1, by1, 0, 22, WICKER)
-    box(bx0 + 0.04, by0 + 0.04, bx1 - 0.04, by1 - 0.04, 20, 30, shade(WICKER, 1.05), top=shade(WICKER, 1.12))
+    iso_paint.paint_box(bx0, by0, bx1, by1, 0, 22, "wicker", front="S", col=WICKER)
+    iso_paint.paint_box(bx0 + 0.04, by0 + 0.04, bx1 - 0.04, by1 - 0.04, 20, 30, "wicker", front="S", col=shade(WICKER, 1.05))
     qz(30.4, bx0 + 0.10, by0 + 0.08, bx1 - 0.10, by1 - 0.08, shade(WICKER, 0.62))
     # teddy sitting up beside the basket — round head, brown body
     cx, cy = RW - 0.95, 2.05
@@ -104,7 +102,7 @@ def teddy_and_basket():
 def bookcase():
     """Tall dark-wood bookcase on the east wall, by the window."""
     x0, x1, y0, y1 = 0.06, 0.72, 4.05, 6.28
-    box(x0, y0, x1, y1, 0, 168, (92, 58, 34), top=shade((108, 70, 42), 1.08))
+    iso_paint.paint_box(x0, y0, x1, y1, 0, 168, "up_bookcase", front="W", col=(92, 58, 34))
     rnd = random.Random(21)
     for s, z in enumerate((18, 48, 80, 112, 144)):
         box(x0 + 0.04, y0 + 0.04, x1 - 0.04, y1 - 0.04, z - 4, z, shade((92, 58, 34), 1.12), ol=False)
@@ -127,7 +125,7 @@ def desk_and_chair():
     """Pine desk with mint-dipped legs, mint chair, lamp and white purifier."""
     x0, x1, y0, y1 = 0.10, 0.88, 1.72, 3.72
     # top
-    box(x0, y0, x1, y1, 68, 74, PINE, top=shade(PINE, 1.1))
+    iso_paint.paint_box(x0, y0, x1, y1, 68, 74, "up_pine", front="E", col=PINE)
     # legs: pine above, mint dipped below
     for xx, yy in ((x0 + 0.06, y0 + 0.06), (x1 - 0.14, y0 + 0.06),
                    (x0 + 0.06, y1 - 0.14), (x1 - 0.14, y1 - 0.14)):
@@ -140,28 +138,26 @@ def desk_and_chair():
     cyl(x0 + 0.42, y0 + 0.35, 0.16, 74, 112, WHITE_, top=shade(WHITE_, 1.06))
     # mint chair
     cx0, cx1, cy0, cy1 = 1.02, 1.55, 2.25, 2.95
-    box(cx0, cy0, cx1, cy1, 0, 42, MINT, top=shade(MINT, 1.08))
+    iso_paint.paint_box(cx0, cy0, cx1, cy1, 0, 42, "archie_mint", front="E", col=MINT)
     box(cx0, cy1 - 0.10, cx1, cy1, 42, 78, shade(MINT, 0.92))
 
 
 def navy_cabinet():
-    box(2.70, 0.08, 4.55, 0.58, 0, 72, NAVY, top=shade(NAVY, 1.12))
+    iso_paint.paint_box(2.70, 0.08, 4.55, 0.58, 0, 72, "archie_navy", front="S", col=NAVY)
     # two doors
-    box(2.78, 0.16, 3.58, 0.52, 8, 64, shade(NAVY, 1.08))
-    box(3.66, 0.16, 4.46, 0.52, 8, 64, shade(NAVY, 1.08))
     for xx in (3.18, 4.06):
         cyl(xx, 0.52, 0.03, 34, 40, (180, 184, 188))
 
 
 def wardrobe():
-    box(RW - 1.18, 0.06, RW - 0.08, 0.92, 0, 176, PINE, top=shade(PINE, 1.1))
+    iso_paint.paint_box(RW - 1.18, 0.06, RW - 0.08, 0.92, 0, 176, "archie_wardrobe", front="S", col=PINE)
     line((RW - 0.63, 0.08, 12), (RW - 0.63, 0.08, 168), shade(PINE, 0.7), 1)
     cyl(RW - 0.70, 0.90, 0.03, 88, 96, (180, 184, 188))
 
 
 def radiator():
     u0, u1 = WINDOW
-    box(u0 + 0.05, RD - 0.32, u1 - 0.05, RD - 0.10, 8, 48, WHITE_, top=shade(WHITE_, 1.04))
+    iso_paint.paint_box(u0 + 0.05, RD - 0.32, u1 - 0.05, RD - 0.10, 8, 48, "hall_radiator", front="S", col=WHITE_)
     for i in range(7):
         xx = u0 + 0.12 + i * (u1 - u0 - 0.24) / 6
         qy(RD - 0.10, xx, xx + 0.04, 12, 44, shade(WHITE_, KY * 0.9))

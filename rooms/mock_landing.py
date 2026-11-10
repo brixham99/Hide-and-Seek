@@ -18,6 +18,7 @@ import sys
 import house_common as hc
 hc.init_room(3.2, 8.05)
 from house_common import *  # noqa: E402,F401,F403
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_landing_mock.png"
@@ -121,7 +122,7 @@ def jute_rug(cx, cy, r=0.95):
 
 def radiator(u0, u1, side="N"):
     y = 0.12
-    box(u0, y, u1, y + 0.22, 8, 52, WHITE_, top=shade(WHITE_, 1.04))
+    iso_paint.paint_box(u0, y, u1, y + 0.22, 8, 52, "hall_radiator", front="N", col=WHITE_)
     for i in range(8):
         xx = u0 + 0.06 + i * (u1 - u0 - 0.1) / 7
         qy(y + 0.22, xx, xx + 0.035, 12, 48, shade(WHITE_, KY * 0.9))

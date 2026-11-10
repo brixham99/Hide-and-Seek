@@ -22,6 +22,7 @@ import numpy as np
 import house_common as hc
 hc.init_room(4.6, 4.4)
 from house_common import *  # noqa: E402,F401,F403
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_bathroom_mock.png"
@@ -137,11 +138,11 @@ def clawfoot_bath():
         cyl(fx, fy, 0.12, 10, 24, shade(iron, 0.8))
         cyl(fx, fy, 0.07, 22, 30, WHITE_)
     # tub body with rounded ends
-    box(x0 + 0.10, y0 + 0.08, x1 - 0.10, y1 - 0.08, 22, 50, WHITE_, top=shade(WHITE_, 1.03))
+    iso_paint.paint_box(x0 + 0.10, y0 + 0.08, x1 - 0.10, y1 - 0.08, 22, 50, "bathroom_bath", front="S", col=WHITE_)
     cyl(x0 + 0.44, (y0 + y1) / 2, 0.46, 22, 50, WHITE_, top=shade(WHITE_, 1.04))
     cyl(x1 - 0.44, (y0 + y1) / 2, 0.46, 22, 50, WHITE_, top=shade(WHITE_, 1.04))
     # roll-top rim (fat white border) with the basin showing through
-    box(x0, y0, x1, y1, 48, 58, WHITE_, top=shade(WHITE_, 1.1))
+    iso_paint.paint_box(x0, y0, x1, y1, 48, 58, "wc_ceramic", front="S", col=WHITE_)
     cyl(x0 + 0.40, (y0 + y1) / 2, 0.52, 48, 58, WHITE_, top=shade(WHITE_, 1.12))
     cyl(x1 - 0.40, (y0 + y1) / 2, 0.52, 48, 58, WHITE_, top=shade(WHITE_, 1.12))
     qz(58.4, x0 + 0.16, y0 + 0.16, x1 - 0.16, y1 - 0.16, (168, 192, 206))
@@ -173,9 +174,9 @@ def ladder_shelf():
     x0, x1 = 0.16, 0.52
     y0, y1 = RD - 1.15, RD - 0.32
     for xx in (x0, x1 - 0.045):
-        box(xx, y0 + 0.04, xx + 0.045, y1 - 0.04, 0, 138, WOOD)
+        iso_paint.paint_box(xx, y0 + 0.04, xx + 0.045, y1 - 0.04, 0, 138, "up_oak", front="S", col=WOOD)
     for z in (38, 76, 114):
-        box(x0, y0 + 0.05, x1, y1 - 0.05, z, z + 5, shade(WOOD, 1.08), top=shade(WOOD, 1.14))
+        iso_paint.paint_box(x0, y0 + 0.05, x1, y1 - 0.05, z, z + 5, "up_oak", front="S", col=shade(WOOD, 1.08))
     # bottles on the middle rung
     cyl(0.28, RD - 0.68, 0.045, 81, 110, (70, 110, 96))
     cyl(0.40, RD - 0.82, 0.04, 81, 106, (186, 92, 64))
@@ -192,9 +193,9 @@ def pedestal_basin():
     x0, x1 = RW - 0.58, RW - 0.10
     y0, y1 = 2.30, 2.88
     # pedestal
-    box(x0 + 0.14, y0 + 0.16, x1 - 0.10, y1 - 0.16, 0, 52, WHITE_, top=shade(WHITE_, 1.02))
+    iso_paint.paint_box(x0 + 0.14, y0 + 0.16, x1 - 0.10, y1 - 0.16, 0, 52, "wc_ceramic", front="W", col=WHITE_)
     # bowl
-    box(x0, y0, x1, y1, 50, 64, WHITE_, top=shade(WHITE_, 1.06))
+    iso_paint.paint_box(x0, y0, x1, y1, 50, 64, "wc_ceramic", front="W", col=WHITE_)
     box(x0 + 0.08, y0 + 0.08, x1 - 0.06, y1 - 0.08, 58, 66, (214, 222, 226), top=(198, 210, 216))
     # taps and splash
     box(x1 - 0.12, (y0 + y1) / 2 - 0.06, x1 - 0.02, (y0 + y1) / 2 + 0.06, 64, 76, CHROME)
@@ -205,10 +206,10 @@ def loo():
     """Close-coupled white loo on the east wall, under the sash."""
     x0, x1, y0, y1 = 0.08, 0.62, 1.22, 1.92
     # pan
-    box(x0 + 0.10, y0 + 0.06, x1 - 0.04, y1 - 0.06, 0, 40, WHITE_, top=shade(WHITE_, 1.03))
+    iso_paint.paint_box(x0 + 0.10, y0 + 0.06, x1 - 0.04, y1 - 0.06, 0, 40, "wc_ceramic", front="W", col=WHITE_)
     box(x0 + 0.16, y0 + 0.14, x1 - 0.10, y1 - 0.14, 38, 44, (230, 232, 234), top=(214, 218, 222))
     # cistern against the east wall
-    box(x0, y0 + 0.10, x0 + 0.28, y1 - 0.10, 40, 82, WHITE_, top=shade(WHITE_, 1.05))
+    iso_paint.paint_box(x0, y0 + 0.10, x0 + 0.28, y1 - 0.10, 40, 82, "wc_ceramic", front="W", col=WHITE_)
     box(x0 + 0.04, (y0 + y1) / 2 - 0.05, x0 + 0.16, (y0 + y1) / 2 + 0.05, 82, 88, CHROME)
     # small framed picture north of the cistern
     if not hc.FLIP:

@@ -19,6 +19,7 @@ import sys
 import house_common as hc
 hc.init_room(6.9, 6.4)
 from house_common import *  # noqa: E402,F401,F403
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_holly_mock.png"
@@ -66,11 +67,10 @@ def striped_alcove(x0, x1, shelves=False):
     if x1 - x0 < 0.10:
         return
     y = RD - 0.03
-    n = max(4, int((x1 - x0) / 0.16))
-    w = (x1 - x0) / n
-    for i in range(n):
-        col = WHITE_ if i % 2 == 0 else shade(WALL, 0.92)
-        qy(y, x0 + i * w, x0 + (i + 1) * w, 14, WALL_H - 8, shade(col, KY))
+    tex = iso_paint.kind_sheets("holly_alcove")["front"]
+    A, B = P(x0, y, WALL_H - 8), P(x1, y, WALL_H - 8)
+    C, D = P(x0, y, 14), P(x1, y, 14)
+    iso_paint.paint_quad(tex, A, B, C, KY, D=D)
     qy(y - 0.01, x0, x1, 168, 174, shade(WHITE_, KY))   # picture rail
     if shelves:
         for z in (72, 122):
@@ -103,10 +103,10 @@ def fireplace_front():
     x0, x1, d = BREAST
     y = RD - 0.03
     qy(y, x0 - 0.04, x1 + 0.04, 0, WALL_H, shade(WALL, KY * 0.9))
-    # white surround
-    qy(y - 0.01, x0 + 0.18, x1 - 0.18, 8, 96, shade(WHITE_, KY))
-    qy(y - 0.02, x0 + 0.42, x1 - 0.42, 16, 82, (32, 30, 30))     # cast-iron insert
-    qy(y - 0.025, x0 + 0.54, x1 - 0.54, 28, 70, (22, 20, 20))
+    tex = iso_paint.kind_sheets("holly_fire")["front"]
+    A, B = P(x0 - 0.04, y - 0.01, WALL_H), P(x1 + 0.04, y - 0.01, WALL_H)
+    C, D = P(x0 - 0.04, y - 0.01, 0), P(x1 + 0.04, y - 0.01, 0)
+    iso_paint.paint_quad(tex, A, B, C, KY, D=D)
     # mantel shelf (a flat band on the wall plus a shallow box)
     qy(y - 0.01, x0 - 0.06, x1 + 0.06, 96, 110, shade(WHITE_, KY * 1.02))
     box(x0 - 0.10, RD - d - 0.10, x1 + 0.10, RD - d + 0.02, 96, 108, WHITE_, top=shade(WHITE_, 1.08))
@@ -128,18 +128,10 @@ def white_bed():
     parallel to the chimney wall, a little out from the fireplace."""
     x0, x1 = 3.38, 6.78          # foot (east) ... head (west)
     y0, y1 = 3.58, 5.14
-    box(x0 + 0.08, y0 + 0.06, x1 - 0.08, y1 - 0.06, 28, 46, (244, 236, 232), top=shade((244, 236, 232), 1.04))
-    box(x0 + 1.15, y0 + 0.08, x1 - 0.10, y1 - 0.08, 46, 54, (236, 214, 216), top=shade((236, 214, 216), 1.05))
-    # check blanket at the foot
-    for i in range(5):
-        for j in range(4):
-            xa = x0 + 0.12 + i * 0.20
-            ya = y0 + 0.10 + j * ((y1 - y0 - 0.20) / 4)
-            xb, yb = xa + 0.20, ya + (y1 - y0 - 0.20) / 4
-            col = (214, 96, 118) if (i + j) % 2 == 0 else (244, 232, 226)
-            box(xa, ya, min(xb, x0 + 1.14), min(yb, y1 - 0.10), 46, 54, col, ol=False)
-    # pillow at the head
-    box(x1 - 0.72, y0 + 0.16, x1 - 0.18, y1 - 0.16, 54, 66, (248, 246, 242), top=shade((248, 246, 242), 1.06))
+    iso_paint.paint_box(x0 + 0.08, y0 + 0.06, x1 - 0.08, y1 - 0.06, 28, 46, "bed_white", front="E", col=(244, 236, 232))
+    iso_paint.paint_box(x0 + 1.15, y0 + 0.08, x1 - 0.10, y1 - 0.08, 46, 54, "bed_pink", front="E", col=(236, 214, 216))
+    iso_paint.paint_box(x0 + 0.12, y0 + 0.10, x0 + 1.14, y1 - 0.10, 46, 54, "holly_check", front="E", col=(214, 96, 118))
+    iso_paint.paint_box(x1 - 0.72, y0 + 0.16, x1 - 0.18, y1 - 0.16, 54, 66, "bed_pillow", front="E", col=(248, 246, 242))
     # white metal foot (east) and head (west) rails, spanning the bed's width
     for x, h1 in ((x0, 78), (x1, 96)):
         box(x - 0.04, y0, x + 0.04, y0 + 0.07, 0, h1, IRON)
@@ -156,7 +148,7 @@ def white_bed():
 def oak_chest():
     """Tall oak chest in the north-east corner, on the window wall by the bathroom door."""
     x0, x1, y0, y1 = 0.08, 0.62, 4.50, 6.12
-    box(x0, y0, x1, y1, 0, 132, OAK, top=shade(OAK, 1.1))
+    iso_paint.paint_box(x0, y0, x1, y1, 0, 132, "up_oak_chest", front="W", col=OAK)
     for z in (36, 68, 100):
         box(x0 + 0.06, y0 + 0.08, x1 - 0.06, y1 - 0.08, z, z + 5, shade(OAK, 1.14), ol=False)
         box(x0 + 0.24, (y0 + y1) / 2 - 0.04, x0 + 0.38, (y0 + y1) / 2 + 0.04, z + 5, z + 9, shade((196, 176, 120), 1.0), ol=False)
@@ -170,7 +162,7 @@ def oak_chest():
 def pine_desk():
     """Pine desk with a monitor, in front of the east window, and a wooden chair."""
     x0, x1, y0, y1 = 0.12, 1.28, 2.30, 3.70
-    box(x0, y0, x1, y1, 48, 56, PINE, top=shade(PINE, 1.1))
+    iso_paint.paint_box(x0, y0, x1, y1, 48, 56, "up_pine", front="W", col=PINE)
     for xx, yy in ((x0 + 0.08, y0 + 0.08), (x1 - 0.16, y0 + 0.08), (x0 + 0.08, y1 - 0.16), (x1 - 0.16, y1 - 0.16)):
         box(xx, yy, xx + 0.08, yy + 0.08, 0, 48, shade(PINE, 0.9))
     # monitor
@@ -184,9 +176,8 @@ def pine_desk():
 def oak_wardrobe_se():
     """Tall oak double wardrobe with a drawer base, between the two windows."""
     x0, x1, y0, y1 = 0.10, 1.18, 0.08, 1.15
-    box(x0, y0, x1, y1, 0, 36, OAK, top=shade(OAK, 1.08))            # drawer base
-    box(x0 + 0.10, y0 + 0.12, x1 - 0.10, y1 - 0.12, 14, 22, shade(OAK, 1.12), ol=False)
-    box(x0, y0, x1, y1, 36, 168, OAK, top=shade(OAK, 1.12))
+    iso_paint.paint_box(x0, y0, x1, y1, 0, 36, "up_oak_chest", front="S", col=OAK)
+    iso_paint.paint_box(x0, y0, x1, y1, 36, 168, "up_oak", front="S", col=OAK)
     mid = (x0 + x1) / 2
     box(mid - 0.02, y0 + 0.04, mid + 0.02, y1 - 0.04, 40, 164, shade(OAK, 0.85), ol=False)
     for xx in (x0 + 0.22, x1 - 0.30):
@@ -204,14 +195,13 @@ def oak_wardrobe_se():
 def south_window_toys():
     """Doll's house, beanbag and low lilac metal cabinet by the south window."""
     # white doll's house
-    box(2.90, 0.12, 3.60, 0.62, 0, 52, WHITE_, top=shade(WHITE_, 1.05))
-    box(2.85, 0.10, 3.65, 0.64, 50, 68, (214, 96, 96))
-    box(3.12, 0.22, 3.38, 0.40, 8, 36, shade((160, 200, 220), 1.0), ol=False)
+    iso_paint.paint_box(2.90, 0.12, 3.60, 0.62, 0, 52, "holly_doll", front="S", col=WHITE_)
+    iso_paint.paint_box(2.85, 0.10, 3.65, 0.64, 50, 68, "holly_doll_roof", front="S", col=(214, 96, 96))
     # beanbag cushion
     cyl(3.88, 0.78, 0.38, 0, 28, (186, 120, 160), top=shade((186, 120, 160), 1.12))
     cyl(3.88, 0.78, 0.30, 24, 42, shade((186, 120, 160), 1.08))
     # low lilac metal two-door cabinet (also reads as the lilac desk from the other view)
-    box(4.15, 0.10, 5.55, 0.58, 0, 52, LILAC, top=shade(LILAC, 1.1))
+    iso_paint.paint_box(4.15, 0.10, 5.55, 0.58, 0, 52, "holly_lilac", front="S", col=LILAC)
     mid = 4.85
     box(mid - 0.02, 0.14, mid + 0.02, 0.54, 8, 48, shade(LILAC, 0.82), ol=False)
     for xx in (4.40, 5.15):
@@ -224,7 +214,7 @@ def white_wardrobe():
     """Tall white cupboard on the west wall, just north of the landing door."""
     x0, x1 = RW - 0.58, RW - 0.08
     y0, y1 = 1.78, 2.48
-    box(x0, y0, x1, y1, 0, 156, WHITE_, top=shade(WHITE_, 1.06))
+    iso_paint.paint_box(x0, y0, x1, y1, 0, 156, "holly_white_ward", front="E", col=WHITE_)
     box(x0 + 0.08, y0 + 0.10, x1 - 0.08, y1 - 0.10, 12, 20, shade(WHITE_, 0.92), ol=False)
     box((x0 + x1) / 2 - 0.03, y0 + 0.16, (x0 + x1) / 2 + 0.03, y1 - 0.16, 70, 80, shade((196, 176, 120), 1.0), ol=False)
 

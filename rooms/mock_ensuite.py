@@ -22,6 +22,7 @@ import pygame
 import house_common as hc
 hc.init_room(5.3, 4.2)
 from house_common import *  # noqa: E402,F401,F403
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_ensuite_mock.png"
@@ -160,14 +161,9 @@ def vanity(full):
     if not full:
         box(x0, y0, x1, y1, 0, 16, BLUE, top=shade(BLUE, 1.06))
         return
-    box(x0, y0, x1, y1, 0, 70, BLUE, top=shade(BLUE, 1.04))
-    box(x0 + 0.08, y0 + 0.08, x1 - 0.06, y1 - 0.08, 8, 12, shade(BLUE, 0.88), ol=False)
+    iso_paint.paint_box(x0, y0, x1, y1, 0, 70, "ensuite_vanity", front="W", col=BLUE)
     box(x0 + 0.16, y0 + 0.22, x1 - 0.14, y0 + 0.70, 12, 28, (168, 128, 80), ol=False)
-    for ya, yb, z in ((y0 + 0.12, y0 + 0.72, 40), (y0 + 0.84, y1 - 0.12, 40),
-                      (y0 + 0.12, y0 + 0.72, 56), (y0 + 0.84, y1 - 0.12, 56)):
-        box(x0 + 0.06, ya, x1 - 0.04, yb, z, z + 12, shade(BLUE, 1.08), ol=False)
-        box(x0 + 0.10, (ya + yb) / 2 - 0.08, x0 + 0.16, (ya + yb) / 2 + 0.08, z + 4, z + 8, CHROME, ol=False)
-    box(x0, y0 - 0.02, x1 + 0.04, y1 + 0.04, 70, 78, WHITE_, top=shade(WHITE_, 1.08))
+    iso_paint.paint_box(x0, y0 - 0.02, x1 + 0.04, y1 + 0.04, 70, 78, "wc_ceramic", front="W", col=WHITE_)
     box(x0 + 0.10, y0 + 0.28, x1 - 0.10, y1 - 0.22, 74, 80, (210, 218, 222), top=(198, 208, 214))
     box(x0 + 0.04, (y0 + y1) / 2 - 0.06, x0 + 0.16, (y0 + y1) / 2 + 0.06, 78, 90, CHROME)
     cyl(x0 + 0.22, y1 - 0.22, 0.07, 78, 92, (62, 118, 58))
@@ -185,9 +181,9 @@ def loo(full):
     if not full:
         box(x0, y0, x1, y1, 0, 16, WHITE_, top=shade(WHITE_, 1.03))
         return
-    box(x0 + 0.08, y0 + 0.08, x1 - 0.08, y1 - 0.08, 0, 40, WHITE_, top=shade(WHITE_, 1.03))
+    iso_paint.paint_box(x0 + 0.08, y0 + 0.08, x1 - 0.08, y1 - 0.08, 0, 40, "wc_ceramic", front="E", col=WHITE_)
     box(x0 + 0.16, y0 + 0.16, x1 - 0.16, y1 - 0.16, 38, 44, (230, 232, 234), top=(214, 218, 222))
-    box(x1 - 0.28, y0 + 0.10, x1, y1 - 0.10, 40, 82, WHITE_, top=shade(WHITE_, 1.05))
+    iso_paint.paint_box(x1 - 0.28, y0 + 0.10, x1, y1 - 0.10, 40, 82, "wc_ceramic", front="E", col=WHITE_)
     box(x1 - 0.16, (y0 + y1) / 2 - 0.05, x1 - 0.04, (y0 + y1) / 2 + 0.05, 82, 88, CHROME)
 
 
@@ -201,12 +197,12 @@ def towel_rail(full):
     box(x0, y1 - 0.04, x1, y1, 36, 138, CHROME)
     for z in (48, 72, 96, 120):
         box(x0, y0, x1, y1, z, z + 5, CHROME)
-    box(x0 + 0.12, y0 + 0.02, x0 + 0.55, y1 - 0.02, 40, 118, (220, 218, 224))
-    box(x1 - 0.50, y0 + 0.02, x1 - 0.12, y1 - 0.02, 40, 100, (232, 228, 220))
+    iso_paint.paint_box(x0 + 0.12, y0 + 0.02, x0 + 0.55, y1 - 0.02, 40, 118, "towel", front="N", col=(220, 218, 224))
+    iso_paint.paint_box(x1 - 0.50, y0 + 0.02, x1 - 0.12, y1 - 0.02, 40, 100, "towel", front="N", col=(232, 228, 220))
 
 
 def wicker_basket():
-    box(4.12, 3.40, 4.48, 3.78, 0, 24, (148, 112, 72), top=shade((148, 112, 72), 0.8))
+    iso_paint.paint_box(4.12, 3.40, 4.48, 3.78, 0, 24, "wicker", front="S", col=(148, 112, 72))
 
 
 def scales():
@@ -217,7 +213,7 @@ def radiator_north():
     if not hc.FLIP:
         return
     a, b = WIN_N
-    box(a + 0.10, RD - 0.16, b - 0.10, RD - 0.04, 0, 36, WHITE_, top=shade(WHITE_, 1.04))
+    iso_paint.paint_box(a + 0.10, RD - 0.16, b - 0.10, RD - 0.04, 0, 36, "hall_radiator", front="S", col=WHITE_)
 
 
 def peg_rail():

@@ -26,6 +26,7 @@ import sys
 import house_common as hc
 hc.init_room(7.3, 7.8)
 from house_common import *  # noqa: E402,F401,F403
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_master_mock.png"
@@ -104,26 +105,15 @@ def wooden_bed():
     x0, x1 = 1.70, 4.44          # east ... west (width)
     y0, y1 = 4.18, 7.62          # foot (south) ... head (north)
     # frame
-    box(x0, y0, x1, y1, 0, 28, PINE, top=shade(PINE, 1.05))
-    # white mattress and duvet
-    box(x0 + 0.08, y0 + 0.10, x1 - 0.08, y1 - 0.10, 28, 48, SHEET, top=shade(SHEET, 1.04))
-    box(x0 + 0.10, y0 + 0.12, x1 - 0.10, y1 - 0.12, 48, 54, shade(SHEET, 1.02), top=shade(SHEET, 1.06))
-    # pillows at the north (head)
+    iso_paint.paint_box(x0, y0, x1, y1, 0, 28, "up_pine", front="S", col=PINE)
+    iso_paint.paint_box(x0 + 0.08, y0 + 0.10, x1 - 0.08, y1 - 0.10, 28, 48, "bed_white", front="S", col=SHEET)
+    iso_paint.paint_box(x0 + 0.10, y0 + 0.12, x1 - 0.10, y1 - 0.12, 48, 54, "master_duvet", front="S", col=shade(SHEET, 1.02))
     mid = (x0 + x1) / 2
-    box(x0 + 0.18, y1 - 0.88, mid - 0.06, y1 - 0.18, 54, 70, SHEET, top=shade(SHEET, 1.05))
-    box(mid + 0.06, y1 - 0.88, x1 - 0.18, y1 - 0.18, 54, 70, SHEET, top=shade(SHEET, 1.05))
-    # blue-grey cushion
-    box(mid - 0.38, y1 - 1.12, mid + 0.38, y1 - 0.48, 68, 80, CUSHION, top=shade(CUSHION, 1.08))
-    # cane headboard at the north
-    box(x0, y1 - 0.12, x1, y1 + 0.06, 28, 112, CANE, top=shade(CANE, 1.08))
-    for i in range(7):
-        xx = x0 + 0.10 + i * (x1 - x0 - 0.20) / 6
-        box(xx - 0.02, y1 - 0.10, xx + 0.02, y1 + 0.04, 34, 106, shade(CANE, 0.85), ol=False)
-    for j in range(5):
-        zz = 40 + j * 12
-        box(x0 + 0.08, y1 - 0.10, x1 - 0.08, y1 + 0.04, zz, zz + 3, shade(CANE, 0.9), ol=False)
-    # foot rail (south)
-    box(x0, y0 - 0.04, x1, y0 + 0.08, 20, 52, PINE, top=shade(PINE, 1.06))
+    iso_paint.paint_box(x0 + 0.18, y1 - 0.88, mid - 0.06, y1 - 0.18, 54, 70, "bed_pillow", front="S", col=SHEET)
+    iso_paint.paint_box(mid + 0.06, y1 - 0.88, x1 - 0.18, y1 - 0.18, 54, 70, "bed_pillow", front="S", col=SHEET)
+    iso_paint.paint_box(mid - 0.38, y1 - 1.12, mid + 0.38, y1 - 0.48, 68, 80, "bed_cushion", front="S", col=CUSHION)
+    iso_paint.paint_box(x0, y1 - 0.12, x1, y1 + 0.06, 28, 112, "master_cane", front="S", col=CANE)
+    iso_paint.paint_box(x0, y0 - 0.04, x1, y0 + 0.08, 20, 52, "up_pine", front="S", col=PINE)
 
 
 # Just outside the bed's width (1.70–4.44), clear of the headboard too.
@@ -134,7 +124,7 @@ WEST_NS = (4.58, 7.18, 5.04, 7.70)
 
 def bedside_table(x0, y0, x1, y1):
     """A pine bedside table and lamp against the north wall."""
-    box(x0, y0, x1, y1, 0, 48, PINE, top=shade(PINE, 1.1))
+    iso_paint.paint_box(x0, y0, x1, y1, 0, 48, "up_pine", front="S", col=PINE)
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     cyl(cx, cy, 0.05, 48, 74, WHITE_)
     cyl(cx, cy, 0.14, 72, 90, (232, 228, 220), top=shade((232, 228, 220), 1.08))
@@ -152,7 +142,7 @@ def pine_chest():
     """Pine chest of drawers in the south-west corner, between the two
     sash windows, with a television standing on top."""
     x0, x1, y0, y1 = 5.40, 7.15, 0.10, 0.78
-    box(x0, y0, x1, y1, 0, 86, PINE, top=shade(PINE, 1.1))
+    iso_paint.paint_box(x0, y0, x1, y1, 0, 86, "up_pine_chest", front="N", col=PINE)
     for z in (22, 44, 66):
         box(x0 + 0.10, y0 + 0.10, x1 - 0.10, y1 - 0.10, z, z + 5, shade(PINE, 1.14), ol=False)
         box((x0 + x1) / 2 - 0.08, (y0 + y1) / 2 - 0.03, (x0 + x1) / 2 + 0.08, (y0 + y1) / 2 + 0.03,
@@ -168,7 +158,7 @@ def pine_chest():
 def pine_desk():
     """Pine desk and white chair in front of the west window."""
     x0, x1, y0, y1 = RW - 1.28, RW - 0.10, 2.55, 4.15
-    box(x0, y0, x1, y1, 48, 56, PINE, top=shade(PINE, 1.1))
+    iso_paint.paint_box(x0, y0, x1, y1, 48, 56, "up_pine", front="E", col=PINE)
     for xx, yy in ((x0 + 0.08, y0 + 0.08), (x1 - 0.16, y0 + 0.08),
                    (x0 + 0.08, y1 - 0.16), (x1 - 0.16, y1 - 0.16)):
         box(xx, yy, xx + 0.08, yy + 0.08, 0, 48, shade(PINE, 0.9))
@@ -182,7 +172,7 @@ def white_bookcase():
     """Low wide white bookcase (~2.8 ft by 3 ft) on the south wall, between
     the landing-door corner and the south sash, with a globe on top."""
     x0, x1, y0, y1 = 0.18, 1.70, 0.08, 0.50
-    box(x0, y0, x1, y1, 0, 86, WHITE_, top=shade(WHITE_, 1.05))
+    iso_paint.paint_box(x0, y0, x1, y1, 0, 86, "master_bookcase", front="N", col=WHITE_)
     rnd = random.Random(8)
     for z in (28, 56):
         box(x0 + 0.06, y0 + 0.06, x1 - 0.06, y1 - 0.06, z, z + 4, shade(WHITE_, 0.9), ol=False)
@@ -199,7 +189,7 @@ def radiators():
     """White radiators under the south and west windows."""
     # south
     a, b = WIN_S
-    box(a + 0.10, 0.04, b - 0.10, 0.18, 0, 38, WHITE_, top=shade(WHITE_, 1.04))
+    iso_paint.paint_box(a + 0.10, 0.04, b - 0.10, 0.18, 0, 38, "hall_radiator", front="N", col=WHITE_)
     # west — drawn solid only when that wall faces the camera
     if hc.FLIP:
         a, b = WIN_W

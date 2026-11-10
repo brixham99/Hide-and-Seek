@@ -19,6 +19,7 @@ import sys
 import house_common as hc
 hc.init_room(6.2, 6.4)
 from house_common import *  # noqa: E402,F401,F403
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_upoffice_mock.png"
@@ -55,26 +56,19 @@ def oak_floor():
 def cream_sofa():
     """Three-seater along the east wall, purple check throw toward the window end."""
     x0, x1, y0, y1 = 0.08, 0.80, 1.55, 5.05
-    box(x0 + 0.20, y0 + 0.16, x1, y1 - 0.16, 0, 46, CREAM, top=shade(CREAM, 1.05))
-    box(x0, y0, x0 + 0.26, y1, 0, 80, CREAM, top=shade(CREAM, 1.04))          # back
-    box(x0, y0, x1, y0 + 0.20, 0, 64, CREAM, top=shade(CREAM, 1.03))          # south arm
-    box(x0, y1 - 0.20, x1, y1, 0, 64, CREAM, top=shade(CREAM, 1.03))          # north arm
-    # seat cushions
+    iso_paint.paint_box(x0 + 0.20, y0 + 0.16, x1, y1 - 0.16, 0, 46, "sofa_cream", front="W", col=CREAM)
+    iso_paint.paint_box(x0, y0, x0 + 0.26, y1, 0, 80, "sofa_cream", front="W", col=CREAM)
+    iso_paint.paint_box(x0, y0, x1, y0 + 0.20, 0, 64, "sofa_cream", front="S", col=CREAM)
+    iso_paint.paint_box(x0, y1 - 0.20, x1, y1, 0, 64, "sofa_cream", front="N", col=CREAM)
     for ya, yb in ((y0 + 0.24, 2.65), (2.70, 3.80), (3.85, y1 - 0.24)):
-        box(x0 + 0.24, ya, x1 - 0.04, yb, 46, 54, shade(CREAM, 1.06), top=shade(CREAM, 1.08))
-    # purple check throw on the north cushion
-    for i in range(5):
-        for j in range(3):
-            xa = x0 + 0.28 + j * 0.14
-            ya = 3.95 + i * 0.18
-            col = PURPLE if (i + j) % 2 == 0 else (210, 196, 214)
-            box(xa, ya, xa + 0.14, ya + 0.18, 54, 58, col, ol=False)
+        iso_paint.paint_box(x0 + 0.24, ya, x1 - 0.04, yb, 46, 54, "sofa_cream", front="W", col=shade(CREAM, 1.06))
+    iso_paint.paint_box(x0 + 0.28, 3.95, x1 - 0.06, y1 - 0.28, 54, 58, "sofa_check", front="W", col=PURPLE)
 
 
 def sofa_table():
     """Small wooden side table and brass lamp at the sofa's window end."""
     x0, x1, y0, y1 = 0.12, 0.58, 5.12, 5.62
-    box(x0, y0, x1, y1, 42, 50, OAK, top=shade(OAK, 1.1))
+    iso_paint.paint_box(x0, y0, x1, y1, 42, 50, "up_oak", front="W", col=OAK)
     for xx, yy in ((x0 + 0.04, y0 + 0.04), (x1 - 0.12, y0 + 0.04),
                    (x0 + 0.04, y1 - 0.12), (x1 - 0.12, y1 - 0.12)):
         box(xx, yy, xx + 0.08, yy + 0.08, 0, 42, shade(OAK, 0.9))
@@ -102,7 +96,7 @@ def print_gallery():
 def oak_chest():
     """Oak three-drawer chest on the south wall, east of the door, printer on top."""
     x0, x1, y0, y1 = 3.22, 4.72, 0.08, 0.68
-    box(x0, y0, x1, y1, 0, 78, OAK, top=shade(OAK, 1.1))
+    iso_paint.paint_box(x0, y0, x1, y1, 0, 78, "up_oak_chest", front="N", col=OAK)
     for z in (18, 38, 58):
         box(x0 + 0.10, y0 + 0.10, x1 - 0.10, y1 - 0.10, z, z + 5, shade(OAK, 1.14), ol=False)
         box((x0 + x1) / 2 - 0.10, (y0 + y1) / 2 - 0.03, (x0 + x1) / 2 + 0.10, (y0 + y1) / 2 + 0.03,
@@ -119,7 +113,7 @@ def oak_chest():
 def black_desk():
     """Black desk against the west wall by the window, with a monitor and chair."""
     x0, x1, y0, y1 = RW - 1.32, RW - 0.10, 4.00, 5.80
-    box(x0, y0, x1, y1, 48, 56, BLACK, top=shade(BLACK, 1.15))
+    iso_paint.paint_box(x0, y0, x1, y1, 48, 56, "up_black", front="E", col=BLACK)
     for xx, yy in ((x0 + 0.08, y0 + 0.08), (x1 - 0.16, y0 + 0.08),
                    (x0 + 0.08, y1 - 0.16), (x1 - 0.16, y1 - 0.16)):
         box(xx, yy, xx + 0.08, yy + 0.08, 0, 48, WHITE_)
@@ -131,7 +125,7 @@ def black_desk():
     cyl(x0 + 0.28, y0 + 0.35, 0.14, 0, 24, (140, 144, 148), top=shade((140, 144, 148), 1.1))
     box(x0 + 0.48, y0 + 0.22, x0 + 0.88, y0 + 0.58, 0, 22, (186, 142, 86), top=shade((186, 142, 86), 1.08))
     # black office chair in front (east) of the desk
-    box(x0 - 0.72, y0 + 0.45, x0 - 0.18, y1 - 0.45, 0, 44, BLACK, top=shade(BLACK, 1.1))
+    iso_paint.paint_box(x0 - 0.72, y0 + 0.45, x0 - 0.18, y1 - 0.45, 0, 44, "up_black", front="E", col=BLACK)
     box(x0 - 0.28, y0 + 0.50, x0 - 0.12, y1 - 0.50, 44, 86, shade(BLACK, 0.9))
 
 
@@ -139,7 +133,7 @@ def radiator():
     """White radiator under the north window."""
     a, b = WINDOW
     y0, y1 = RD - 0.16, RD - 0.02
-    box(a + 0.08, y0, b - 0.08, y1, 0, 40, WHITE_, top=shade(WHITE_, 1.04))
+    iso_paint.paint_box(a + 0.08, y0, b - 0.08, y1, 0, 40, "hall_radiator", front="S", col=WHITE_)
     n = 7
     for i in range(n):
         xx = a + 0.16 + i * (b - a - 0.32) / (n - 1)

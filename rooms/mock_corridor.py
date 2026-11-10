@@ -21,6 +21,7 @@ import sys
 import house_common as hc
 hc.init_room(11.4, 3.85)
 from house_common import *  # noqa: E402,F401,F403
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_corridor_mock.png"
@@ -124,7 +125,7 @@ def niche(u0, u1):
 def radiator_north(x0, x1):
     """White radiator on the north (near) wall, in the gap between the bedroom doors."""
     y = RD - 0.24
-    box(x0, y, x1, RD - 0.05, 8, 50, WHITE_, top=shade(WHITE_, 1.04))
+    iso_paint.paint_box(x0, y, x1, RD - 0.05, 8, 50, "hall_radiator", front="S", col=WHITE_)
     for i in range(6):
         xx = x0 + 0.05 + i * (x1 - x0 - 0.08) / 5
         qy(y, xx, xx + 0.03, 12, 46, shade(WHITE_, KY * 0.9))
@@ -147,7 +148,7 @@ def clothes_basket(cx, cy):
     """Fabric laundry basket on a metal frame, at the west dead end."""
     for dx, dy in ((-0.22, -0.16), (0.18, -0.16), (-0.22, 0.14), (0.18, 0.14)):
         box(cx + dx, cy + dy, cx + dx + 0.045, cy + dy + 0.045, 0, 40, STEEL)
-    box(cx - 0.30, cy - 0.24, cx + 0.30, cy + 0.24, 36, 68, FABRIC, top=shade(FABRIC, 1.08))
+    iso_paint.paint_box(cx - 0.30, cy - 0.24, cx + 0.30, cy + 0.24, 36, 68, "basket_fabric", front="S", col=FABRIC)
     box(cx - 0.32, cy - 0.26, cx + 0.32, cy + 0.26, 66, 74, shade(STEEL, 1.05), top=shade(STEEL, 1.15))
     qz(74.4, cx - 0.22, cy - 0.16, cx + 0.22, cy + 0.16, (96, 98, 102))
     box(cx - 0.12, cy - 0.08, cx + 0.14, cy + 0.1, 74.5, 80, (232, 230, 224), ol=False)
