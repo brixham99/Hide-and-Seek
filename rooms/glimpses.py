@@ -324,6 +324,9 @@ landing_from_holly = _open(HOLLY, LANDING, lambda: landing_zone(east_wall=False)
 
 
 UPOFFICE = (-0.60, 2.00)  # north of the corridor lobby, east of Archie's Room
+MASTER = (9.75, -8.25)  # west of the landing, above the Drawing Room
+DRESSING = (11.75, -0.45)  # north of the master, west-aligned
+ENSUITE = (11.75, 3.55)  # north of the dressing room
 
 
 def upoffice_zone():
@@ -340,3 +343,66 @@ def upoffice_zone():
 
 upoffice_from_corridor = _open(CORRIDOR, UPOFFICE, upoffice_zone)
 corridor_from_upoffice = _open(UPOFFICE, CORRIDOR, lambda: corridor_zone(north_wall=False))
+
+def master_zone():
+    """Pale grey walls, oak floor, the bed, south sash and the chest.
+    East (landing) doorway wall is left undrawn."""
+    grey = (176, 178, 176)
+    _floor("honey", 0.0, 0.0, 7.3, 7.8, seed=14)
+    _wall_y(0, 0.0, 7.3, grey)
+    _wall_x(7.3, 0.0, 7.8, grey)
+    _wall_y(7.8, 0.0, 7.3, grey)
+    hc.qy(0.04, 1.45, 3.20, 70, 198, hc.shade((210, 220, 198), hc.KY))
+    hc.qy(0.05, 1.55, 3.10, 78, 190, hc.shade((150, 168, 120), hc.KY))
+    hc.box(4.20, 0.10, 5.90, 0.72, 0, 86, (198, 158, 98))
+    hc.box(3.05, 4.48, 6.52, 6.42, 0, 48, (224, 176, 186))
+
+
+def dressing_zone():
+    """Warm dressing room just north of the master, drawn in master tiles
+    so the doorway lines up. A far opening reads as the En-suite."""
+    cream = (232, 224, 210)
+    rd, rw = hc.RD, hc.RW
+    x0, x1 = 2.00, rw
+    y0, y1 = rd, rd + 4.0
+    _floor("honey", x0 - 0.2, y0 - 0.05, x1 + 0.05, y1 + 0.05, seed=6)
+    _wall_x(x0, y0, y1, cream)
+    _wall_x(x1, y0, y1, cream)
+    # west sash: greenery and pale curtains, as seen through the doorway
+    hc.qx(x1 - 0.02, y0 + 1.10, y0 + 2.90, 64, 200, hc.shade((236, 234, 226), hc.KX))
+    hc.qx(x1 - 0.03, y0 + 1.22, y0 + 2.78, 76, 188, hc.shade((138, 168, 110), hc.KX))
+    hc.qx(x1 - 0.035, y0 + 1.10, y0 + 1.28, 64, 200, hc.shade((176, 192, 186), hc.KX))
+    hc.qx(x1 - 0.035, y0 + 2.72, y0 + 2.90, 64, 200, hc.shade((176, 192, 186), hc.KX))
+    hc.box(x1 - 0.18, y0 + 1.20, x1 - 0.04, y0 + 2.80, 0, 38, (244, 242, 236))
+    # hanging rail along the west side — mid tones, no near-black
+    hc.box(x1 - 0.50, y0 + 0.40, x1 - 0.16, y1 - 0.55, 94, 100, (168, 132, 88))
+    for i, col in enumerate(((96, 110, 158), (176, 92, 102), (186, 176, 154), (120, 148, 118))):
+        yy = y0 + 0.50 + i * 0.52
+        hc.box(x1 - 0.48, yy, x1 - 0.18, yy + 0.26, 36, 94, col)
+    # north wall: open doorway into a reserved, fully filled En-suite
+    ea, eb = x0 + 1.55, x0 + 2.90
+    _wall_y(y1, x0, ea, cream)
+    _wall_y(y1, eb, x1, cream)
+    _floor("honey", x0, y1, x1, y1 + 3.8, seed=7)
+    _wall_y(y1 + 3.8, x0, x1, cream)
+    _wall_x(x0, y1, y1 + 3.8, cream)
+    _wall_x(x1, y1, y1 + 3.8, cream)
+    hc.box(x0 + 0.22, y1 + 2.45, x0 + 0.92, y1 + 3.20, 0, 42, (248, 248, 246))
+    hc.box(x1 - 1.20, y1 + 2.55, x1 - 0.28, y1 + 3.35, 0, 58, (248, 248, 246))
+
+
+def ensuite_zone():
+    """A plain warm bathroom north of the dressing room (reserved)."""
+    cream = CREAM
+    _floor("honey", 0.0, 0.0, 5.3, 4.2, seed=7)
+    _wall_y(4.2, 0.0, 5.3, cream)
+    _wall_x(0.0, 0.0, 4.2, cream)
+    _wall_x(5.3, 0.0, 4.2, cream)
+    hc.box(0.20, 2.55, 0.85, 3.30, 0, 42, (248, 248, 246))
+
+
+master_from_landing = _open(LANDING, MASTER, master_zone)
+landing_from_master = _open(MASTER, LANDING, landing_zone)
+dressing_from_master = dressing_zone
+ensuite_from_dressing = _open(DRESSING, ENSUITE, ensuite_zone)
+

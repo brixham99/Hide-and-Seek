@@ -27,6 +27,14 @@ ROOMS = {
     "upoffice": dict(name="Upstairs Office", rw=6.2, rd=6.4, origin=(-0.60, 2.00), views=[("upoffice", 0.0, 0, 99)]),
     "bathroom": dict(name="The Bathroom", rw=4.6, rd=4.4, origin=(-0.60, -1.85), views=[("bathroom", 0.0, 0, 99)]),
     "holly": dict(name="Holly's Room", rw=6.9, rd=6.4, origin=(-0.60, -8.25), views=[("holly", 0.0, 0, 99)]),
+    "master": dict(name="Master Bedroom", rw=7.3, rd=7.8, origin=(9.75, -8.25), views=[("master", 0.0, 0, 99)]),
+    # Reserved: not walkable yet (no portals, no views). Footprints from the
+    # first-floor plate, west-aligned with the master. Dressing sits on the
+    # master's north wall; the En-suite sits on the dressing room's north wall.
+    # Corridor west (house X = 15.40) and dressing east (house X = 11.75) do
+    # not meet on this metre-grid — known slop, same as the drawing-room stack.
+    "dressing": dict(name="Dressing Room", rw=5.3, rd=4.0, origin=(11.75, -0.45), views=[]),
+    "ensuite": dict(name="En-suite", rw=5.3, rd=4.2, origin=(11.75, 3.55), views=[]),
 }
 VIEW_NAMES = {"kitchen": "Kitchen", "dining": "Dining Room"}
 KD_SPLIT = 8.2
@@ -46,6 +54,7 @@ PORTALS = [
     (("corridor", "E", 0.65, 2.15), ("bathroom", "W", 0.65, 2.15)),
     (("bathroom", "S", 0.22, 1.62), ("holly", "N", 0.22, 1.62)),
     (("landing", "E", 0.45, 1.70), ("holly", "W", 0.45, 1.70)),
+    (("landing", "W", 0.50, 1.75), ("master", "E", 0.50, 1.75)),
 ]
 
 
@@ -123,6 +132,18 @@ SOLIDS = {
         (2.15, 5.68, 4.05, 6.40),   # chimney breast
         (2.03, 5.26, 4.17, 5.68),   # hearth
     ],
+    "master": [
+        (3.05, 4.48, 6.52, 6.42),   # double bed, head west
+        (6.44, 3.96, 6.94, 4.40),   # nightstand
+        (4.20, 0.10, 5.90, 0.72),   # pine chest + TV, south wall
+        (6.02, 2.55, 7.20, 4.15),   # pine desk at the west window
+        (5.32, 3.00, 5.86, 3.70),   # white chair
+        (3.15, 7.25, 4.25, 7.72),   # white bookcase
+        (5.95, 7.08, 7.20, 7.80),   # chimney breast
+        (5.83, 6.66, 7.20, 7.08),   # hearth
+    ],
+    "dressing": [],
+    "ensuite": [],
 }
 
 R = 0.22                     # Archie's footprint radius (tiles)
