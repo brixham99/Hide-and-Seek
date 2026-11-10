@@ -362,37 +362,41 @@ def master_zone():
 
 
 def dressing_zone():
-    """Warm dressing room just north of the master, drawn in master tiles
-    so the doorway looks onto floor and a cream back wall, with side walls
-    well clear of the opening."""
-    cream = (232, 224, 210)
-    rd, rw = hc.RD, hc.RW
-    x0, x1 = 2.00, rw
-    y0, y1 = rd, rd + 4.0
-    _floor("honey", x0, y0, x1, y1, seed=6)
-    _wall_x(x0, y0, y1, cream)
-    _wall_x(x1, y0, y1, cream)
-    _wall_y(y1, x0, x1, cream)          # solid back wall — no void behind the door
-    # west sash off to the side, not filling the doorway
-    hc.qx(x1 - 0.02, y0 + 1.15, y0 + 2.85, 70, 198, hc.shade((236, 234, 226), hc.KX))
-    hc.qx(x1 - 0.03, y0 + 1.28, y0 + 2.72, 78, 188, hc.shade((138, 168, 110), hc.KX))
-    hc.box(x1 - 0.16, y0 + 1.25, x1 - 0.04, y0 + 2.75, 0, 38, (244, 242, 236))
-    # a low chest on the east side, clear of the door sightline
-    hc.box(x0 + 0.20, y0 + 1.40, x0 + 0.95, y0 + 2.20, 0, 62, (198, 158, 98))
+    """Grey walls, oak floor, the U of painted wardrobes and the west sash.
+    South (master) doorway wall is left undrawn."""
+    grey = (176, 178, 176)
+    ward = (110, 114, 118)
+    _floor("honey", 0.0, 0.0, 5.3, 4.0, seed=6)
+    _wall_y(4.0, 0.0, 5.3, grey)
+    _wall_x(0.0, 0.0, 4.0, grey)
+    _wall_x(5.3, 0.0, 4.0, grey)
+    hc.qx(5.28, 1.20, 2.80, 70, 198, hc.shade((210, 220, 198), hc.KX))
+    hc.qx(5.27, 1.30, 2.70, 78, 190, hc.shade((150, 168, 120), hc.KX))
+    hc.box(0.00, 0.00, 0.88, 4.00, 0, 220, ward)
+    hc.box(0.88, 0.00, 3.02, 0.88, 0, 220, ward)
+    hc.box(0.88, 3.12, 3.62, 4.00, 0, 220, ward)
+    hc.box(1.10, 1.28, 3.40, 2.72, 0, 2, (186, 192, 176))
 
 
 def ensuite_zone():
-    """A plain warm bathroom north of the dressing room (reserved)."""
+    """A reserved bathroom north of the dressing: patterned tile hint and cream walls."""
     cream = CREAM
+    tile_a, tile_b = (186, 184, 174), (168, 176, 166)
     _floor("honey", 0.0, 0.0, 5.3, 4.2, seed=7)
+    for i in range(8):
+        for j in range(6):
+            col = tile_a if (i + j) % 2 == 0 else tile_b
+            hc.box(0.1 + i * 0.62, 0.1 + j * 0.66, 0.1 + (i + 1) * 0.62, 0.1 + (j + 1) * 0.66,
+                   0, 1, col, ol=False)
     _wall_y(4.2, 0.0, 5.3, cream)
     _wall_x(0.0, 0.0, 4.2, cream)
     _wall_x(5.3, 0.0, 4.2, cream)
-    hc.box(0.20, 2.55, 0.85, 3.30, 0, 42, (248, 248, 246))
+    hc.box(0.22, 2.55, 0.95, 3.35, 0, 42, (248, 248, 246))
 
 
 master_from_landing = _open(LANDING, MASTER, master_zone)
 landing_from_master = _open(MASTER, LANDING, landing_zone)
-dressing_from_master = dressing_zone
+dressing_from_master = _open(MASTER, DRESSING, dressing_zone)
+master_from_dressing = _open(DRESSING, MASTER, master_zone)
 ensuite_from_dressing = _open(DRESSING, ENSUITE, ensuite_zone)
 

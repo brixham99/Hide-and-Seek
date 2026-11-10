@@ -52,7 +52,7 @@ def load_views():
         build_rooms.build_all(quiet=True)
     views = {}
     names = ("hall", "sitting", "drawing", "kitchen", "dining", "boot", "utility", "office", "wc",
-             "landing", "corridor", "archie", "bathroom", "holly", "upoffice", "master")
+             "landing", "corridor", "archie", "bathroom", "holly", "upoffice", "master", "dressing")
     for v in names:
         for suffix in ("", "_r"):
             key = v + suffix

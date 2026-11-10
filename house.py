@@ -28,12 +28,11 @@ ROOMS = {
     "bathroom": dict(name="The Bathroom", rw=4.6, rd=4.4, origin=(-0.60, -1.85), views=[("bathroom", 0.0, 0, 99)]),
     "holly": dict(name="Holly's Room", rw=6.9, rd=6.4, origin=(-0.60, -8.25), views=[("holly", 0.0, 0, 99)]),
     "master": dict(name="Master Bedroom", rw=7.3, rd=7.8, origin=(9.75, -8.25), views=[("master", 0.0, 0, 99)]),
-    # Reserved: not walkable yet (no portals, no views). Footprints from the
-    # first-floor plate, west-aligned with the master. Dressing sits on the
-    # master's north wall; the En-suite sits on the dressing room's north wall.
-    # Corridor west (house X = 15.40) and dressing east (house X = 11.75) do
-    # not meet on this metre-grid — known slop, same as the drawing-room stack.
-    "dressing": dict(name="Dressing Room", rw=5.3, rd=4.0, origin=(11.75, -0.45), views=[]),
+    # Dressing sits on the master's north wall; the En-suite (still reserved)
+    # sits on the dressing room's north wall. Corridor west (house X = 15.40)
+    # and dressing east (house X = 11.75) do not meet on this metre-grid —
+    # known slop, same as the drawing-room stack.
+    "dressing": dict(name="Dressing Room", rw=5.3, rd=4.0, origin=(11.75, -0.45), views=[("dressing", 0.0, 0, 99)]),
     "ensuite": dict(name="En-suite", rw=5.3, rd=4.2, origin=(11.75, 3.55), views=[]),
 }
 VIEW_NAMES = {"kitchen": "Kitchen", "dining": "Dining Room"}
@@ -55,6 +54,7 @@ PORTALS = [
     (("bathroom", "S", 0.22, 1.62), ("holly", "N", 0.22, 1.62)),
     (("landing", "E", 0.45, 1.70), ("holly", "W", 0.45, 1.70)),
     (("landing", "W", 0.50, 1.75), ("master", "E", 0.50, 1.75)),
+    (("master", "N", 5.10, 6.45), ("dressing", "S", 3.10, 4.45)),
 ]
 
 
@@ -143,7 +143,12 @@ SOLIDS = {
         (0.00, 2.15, 0.62, 3.85),   # chimney breast, east wall north of the landing door
         (0.62, 2.05, 1.02, 3.95),   # hearth
     ],
-    "dressing": [],
+    "dressing": [
+        (0.00, 0.00, 0.88, 4.00),   # east-wall floor-to-ceiling wardrobes
+        (0.88, 0.00, 3.02, 0.88),   # south-wall wardrobes, east of the master door
+        (0.88, 3.12, 3.62, 4.00),   # north-wall wardrobes, east of the ensuite door
+        (3.78, 2.88, 4.20, 3.28),   # wicker basket by the ensuite door
+    ],
     "ensuite": [],
 }
 
