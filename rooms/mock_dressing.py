@@ -29,8 +29,8 @@ WALL = (176, 178, 176)          # pale grey, as the master
 OAK1, OAK2 = (214, 186, 148), (196, 166, 126)
 WHITE_ = (244, 242, 236)
 FLORAL = (176, 192, 186)        # same pale blue-green floral as the master
-WARD = (110, 114, 118)          # painted grey-blue shaker
-WARD_IN = (96, 100, 104)
+WARD = (162, 170, 176)          # light grey-blue shaker (photos, not charcoal)
+WARD_IN = (130, 144, 154)       # cooler, darker recessed panel
 SAGE = (186, 192, 176)
 BRANCH = (124, 132, 114)
 WICKER = (148, 112, 72)
@@ -71,58 +71,95 @@ def _knob(x, y, z):
     cyl(x, y, 0.035, z - 4, z + 4, WHITE_, top=shade(WHITE_, 1.06))
 
 
-def wardrobe_east():
-    """Floor-to-ceiling run on the east wall, doors facing west into the aisle."""
-    x0, x1, y0, y1 = 0.0, WD, 0.0, RD
-    box(x0, y0, x1, y1, 0, WALL_H, WARD, top=shade(WARD, 1.04))
-    z_split = 198
-    qx(x1 + 0.01, y0 + 0.05, y1 - 0.05, z_split - 4, z_split + 3, shade(WARD, 0.82))
+Z_SPLIT = 198
+PLINTH_H = 18
+
+
+def _shaker_x(x, y0, y1, knobs=False):
+    """Shaker leaves on an x=const face (inset panels darker and cooler)."""
+    qx(x, y0 + 0.04, y1 - 0.04, Z_SPLIT - 4, Z_SPLIT + 3, shade(WARD, 0.88))
     n = 4
     span = y1 - y0 - 0.12
     for i in range(n):
         a = y0 + 0.06 + i * span / n
         b = y0 + 0.06 + (i + 1) * span / n - 0.05
-        qx(x1 + 0.015, a + 0.07, b - 0.07, 16, z_split - 14, shade(WARD_IN, KX))
-        qx(x1 + 0.015, a + 0.07, b - 0.07, z_split + 10, WALL_H - 14, shade(WARD_IN, KX))
-        mid = (a + b) / 2
-        _knob(x1 + 0.05, mid, 112)
-        _knob(x1 + 0.05, mid, z_split + 32)
+        qx(x, a + 0.04, b - 0.04, 12, Z_SPLIT - 8, shade(WARD, 1.02))
+        qx(x, a + 0.12, b - 0.12, 26, Z_SPLIT - 20, shade(WARD_IN, KX))
+        qx(x, a + 0.04, b - 0.04, Z_SPLIT + 8, WALL_H - 12, shade(WARD, 1.02))
+        qx(x, a + 0.12, b - 0.12, Z_SPLIT + 20, WALL_H - 24, shade(WARD_IN, KX))
+        if knobs:
+            mid = (a + b) / 2
+            _knob(x + 0.04, mid, 112)
+            _knob(x + 0.04, mid, Z_SPLIT + 32)
 
 
-def wardrobe_south():
-    """Built-ins along the south wall, east of the master door, doors facing north."""
+def _shaker_y(y, x0, x1, knobs=False):
+    """Shaker leaves on a y=const face."""
+    qy(y, x0 + 0.04, x1 - 0.04, Z_SPLIT - 4, Z_SPLIT + 3, shade(WARD, 0.92))
+    n = 3
+    span = x1 - x0 - 0.10
+    for i in range(n):
+        a = x0 + 0.05 + i * span / n
+        b = x0 + 0.05 + (i + 1) * span / n - 0.05
+        qy(y, a + 0.04, b - 0.04, 12, Z_SPLIT - 8, shade(WARD, 1.02))
+        qy(y, a + 0.12, b - 0.12, 26, Z_SPLIT - 20, shade(WARD_IN, KY))
+        qy(y, a + 0.04, b - 0.04, Z_SPLIT + 8, WALL_H - 12, shade(WARD, 1.02))
+        qy(y, a + 0.12, b - 0.12, Z_SPLIT + 20, WALL_H - 24, shade(WARD_IN, KY))
+        if knobs:
+            mid = (a + b) / 2
+            _knob(mid, y + 0.04, 112)
+            _knob(mid, y + 0.04, Z_SPLIT + 32)
+
+
+def wardrobe_east(full):
+    """East-wall run. Full-height when that wall is far; a low plinth when near."""
+    x0, x1, y0, y1 = 0.0, WD, 0.0, RD
+    if full:
+        box(x0, y0, x1, y1, 0, WALL_H, WARD, top=shade(WARD, 1.05))
+        _shaker_x(x1 + 0.01, y0, y1, knobs=True)
+    else:
+        box(x0, y0, x1, y1, 0, PLINTH_H, WARD, top=shade(WARD, 1.06))
+
+
+def wardrobe_south(full):
+    """South-wall run, east of the master door."""
     x0, x1, y0, y1 = WD, 3.02, 0.0, WD
-    box(x0, y0, x1, y1, 0, WALL_H, WARD, top=shade(WARD, 1.04))
-    z_split = 198
-    qy(y1 + 0.01, x0 + 0.04, x1 - 0.04, z_split - 4, z_split + 3, shade(WARD, 0.88))
-    n = 3
-    span = x1 - x0 - 0.10
-    for i in range(n):
-        a = x0 + 0.05 + i * span / n
-        b = x0 + 0.05 + (i + 1) * span / n - 0.05
-        qy(y1 + 0.015, a + 0.07, b - 0.07, 16, z_split - 14, shade(WARD_IN, KY))
-        qy(y1 + 0.015, a + 0.07, b - 0.07, z_split + 10, WALL_H - 14, shade(WARD_IN, KY))
-        mid = (a + b) / 2
-        _knob(mid, y1 + 0.05, 112)
-        _knob(mid, y1 + 0.05, z_split + 32)
+    if full:
+        box(x0, y0, x1, y1, 0, WALL_H, WARD, top=shade(WARD, 1.05))
+        _shaker_y(y1 + 0.01, x0, x1, knobs=True)
+    else:
+        box(x0, y0, x1, y1, 0, PLINTH_H, WARD, top=shade(WARD, 1.06))
 
 
-def wardrobe_north():
-    """Built-ins along the north wall, east of the ensuite door, doors facing south."""
+def wardrobe_north(full):
+    """North-wall run, east of the ensuite door."""
     x0, x1, y0, y1 = WD, 3.62, RD - WD, RD
-    box(x0, y0, x1, y1, 0, WALL_H, WARD, top=shade(WARD, 1.04))
-    z_split = 198
-    qy(y0 - 0.01, x0 + 0.04, x1 - 0.04, z_split - 4, z_split + 3, shade(WARD, 0.88))
-    n = 3
-    span = x1 - x0 - 0.10
-    for i in range(n):
-        a = x0 + 0.05 + i * span / n
-        b = x0 + 0.05 + (i + 1) * span / n - 0.05
-        qy(y0 - 0.015, a + 0.07, b - 0.07, 16, z_split - 14, shade(WARD_IN, KY))
-        qy(y0 - 0.015, a + 0.07, b - 0.07, z_split + 10, WALL_H - 14, shade(WARD_IN, KY))
-        mid = (a + b) / 2
-        _knob(mid, y0 - 0.05, 112)
-        _knob(mid, y0 - 0.05, z_split + 32)
+    if full:
+        box(x0, y0, x1, y1, 0, WALL_H, WARD, top=shade(WARD, 1.05))
+        _shaker_y(y0 - 0.01, x0, x1, knobs=True)
+    else:
+        box(x0, y0, x1, y1, 0, PLINTH_H, WARD, top=shade(WARD, 1.06))
+
+
+def near_wardrobe_ghosts():
+    """Faint shaker faces on near-wall runs (no tall occluders)."""
+    if hc.FLIP:
+        # east (x~0) and south (y~0) sit on the flipped near plane and go to the ghost layer
+        _shaker_x(0.05, 0.0, RD, knobs=False)
+        _shaker_y(0.05, WD, 3.02, knobs=False)
+    else:
+        with hung_layer(alpha=118):
+            _shaker_y(RD - 0.04, WD, 3.62, knobs=False)
+
+
+def master_door_ghost():
+    """White architrave on the near south doorway (V view)."""
+    if not hc.FLIP:
+        return
+    a, b = MASTER_DOOR
+    qy(0.03, a - 0.08, a + 0.06, 0, DOOR_H + 10, shade(WHITE_, KY))
+    qy(0.03, b - 0.06, b + 0.08, 0, DOOR_H + 10, shade(WHITE_, KY))
+    qy(0.03, a - 0.08, b + 0.08, DOOR_H - 2, DOOR_H + 10, shade(WHITE_, KY))
 
 
 def wicker_basket():
@@ -175,15 +212,17 @@ def main():
     if not hc.FLIP:
         back_opening("N", *MASTER_DOOR, glimpses.master_from_dressing)
     wall_trim()
-    # Far-to-near: east and south are farther in SE; north is farther in V.
+    # Far-wall runs stay solid and full height; near-wall runs are a low plinth
+    # plus a faint shaker hint, so the aisle and Archie stay visible.
     if hc.FLIP:
-        wardrobe_north()
-        wardrobe_east()
-        wardrobe_south()
+        wardrobe_north(full=True)
+        wardrobe_east(full=False)
+        wardrobe_south(full=False)
     else:
-        wardrobe_east()
-        wardrobe_south()
-        wardrobe_north()
+        wardrobe_east(full=True)
+        wardrobe_south(full=True)
+        wardrobe_north(full=False)
+    near_wardrobe_ghosts()
     wicker_basket()
     place_sprite("archie", 2.65, 2.00)
     ghost_near_walls(WALL,
@@ -195,6 +234,7 @@ def main():
         sash_on_far("E", *WIN_W, ext_w, z0=70, z1=198, curtains=FLORAL, cols=2)
         floral_drapes_west()
         radiator()
+        master_door_ghost()
     finish("Hide and Seek - Dressing Room (mock-up)", OUT,
            subtitle="First Floor", copies=() if ARGS else ("shots/hs_dressing_mock.png",))
 

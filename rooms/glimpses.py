@@ -365,7 +365,7 @@ def dressing_zone():
     """Grey walls, oak floor, the U of painted wardrobes and the west sash.
     South (master) doorway wall is left undrawn."""
     grey = (176, 178, 176)
-    ward = (110, 114, 118)
+    ward = (162, 170, 176)
     _floor("honey", 0.0, 0.0, 5.3, 4.0, seed=6)
     _wall_y(4.0, 0.0, 5.3, grey)
     _wall_x(0.0, 0.0, 4.0, grey)
