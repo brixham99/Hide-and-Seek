@@ -121,8 +121,20 @@ def main():
     with drawing_on(front), world(X0):
         kitchen_front()
     screen.blit(fade_x(front, RW + .3, RW + 3.6, z_ref=70), (0, 0))
-    ghost_near_walls(OFF_WHITE, doors_S=[F.D_FRENCH], cornice=False, open_E=True,
-                     extra_polys=french_door_polys() + beam_polys())
+    if hc.FLIP:
+        ghost_near_walls(OFF_WHITE, doors_S=(), cornice=False, open_E=True,
+                         extra_polys=beam_polys())
+        def garden(side, rnd):
+            ext_lawn(side, -4, RW + 6, 0.15, 6.5, rnd)
+            ext_paving(side, -4, RW + 6, 0.2, 1.15, rnd)
+            ext_border(side, -4, RW + 6, 1.2, 1.7, rnd)
+            ext_picket_fence(side, -4, RW + 6, 2.05, h=40)
+            ext_hedge(side, -4, RW + 6, 3.05, 3.65, h=100, rnd=rnd)
+        ext_n = exterior_layer({"S": garden}, haze=(156, 190, 216))
+        glazed_doors_on_S(*F.D_FRENCH, ext_n)
+    else:
+        ghost_near_walls(OFF_WHITE, doors_S=[F.D_FRENCH], cornice=False, open_E=True,
+                         extra_polys=french_door_polys() + beam_polys())
     finish("Hide and Seek - Dining Room (mock-up)", OUT, subtitle="Ground Floor - dining half of the Kitchen + Dining Room")
 
 

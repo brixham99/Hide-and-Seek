@@ -335,28 +335,43 @@ def main():
     floor_boards()
     rug(1.25, 1.05, 6.05, 6.55)
     wall_shell(GREEN)
-    ext = exterior_layer({"N": garden_side})
-    sash_window("N", 2.55, 3.95, ext)
-    photo_grid_N(4.55, 112, seed=2)
-    painting_landscape_N(0.55, 1.6, 140, 188)
     import glimpses
+    if not hc.FLIP:
+        ext = exterior_layer({"N": garden_side})
+        sash_window("N", 2.55, 3.95, ext)
+        photo_grid_N(4.55, 112, seed=2)
+        painting_landscape_N(0.55, 1.6, 140, 188)
     back_opening("W", 0.4, 1.85, glimpses.hall_from_drawing)
     wall_trim()
-    cy0, cy1, cd = chimney()
-    cupboards(cy1, 6.85, cd)
-    rnd = random.Random(7)
-    plane = lambda a, b, za, zb, c: qx(0.02, a, b, za, zb, shade(c, KX))
-    for i in range(3):
-        for j in range(2):
-            frame_W(6.95 + i * .26, 7.17 + i * .26, 120 + j * 34, 148 + j * 34, bw_photo(rnd, plane))
+    if not hc.FLIP:
+        cy0, cy1, cd = chimney()
+        cupboards(cy1, 6.85, cd)
+        rnd = random.Random(7)
+        plane = lambda a, b, za, zb, c: qx(0.02, a, b, za, zb, shade(c, KX))
+        for i in range(3):
+            for j in range(2):
+                frame_W(6.95 + i * .26, 7.17 + i * .26, 120 + j * 34, 148 + j * 34, bw_photo(rnd, plane))
     bookcase(0.25, 1.9)
     dog_bed(1.35, 4.55, 2.55, 5.65)
     coffee_table(3.0, 2.3, 5.2, 3.2)
     sofa()
+    if hc.FLIP:
+        # finished back of the long leg, seen from the opposite side
+        qy(0.04, 3.85, RW - 0.08, 10, 88, shade(SOFA, KY * 1.04))
+        for xx in (4.55, 5.35, 6.15):
+            qy(0.045, xx - 0.015, xx + 0.015, 16, 82, shade(SOFA, KY * 0.78))
     piano(RW - .9, RW - .02, 3.9, 6.15)
     tv_stand(0.85, 3.55, RD - .75, RD - .05)
+    if hc.FLIP:
+        # the TV faces the sofa, so this camera sees the screen
+        tx0, tx1, ty = 1.1, 2.8, RD - 0.43
+        qy(ty, tx0, tx1, 72, 152, (36, 48, 64))
+        qy(ty + 0.004, tx0 + 0.25, tx0 + 0.7, 80, 144, (46, 60, 80))
     place_sprite("archie", 3.55, 4.3)
-    ghost_near_walls(GREEN, doors_S=[HALL_DOOR], windows_E=[SIDE_WIN])
+    ghost_near_walls(GREEN, doors_S=[HALL_DOOR], windows_E=() if hc.FLIP else [SIDE_WIN])
+    if hc.FLIP:
+        ext_w = exterior_layer({"E": garden_side})
+        sash_on_far("E", *SIDE_WIN, ext_w, z0=52, z1=206, curtains=PINK, cols=3)
     finish("Hide and Seek - Drawing Room (mock-up)", OUT,
            copies=() if ARGS else ("shots/hs_drawing_room_mock.png",))
 

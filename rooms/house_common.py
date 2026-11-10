@@ -271,18 +271,31 @@ class world:
 
 
 def _near_plane(pts):
-    """A vertical face on the east or south wall. After the 180° spin those
-    two walls are the ones nearest the camera, so they belong on the ghost layer."""
+    """A vertical face on the east (x ≈ 0) or south (y ≈ 0) wall.
+
+    After the 180° spin those walls are nearest the camera, so they belong on
+    the ghost layer: the wall slabs themselves, anything mounted on them
+    (pictures, window frames, doors, bricks, panelling) and tall shallow
+    fittings (a chimney breast, a wall-hung TV). Low, wide furniture such as
+    a sofa back stays on the room so it can be drawn as a finished back.
+    """
     infs = [_pinf.get(p) for p in pts]
     if any(i is None for i in infs):
         return False
     xs = [i[0] for i in infs]
     ys = [i[1] for i in infs]
     zs = [i[2] for i in infs]
-    # only the wall slabs themselves, not the furniture standing against them
-    on_x = max(xs) - min(xs) < 0.2 and max(abs(v) for v in xs) < 0.12
-    on_y = max(ys) - min(ys) < 0.2 and max(abs(v) for v in ys) < 0.12
-    return (on_x or on_y) and max(zs) - min(zs) > 140
+    on_x = max(xs) - min(xs) < 0.25 and max(abs(v) for v in xs) < 0.58
+    on_y = max(ys) - min(ys) < 0.25 and max(abs(v) for v in ys) < 0.58
+    if not (on_x or on_y):
+        return False
+    zspan = max(zs) - min(zs)
+    if zspan <= 6:
+        return False
+    uspan = (max(ys) - min(ys)) if on_x else (max(xs) - min(xs))
+    if zspan > 140:
+        return True
+    return uspan < 2.05
 
 
 def _tri_fill(target, a, b, c, da, db, dc, col, alpha, zwrite=True):
@@ -510,9 +523,15 @@ HOUSE_CAMERA = {
 
 
 def wall_pt(side, u, z, n=0.0):
-    """A point on back wall `side` ("N": y = 0, "W": x = 0): u along the wall,
-    z up, n out into the room (negative n = outside, behind the wall)."""
-    return P(u, n, z) if side == "N" else P(n, u, z)
+    """A point on a wall: u along it, z up, n into the room (negative = outside).
+    "N" y = 0, "W" x = 0, "S" y = RD, "E" x = RW."""
+    if side == "N":
+        return P(u, n, z)
+    if side == "S":
+        return P(u, RD - n, z)
+    if side == "E":
+        return P(RW - n, u, z)
+    return P(n, u, z)
 
 
 class drawing_on:
@@ -538,6 +557,8 @@ def out_pt(side, u, t, z=GROUND_Z):
         return (u, -t, z)
     if side == "S":
         return (u + t, RD + t, z)
+    if side == "E":
+        return (RW + t, u + t, z)
     return (-t, u, z)
 
 
@@ -610,7 +631,7 @@ def ext_picket_fence(side, u0, u1, t, h=46, col=(236, 234, 226)):
         u += 0.17
     for k in (0, 1):     # posts
         uu = u0 + (u1 - u0) * k
-        if side == "S":
+        if side in ("S", "E"):
             x, y, _ = out_pt(side, uu, t)
             box(x - .05, y - .05, x + .05, y + .05, GROUND_Z, GROUND_Z + h + 8, col)
         else:
@@ -619,8 +640,8 @@ def ext_picket_fence(side, u0, u1, t, h=46, col=(236, 234, 226)):
 
 
 def ext_hedge(side, u0, u1, t0, t1, h=70, col=(36, 102, 42), rnd=None):
-    if side == "S":
-        # a sheared slab, so it lands in the north-wall windows rather than
+    if side in ("S", "E"):
+        # a sheared slab, so it lands in the north/west-wall windows rather than
         # an axis-aligned box on the wrong side of the house
         z0, z1 = GROUND_Z, GROUND_Z + h
         poly([P(*out_pt(side, u0, t0, z0)), P(*out_pt(side, u1, t0, z0)),
@@ -774,15 +795,18 @@ def show_through(ext, pts, tint=(214, 230, 236), tint_a=22, glare=True):
             g.blit(streak, (0, 0))
         view.blit(g, (0, 0))
     if _flip_draw():
-        _present_opening(view, x0, y0, pts)
+        # Near windows (glass tint) must not paint the garden over the room.
+        # Near doorways have no glass (tint_a == 0) and should show the next room.
+        _present_opening(view, x0, y0, pts, allow_near=(tint_a == 0))
     else:
         screen.blit(view, (x0, y0))
 
 
-def _present_opening(view, x0, y0, pts):
+def _present_opening(view, x0, y0, pts, allow_near=False):
     """Paste a masked opening onto the flipped room, in front of whatever is
-    farther away. A window in a near (ghost) wall must not paint over the room."""
-    if _near_plane(pts):
+    farther away. A window in a near (ghost) wall must not paint over the room;
+    an open doorway in that wall should, so you can see through it."""
+    if _near_plane(pts) and not allow_near:
         return
     infs = [_pinf.get(p) for p in pts]
     if any(i is None for i in infs):
@@ -1005,7 +1029,7 @@ def wall_quad(side, u0, u1, z0, z1, col, n=0.0, ol=None):
 
 
 def wall_k(side):
-    return KY if side == "N" else KX
+    return KY if side in ("N", "S") else KX
 
 
 def brick_wall(side, u0, u1, z0, z1, col=(232, 228, 218), seed=1, rows_h=13, per=0.42, n=0.0):
@@ -1029,11 +1053,15 @@ def brick_wall(side, u0, u1, z0, z1, col=(232, 228, 218), seed=1, rows_h=13, per
 def tongue_and_groove(side, u0, u1, z0, z1, col, board=0.2, n=0.0, rail=True):
     """Vertical tongue-and-groove panelling with a capping rail."""
     k = wall_k(side)
-    wall_quad(side, u0, u1, z0, z1, shade(col, k), n)
-    u = u0 + board
+    # One board at a time so a flipped near wall can ghost each plank
+    # (a single full-width slab is too wide to count as wall-mounted).
+    u = u0
     while u < u1 - 1e-6:
-        wall_quad(side, u - .008, u + .008, z0 + 2, z1 - 2, shade(col, k * .78), n)
-        u += board
+        uu = min(u1, u + board)
+        wall_quad(side, u, uu, z0, z1, shade(col, k), n)
+        if uu < u1:
+            wall_quad(side, uu - .008, uu + .008, z0 + 2, z1 - 2, shade(col, k * .78), n)
+        u = uu
     if rail:
         wall_quad(side, u0 - .02, u1 + .02, z1, z1 + 6, shade(col, k * 1.08), n + .03)
         wall_quad(side, u0 - .02, u1 + .02, z1 - 2, z1, shade(col, k * .7), n + .03)
@@ -1166,6 +1194,77 @@ def glazed_door_back(side, a, b, ext, col=SAGE, h=DOOR_H, panes=(2, 3), glass_z=
     for zz in (h * .14, h * .86):
         u0, u1 = (a + .03, a + .4) if hinge == "left" else (b - .4, b - .03)
         wall_quad(side, u0, u1, zz - 2.5, zz + 2.5, IRON, .016)
+
+
+def _far_wall_W(side):
+    """Point on the north (S, y = RD) or west (E, x = RW) wall, n into the room."""
+    if side == "S":
+        return lambda u, z, n=0.0: P(u, RD - n, z)
+    return lambda u, z, n=0.0: P(RW - n, u, z)
+
+
+def sash_on_far(side, u0, u1, ext, z0=112, z1=208, curtains=None, cols=2):
+    """A white sash on the north or west wall once that wall faces the camera."""
+    W = _far_wall_W(side)
+    k = KY if side == "S" else KX
+
+    def quad(a, b, za, zb, col, n=0.0):
+        poly([W(a, za, n), W(b, za, n), W(b, zb, n), W(a, zb, n)], col)
+
+    show_through(ext, [W(u0, z0), W(u1, z0), W(u1, z1), W(u0, z1)], tint_a=12)
+    frame = shade(WHITE, k)
+    n = 0.02
+    quad(u0 - 0.07, u0, z0 - 7, z1 + 7, frame, n)
+    quad(u1, u1 + 0.07, z0 - 7, z1 + 7, frame, n)
+    quad(u0 - 0.07, u1 + 0.07, z1, z1 + 7, frame, n)
+    quad(u0 - 0.07, u1 + 0.07, z0 - 7, z0, frame, n)
+    bar = shade((248, 248, 246), 1.02)
+    mid = (z0 + z1) / 2
+    for za, zb in ((z0, z0 + 4), (mid - 2.5, mid + 2.5), (z1 - 4, z1)):
+        quad(u0, u1, za, zb, bar, n=0.028)
+    step = (u1 - u0) / cols
+    for i in range(cols + 1):
+        uu = u0 + step * i - (0.025 if i == cols else 0)
+        quad(uu, uu + 0.05, z0, z1, bar, n=0.028)
+    quad(u0 - 0.1, u1 + 0.1, z0 - 9, z0 - 4, shade(WHITE, 1.04), n=0.045)
+    if curtains:
+        for ca, cb in ((u0 - 0.55, u0 + 0.02), (u1 - 0.02, u1 + 0.55)):
+            quad(ca, cb, 12, z1 + 16, shade(curtains, 0.55 * k / KY), n=0.06)
+            for f in range(5):
+                fa = ca + (cb - ca) * f / 5
+                fb = ca + (cb - ca) * (f + 1) / 5
+                quad(fa + 0.01, fb - 0.01, 13, z1 + 15,
+                     shade(curtains, (0.84 + 0.18 * (f % 2)) * k / KY), n=0.06)
+
+
+def glazed_doors_on_S(a, b, ext, h=None, curtains=(226, 218, 196)):
+    """A pair of glazed French doors on the north wall (y = RD), shut."""
+    h = DOOR_H if h is None else h
+    W = _far_wall_W("S")
+
+    def quad(u0, u1, za, zb, col, n=0.0):
+        poly([W(u0, za, n), W(u1, za, n), W(u1, zb, n), W(u0, zb, n)], col)
+
+    mid = (a + b) / 2
+    frame = shade(WHITE, KY)
+    for u0, u1 in ((a + 0.04, mid - 0.015), (mid + 0.015, b - 0.04)):
+        show_through(ext, [W(u0 + 0.04, 28, 0), W(u1 - 0.04, 28, 0), W(u1 - 0.04, h - 8, 0), W(u0 + 0.04, h - 8, 0)], tint_a=12)
+        quad(u0 + 0.03, u1 - 0.03, 92, h - 10, (74, 134, 70), 0.02)
+        quad(u0 + 0.03, u1 - 0.03, 28, 92, (50, 104, 46), 0.02)
+        quad(u0, u1, 0, 28, shade(WHITE, KY * 0.95), 0.02)
+        for i in range(3):
+            uu = u0 + (u1 - u0) * i / 2
+            quad(uu - 0.015, uu + 0.015, 28, h - 8, frame, 0.03)
+        for kk in range(6):
+            zz = 28 + (h - 36) * kk / 5
+            quad(u0, u1, zz - 1.5, zz + 1.5, frame, 0.03)
+    if curtains:
+        for ca, cb in ((a - 0.55, a - 0.05), (b + 0.05, b + 0.55)):
+            for f in range(5):
+                fa = ca + (cb - ca) * f / 5
+                fb = ca + (cb - ca) * (f + 1) / 5
+                quad(fa, fb, 10, 214, shade(curtains, 0.86 + 0.16 * (f % 2)), n=0.04)
+        quad(a - 0.65, b + 0.65, 214, 219, (120, 110, 96), n=0.045)
 
 
 def ghost_near_walls(wall_col=GREEN, trim_col=WHITE, doors_S=(), doors_E=(), windows_E=(), windows_S=(),

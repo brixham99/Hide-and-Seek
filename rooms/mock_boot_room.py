@@ -209,20 +209,22 @@ def beam_ends():
 def main():
     background()
     floor_flagstones(seed=5)
-    threshold("S", *PANTRY, TERRACOTTA, depth=0.6)
-    threshold("S", *STUDY, TERRACOTTA, depth=0.6)
+    if not hc.FLIP:
+        threshold("S", *PANTRY, TERRACOTTA, depth=0.6)
+        threshold("S", *STUDY, TERRACOTTA, depth=0.6)
     mat(2.25, 1.15, 3.85, 2.25)
     wall_shell(SAGE_WALL)
     ext = exterior_layer({"N": drive_side}, haze=(196, 202, 206))
     kitchen = exterior_layer({"W": kitchen_side}, haze=(200, 204, 190))
-    # back wall y = 0
-    brick_wall("N", 0, 1.45, 0, WALL_H, BRICK_WHITE, seed=2)
-    tongue_and_groove("N", 1.45, EXT_DOOR[0] - .14, 0, 94, SAGE_DOOR)
-    brick_wall("N", EXT_DOOR[0] - .14, EXT_DOOR[0], 0, WALL_H, BRICK_WHITE, seed=3)
-    casement_window("N", *WINDOW[:2], ext, z0=WINDOW[2], z1=WINDOW[3], cols=4, top_lights=True)
-    glazed_door_back("N", *EXT_DOOR, ext, col=SAGE_DOOR)
-    # back wall x = 0: white brick with the kitchen doorway
-    brick_wall("W", 0, RD, 0, WALL_H, BRICK_WHITE, seed=4)
+    if not hc.FLIP:
+        # back wall y = 0
+        brick_wall("N", 0, 1.45, 0, WALL_H, BRICK_WHITE, seed=2)
+        tongue_and_groove("N", 1.45, EXT_DOOR[0] - .14, 0, 94, SAGE_DOOR)
+        brick_wall("N", EXT_DOOR[0] - .14, EXT_DOOR[0], 0, WALL_H, BRICK_WHITE, seed=3)
+        casement_window("N", *WINDOW[:2], ext, z0=WINDOW[2], z1=WINDOW[3], cols=4, top_lights=True)
+        glazed_door_back("N", *EXT_DOOR, ext, col=SAGE_DOOR)
+        # back wall x = 0: white brick with the kitchen doorway
+        brick_wall("W", 0, RD, 0, WALL_H, BRICK_WHITE, seed=4)
     doorway_back("W", *KITCHEN_DOOR, kitchen)
     wall_trim(cornice=False, skirting=False)
     radiator(0.15, 1.35)
@@ -240,6 +242,8 @@ def main():
     ghost_near_walls(SAGE_WALL, doors_S=[PANTRY, STUDY], doors_E=[WC_DOOR], cornice=False,
                      extra_polys=list(wc) + beam_ends())
     img = finish("Hide and Seek - Boot Room (mock-up)", OUT)
+    if ARGS:
+        return
     # close-up of the window and the external door
     a = P(WINDOW[0] - .3, 0, WINDOW[3] + 20)
     b = P(EXT_DOOR[1] + .1, 0, -10)

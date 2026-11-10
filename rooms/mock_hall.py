@@ -221,8 +221,16 @@ def balustrade():
     cyl(nx, ny, .05, z + 34, z + 86, MAHOGANY)
     cyl(nx, ny, .08, z + 86, z + 96, MAHOGANY, top=shade(MAHOGANY, 1.25))
     cyl(nx, ny, .06, z + 96, z + 108, MAHOGANY, top=shade(MAHOGANY, 1.3))
-    pygame.draw.line(screen, MAHOGANY, P(nx, ny + .05, z + 92), P(hx + .02, RD, hz(RD)), int(5 * S))
-    pygame.draw.line(screen, shade(MAHOGANY, 1.35), P(nx, ny + .05, z + 95), P(hx + .02, RD, hz(RD) + 3), int(1.5 * S))
+    x0, y0, z0 = nx, ny + .05, z + 92
+    x1, y1, z1 = hx + .02, RD, hz(RD)
+    n = 14
+    for i in range(n):
+        t0, t1 = i / n, (i + 1) / n
+        xa, ya, za = x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0, z0 + (z1 - z0) * t0
+        xb, yb, zb = x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1, z0 + (z1 - z0) * t1
+        box(min(xa, xb) - 0.025, min(ya, yb) - 0.025,
+            max(xa, xb) + 0.025, max(ya, yb) + 0.025,
+            min(za, zb), max(za, zb) + 4, MAHOGANY, ol=False)
 
 
 # ------------------------------------------------------------- near walls

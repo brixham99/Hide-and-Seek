@@ -160,7 +160,14 @@ def main():
     wicker_basket(RW - .45, 1.5)
     north_run(.92, RW, (2.55, 3.6))
     west_wall_hung()
-    ghost_near_walls(WHITE, windows_S=[WINDOW], window_z=(118, 200), window_cols=2, cornice=False, curtains=None)
+    ghost_near_walls(WHITE, windows_S=() if hc.FLIP else [WINDOW],
+                     window_z=(118, 200), window_cols=2, cornice=False, curtains=None)
+    if hc.FLIP:
+        def hedge(side, rnd):
+            ext_lawn(side, -3, RW + 3, 0.15, 6, rnd, base=(58, 130, 52))
+            ext_hedge(side, -3, RW + 3, 1.7, 2.6, h=105, rnd=rnd)
+        ext = exterior_layer({"S": hedge}, haze=(156, 184, 168))
+        sash_on_far("S", *WINDOW, ext, z0=118, z1=200, cols=2)
     finish("Hide and Seek - Utility (mock-up)", OUT)
 
 

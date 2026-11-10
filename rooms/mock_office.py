@@ -48,12 +48,13 @@ def boot_room_beyond(side, rnd):
 
 
 def walls():
-    for side, n in (("N", RW), ("W", RD)):
-        tongue_and_groove(side, 0, n, 0, PANEL_H, WHITE, rail=False)
-        brick_wall(side, 0, n, PANEL_H, WALL_H, GREY_BRICK, seed=3 if side == "N" else 4)
+    if not hc.FLIP:
+        for side, n in (("N", RW), ("W", RD)):
+            tongue_and_groove(side, 0, n, 0, PANEL_H, WHITE, rail=False)
+            brick_wall(side, 0, n, PANEL_H, WALL_H, GREY_BRICK, seed=3 if side == "N" else 4)
+        picture_wall()
     boot = exterior_layer({"N": boot_room_beyond}, haze=(180, 190, 178))
     doorway_back("N", *DOOR, boot)
-    picture_wall()
 
 
 # hung on the brick above the picture rail: (y0, y1, z0, z1, frame colour, shape)
@@ -208,8 +209,22 @@ def main():
     armchair(2.2, .25, 3.3, 1.35)
     side_table(3.95, 4.6, RW - 1.05, RW - .4)
     shelving(4.95, 5.95)
-    clocks_hung()
-    ghost_near_walls(GREY_BRICK, windows_S=[WINDOW], window_z=(100, 200), window_cols=2, cornice=False, curtains=None)
+    if not hc.FLIP:
+        clocks_hung()
+    ghost_near_walls(GREY_BRICK, windows_S=() if hc.FLIP else [WINDOW],
+                     window_z=(100, 200), window_cols=2, cornice=False, curtains=None)
+    if hc.FLIP:
+        tongue_and_groove("S", 0, RW, 0, PANEL_H, WHITE, rail=False)
+        brick_wall("S", 0, RW, PANEL_H, WALL_H, GREY_BRICK, seed=3)
+        tongue_and_groove("E", 0, RD, 0, PANEL_H, WHITE, rail=False)
+        brick_wall("E", 0, RD, PANEL_H, WALL_H, GREY_BRICK, seed=4)
+        def hedge(side, rnd):
+            ext_lawn(side, -4, RW + 4, 0.15, 6.5, rnd, base=(58, 130, 52))
+            ext_hedge(side, -4, RW + 4, 1.8, 2.7, h=110, rnd=rnd)
+            ext_picket_fence(side, -4, RW + 4, 1.35, h=36)
+        ext = exterior_layer({"S": hedge}, haze=(156, 184, 168))
+        sash_on_far("S", *WINDOW, ext, z0=100, z1=200, cols=2)
+        clocks_hung()
     img = finish("Hide and Seek - Office (mock-up)", OUT)
     if not ARGS:      # close-up of the armchair
         a, b = P(2.2, 1.35, 0), P(3.3, .25, 104)
