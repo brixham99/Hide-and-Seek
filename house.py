@@ -151,10 +151,10 @@ SOLIDS = {
         (3.78, 2.88, 4.20, 3.28),   # wicker basket by the ensuite door
     ],
     "ensuite": [
-        (0.08, 2.52, 1.70, 4.18),   # shower tray / cubicle, north-east
-        (1.80, 3.56, 3.28, 4.16),   # dusty-blue vanity, north wall
-        (4.78, 0.80, 5.26, 1.52),   # close-coupled loo, south-west
-        (0.02, 1.32, 0.16, 2.38),   # towel rail, east wall south of shower
+        (0.04, 0.04, 1.64, 1.68),   # shower cubicle, south-east (glass casing included)
+        (0.04, 1.80, 0.72, 4.00),   # dusty-blue vanity, east wall north of the shower
+        (4.55, 3.20, 5.26, 4.12),   # close-coupled loo, north-west against the west wall
+        (1.82, 0.02, 3.28, 0.18),   # towel rail, south wall between shower and door
     ],
 }
 
