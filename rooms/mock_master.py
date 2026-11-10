@@ -3,18 +3,19 @@
 
 The 14'1 x 13' (4.3 m N-S x 4.0 m E-W) bedroom west of the landing,
 above the Drawing Room. Pale grey walls, white skirting, light oak
-laminate. East wall: open doorway to the landing at the south end.
-South wall (front): sash with pale blue floral curtains and rooftops
-beyond, a pine chest of drawers with a television. West wall: sash
-with the same curtains, a pine desk and white chair, radiator under
-each window. North wall: chimney breast with a white fireplace and
-black insert, an open doorway to the Dressing Room (shifted a little
-west, next to the chimney, so the bed fits beside it), a king-size
-bed with a cane headboard against this wall projecting south onto a
-large pale blue-grey rug, a bedside table and lamp on each side of
-the head, and a white bookcase with a globe toward the east end.
-East wall: landing door at the south end. Pine chest of drawers with a
-television in the south-west corner, between the two sash windows.
+laminate. East wall: landing door at the south end; a chimney breast
+with a small fireplace north of that door (the wall juts out);
+through the landing door the Landing's oak floor and south sash are
+visible. South wall: a wide low white bookcase with a globe (between
+the landing-door corner and the sash), then a more centred sash with
+floral curtains and a radiator, then a pine chest with a television
+in the south-west corner. West wall: sash with the same curtains, a
+pine desk and white chair, radiator under the window. North wall: an
+open doorway to the Dressing Room toward the west (wall on both
+sides, the dressing room sitting fully behind it), a king-size bed
+with a cane headboard against this wall projecting south onto a large
+pale blue-grey rug, and a bedside table with a lamp on each side of
+the head (the west one next to the dressing doorway).
 Ceiling pendant left out. No internal door leaf; no registration-plate
 lettering.
 """
@@ -39,10 +40,10 @@ CUSHION = (176, 186, 196)     # blue-grey
 CANE = (186, 150, 96)
 
 LANDING_DOOR = (0.50, 1.75)     # east wall, south end -> landing
-DRESSING_DOOR = (4.64, 5.88)    # north wall, just east of the chimney -> dressing room
-WIN_S = (1.45, 3.20)            # south wall (front)
+DRESSING_DOOR = (5.10, 6.45)    # north wall, west of centre -> dressing room
+WIN_S = (2.55, 4.35)            # south wall, more centred (bookcase takes the east end)
 WIN_W = (2.55, 4.30)            # west wall
-BREAST = (5.95, 7.18, 0.72)     # chimney on the north wall: x0, x1, depth
+BREAST = (2.15, 3.85, 0.62)     # chimney on the east wall, north of the landing door: y0, y1, depth
 
 
 def front_garden(side, rnd):
@@ -69,49 +70,38 @@ def oak_floor():
 
 def pale_rug():
     """Large pale blue-grey rug under the bed, spreading into the room."""
-    box(0.95, 3.15, 5.15, 7.45, 0.4, 1.2, (196, 202, 208), top=shade((206, 210, 214), 1.04))
+    box(1.20, 3.20, 5.20, 7.45, 0.4, 1.2, (196, 202, 208), top=shade((206, 210, 214), 1.04))
 
 
 def hearth():
-    x0, x1, d = BREAST
-    y = RD - d
-    box(x0 - 0.12, y - 0.40, x1 + 0.10, y, 0, 4, (48, 46, 46), top=(58, 56, 56))
+    """Slate hearth in front of the east-wall chimney breast."""
+    y0, y1, d = BREAST
+    box(d, y0 - 0.10, d + 0.40, y1 + 0.10, 0, 4, (48, 46, 46), top=(58, 56, 56))
 
 
-def chimney_hung():
+def east_fireplace():
+    """Small white fireplace on the east wall, north of the landing door.
+    That wall faces the camera in the SE view."""
     if hc.FLIP:
         return
-    x0, x1, d = BREAST
-    with hung_layer(alpha=115):
-        box(x0, RD - d, x1, RD, 0, WALL_H, shade(WALL, 0.95), faces="x")
-        box(x0 - 0.10, RD - d - 0.14, x1 + 0.08, RD - d, 92, 104, WHITE_, faces="xz")
-
-
-def fireplace_front():
-    """White surround and black insert on the far north wall (V-view)."""
-    if not hc.FLIP:
-        return
-    x0, x1, d = BREAST
-    y = RD - 0.03
-    qy(y, x0 - 0.04, x1 + 0.04, 0, WALL_H, shade(WALL, KY * 0.92))
-    qy(y - 0.01, x0 + 0.18, x1 - 0.18, 8, 96, shade(WHITE_, KY))
-    qy(y - 0.02, x0 + 0.42, x1 - 0.42, 16, 82, (32, 30, 30))
-    qy(y - 0.025, x0 + 0.54, x1 - 0.54, 28, 70, (22, 20, 20))
-    qy(y - 0.01, x0 - 0.08, x1 + 0.08, 94, 110, shade(WHITE_, KY * 1.02))
-    box(x0 - 0.10, RD - d - 0.10, x1 + 0.10, RD - d + 0.02, 94, 108, WHITE_, top=shade(WHITE_, 1.08))
-    # round black-framed mirror above the mantel
-    mid = (x0 + x1) / 2
-    qy(y - 0.02, mid - 0.30, mid + 0.30, 126, 178, shade((36, 36, 38), KY))
-    qy(y - 0.025, mid - 0.22, mid + 0.22, 134, 170, shade((198, 202, 206), KY))
-    # a tiny framed photo on the mantel
-    qy(y - 0.02, x0 + 0.28, x0 + 0.50, 112, 130, shade((120, 88, 48), KY))
-    qy(y - 0.025, x0 + 0.32, x0 + 0.46, 116, 126, shade((186, 176, 150), KY))
+    y0, y1, d = BREAST
+    box(0, y0, d, y1, 0, WALL_H, shade(WALL, 0.96), faces="y")
+    # white surround and black insert on the breast's west face
+    qx(d + 0.01, y0 + 0.18, y1 - 0.18, 8, 96, shade(WHITE_, KX))
+    qx(d + 0.02, y0 + 0.40, y1 - 0.40, 16, 82, (32, 30, 30))
+    qx(d + 0.025, y0 + 0.50, y1 - 0.50, 28, 70, (22, 20, 20))
+    box(d - 0.02, y0 - 0.08, d + 0.14, y1 + 0.08, 94, 108, WHITE_, top=shade(WHITE_, 1.08))
+    mid = (y0 + y1) / 2
+    qx(d + 0.02, mid - 0.28, mid + 0.28, 126, 176, shade((36, 36, 38), KX))
+    qx(d + 0.025, mid - 0.20, mid + 0.20, 134, 168, shade((198, 202, 206), KX))
+    qx(d + 0.02, y0 + 0.22, y0 + 0.42, 112, 128, shade((120, 88, 48), KX))
+    qx(d + 0.025, y0 + 0.26, y0 + 0.38, 116, 124, shade((186, 176, 150), KX))
 
 
 def wooden_bed():
     """King-size bed: cane headboard against the north wall, just east of
     the dressing doorway, projecting south into the middle of the room."""
-    x0, x1 = 1.32, 4.04          # east ... west (width)
+    x0, x1 = 1.70, 4.44          # east ... west (width)
     y0, y1 = 4.18, 7.62          # foot (south) ... head (north)
     # frame
     box(x0, y0, x1, y1, 0, 28, PINE, top=shade(PINE, 1.05))
@@ -144,8 +134,8 @@ def bedside_tables():
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
         cyl(cx, cy, 0.05, 48, 74, WHITE_)
         cyl(cx, cy, 0.14, 72, 90, (232, 228, 220), top=shade((232, 228, 220), 1.08))
-    one(4.12, 7.10, 4.56, 7.68)   # west of the head, next to the dressing door
-    one(0.74, 7.10, 1.24, 7.68)   # east of the head
+    one(4.52, 7.10, 5.02, 7.68)   # west of the head, next to the dressing door
+    one(1.12, 7.10, 1.62, 7.68)   # east of the head
 
 
 def pine_chest():
@@ -179,19 +169,20 @@ def pine_desk():
 
 
 def white_bookcase():
-    """White bookcase on the north wall, east of the bed, globe on top."""
-    x0, x1, y0, y1 = 0.12, 0.90, RD - 0.55, RD - 0.08
-    box(x0, y0, x1, y1, 0, 118, WHITE_, top=shade(WHITE_, 1.05))
+    """Low wide white bookcase (~2.8 ft by 3 ft) on the south wall, between
+    the landing-door corner and the south sash, with a globe on top."""
+    x0, x1, y0, y1 = 0.18, 1.70, 0.08, 0.50
+    box(x0, y0, x1, y1, 0, 86, WHITE_, top=shade(WHITE_, 1.05))
     rnd = random.Random(8)
-    for z in (28, 56, 84):
+    for z in (28, 56):
         box(x0 + 0.06, y0 + 0.06, x1 - 0.06, y1 - 0.06, z, z + 4, shade(WHITE_, 0.9), ol=False)
         u = x0 + 0.10
         while u < x1 - 0.14:
-            bw = rnd.uniform(0.06, 0.11)
+            bw = rnd.uniform(0.07, 0.12)
             col = rnd.choice([(160, 50, 50), (40, 70, 130), (200, 180, 70), (50, 110, 70), (230, 220, 200), (90, 60, 40)])
             box(u, y0 + 0.10, u + bw, y1 - 0.10, z + 4, z + rnd.uniform(16, 24), col, ol=False)
             u += bw + 0.015
-    cyl((x0 + x1) / 2, (y0 + y1) / 2, 0.14, 118, 142, (70, 120, 170), top=shade((90, 140, 120), 1.1))
+    cyl((x0 + x1) / 2, (y0 + y1) / 2, 0.16, 86, 112, (70, 120, 170), top=shade((90, 140, 120), 1.1))
 
 
 def radiators():
@@ -209,8 +200,8 @@ def wall_picture():
     """Landscape print above the bed, on the north wall (far in V)."""
     if not hc.FLIP:
         return
-    qy(RD - 0.04, 1.70, 3.55, 128, 176, shade((120, 88, 48), KY))
-    qy(RD - 0.045, 1.80, 3.45, 134, 170, shade((186, 196, 176), KY))
+    qy(RD - 0.04, 2.15, 4.00, 128, 176, shade((120, 88, 48), KY))
+    qy(RD - 0.045, 2.25, 3.90, 134, 170, shade((186, 196, 176), KY))
 
 
 def floral_drapes_south():
@@ -256,9 +247,9 @@ def main():
     pine_desk()
     white_bookcase()
     radiators()
-    chimney_hung()
+    east_fireplace()
     wall_picture()
-    place_sprite("archie", 3.55, 3.15)
+    place_sprite("archie", 3.50, 3.15)
     ghost_near_walls(WALL,
                      doors_S=[DRESSING_DOOR],
                      windows_E=() if hc.FLIP else [WIN_W],
@@ -266,9 +257,8 @@ def main():
     if hc.FLIP:
         ext_w = exterior_layer({"E": side_garden}, haze=(170, 188, 150))
         sash_on_far("E", *WIN_W, ext_w, z0=70, z1=198, curtains=FLORAL, cols=2)
-        x0, x1, d = BREAST
-        box(x0, RD - d, x1, RD, 0, WALL_H, shade(WALL, 0.96), faces="x")
-        fireplace_front()
+        y0, y1, d = BREAST
+        box(0, y0, d, y1, 0, WALL_H, shade(WALL, 0.96), faces="y")
         radiators()
     finish("Hide and Seek - Master Bedroom (mock-up)", OUT,
            subtitle="First Floor", copies=() if ARGS else ("shots/hs_master_mock.png",))

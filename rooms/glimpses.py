@@ -274,6 +274,8 @@ def landing_zone(east_wall=True):
     _floor("honey", 0, 7.18, 3.2, 8.05, seed=6)
     hc.qz(-2, 0.06, 3.2, 1.62, 7.16, (52, 50, 48))
     _wall_y(0, 0, 3.2, (188, 190, 192))
+    hc.qy(0.04, 0.85, 2.15, 70, 198, hc.shade((210, 220, 198), hc.KY))
+    hc.qy(0.05, 0.95, 2.05, 78, 190, hc.shade((140, 158, 118), hc.KY))
     if east_wall:
         _wall_x(0, 0, 3.15, (188, 190, 192))
     hc.box(1.52, 6.35, 1.70, 7.12, 88, 100, (112, 48, 32))
@@ -352,43 +354,31 @@ def master_zone():
     _wall_y(0, 0.0, 7.3, grey)
     _wall_x(7.3, 0.0, 7.8, grey)
     _wall_y(7.8, 0.0, 7.3, grey)
-    hc.qy(0.04, 1.45, 3.20, 70, 198, hc.shade((210, 220, 198), hc.KY))
-    hc.qy(0.05, 1.55, 3.10, 78, 190, hc.shade((150, 168, 120), hc.KY))
+    hc.qy(0.04, 2.55, 4.35, 70, 198, hc.shade((210, 220, 198), hc.KY))
+    hc.qy(0.05, 2.65, 4.25, 78, 190, hc.shade((150, 168, 120), hc.KY))
     hc.box(5.40, 0.10, 7.15, 0.78, 0, 86, (198, 158, 98))
-    hc.box(1.32, 4.18, 4.04, 7.62, 0, 48, (248, 246, 242))
+    hc.box(1.70, 4.18, 4.44, 7.62, 0, 48, (248, 246, 242))
+    hc.box(0.18, 0.08, 1.70, 0.50, 0, 86, (244, 242, 236))
 
 
 def dressing_zone():
     """Warm dressing room just north of the master, drawn in master tiles
-    so the doorway lines up. A far opening reads as the En-suite."""
+    so the doorway looks onto floor and a cream back wall, with side walls
+    well clear of the opening."""
     cream = (232, 224, 210)
     rd, rw = hc.RD, hc.RW
     x0, x1 = 2.00, rw
     y0, y1 = rd, rd + 4.0
-    _floor("honey", x0 - 0.2, y0 - 0.05, x1 + 0.05, y1 + 0.05, seed=6)
+    _floor("honey", x0, y0, x1, y1, seed=6)
     _wall_x(x0, y0, y1, cream)
     _wall_x(x1, y0, y1, cream)
-    # west sash: greenery and pale curtains, as seen through the doorway
-    hc.qx(x1 - 0.02, y0 + 1.10, y0 + 2.90, 64, 200, hc.shade((236, 234, 226), hc.KX))
-    hc.qx(x1 - 0.03, y0 + 1.22, y0 + 2.78, 76, 188, hc.shade((138, 168, 110), hc.KX))
-    hc.qx(x1 - 0.035, y0 + 1.10, y0 + 1.28, 64, 200, hc.shade((176, 192, 186), hc.KX))
-    hc.qx(x1 - 0.035, y0 + 2.72, y0 + 2.90, 64, 200, hc.shade((176, 192, 186), hc.KX))
-    hc.box(x1 - 0.18, y0 + 1.20, x1 - 0.04, y0 + 2.80, 0, 38, (244, 242, 236))
-    # hanging rail along the west side — mid tones, no near-black
-    hc.box(x1 - 0.50, y0 + 0.40, x1 - 0.16, y1 - 0.55, 94, 100, (168, 132, 88))
-    for i, col in enumerate(((96, 110, 158), (176, 92, 102), (186, 176, 154), (120, 148, 118))):
-        yy = y0 + 0.50 + i * 0.52
-        hc.box(x1 - 0.48, yy, x1 - 0.18, yy + 0.26, 36, 94, col)
-    # north wall: open doorway into a reserved, fully filled En-suite
-    ea, eb = x0 + 1.55, x0 + 2.90
-    _wall_y(y1, x0, ea, cream)
-    _wall_y(y1, eb, x1, cream)
-    _floor("honey", x0, y1, x1, y1 + 3.8, seed=7)
-    _wall_y(y1 + 3.8, x0, x1, cream)
-    _wall_x(x0, y1, y1 + 3.8, cream)
-    _wall_x(x1, y1, y1 + 3.8, cream)
-    hc.box(x0 + 0.22, y1 + 2.45, x0 + 0.92, y1 + 3.20, 0, 42, (248, 248, 246))
-    hc.box(x1 - 1.20, y1 + 2.55, x1 - 0.28, y1 + 3.35, 0, 58, (248, 248, 246))
+    _wall_y(y1, x0, x1, cream)          # solid back wall — no void behind the door
+    # west sash off to the side, not filling the doorway
+    hc.qx(x1 - 0.02, y0 + 1.15, y0 + 2.85, 70, 198, hc.shade((236, 234, 226), hc.KX))
+    hc.qx(x1 - 0.03, y0 + 1.28, y0 + 2.72, 78, 188, hc.shade((138, 168, 110), hc.KX))
+    hc.box(x1 - 0.16, y0 + 1.25, x1 - 0.04, y0 + 2.75, 0, 38, (244, 242, 236))
+    # a low chest on the east side, clear of the door sightline
+    hc.box(x0 + 0.20, y0 + 1.40, x0 + 0.95, y0 + 2.20, 0, 62, (198, 158, 98))
 
 
 def ensuite_zone():
