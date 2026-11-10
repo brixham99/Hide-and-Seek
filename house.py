@@ -22,7 +22,7 @@ ROOMS = {
     "office":  dict(name="Office", rw=3.6, rd=6.0, origin=(20.85, 2.65), views=[("office", 0.0, 0, 99)]),
     "wc":      dict(name="Dragon Toilet", rw=1.65, rd=3.1, origin=(23.2, -0.65), views=[("wc", 0.0, 0, 99)]),
     "landing": dict(name="Landing", rw=3.2, rd=8.05, origin=(6.55, -8.25), views=[("landing", 0.0, 0, 99)]),
-    "corridor": dict(name="Upstairs Corridor", rw=11.4, rd=2.2, origin=(4.00, -0.20), views=[("corridor", 0.0, 0, 99)]),
+    "corridor": dict(name="Upstairs Corridor", rw=11.4, rd=3.85, origin=(4.00, -1.85), views=[("corridor", 0.0, 0, 99)]),
     "archie":  dict(name="Archie's Room", rw=6.4, rd=6.4, origin=(5.56, 2.00), views=[("archie", 0.0, 0, 99)]),
 }
 VIEW_NAMES = {"kitchen": "Kitchen", "dining": "Dining Room"}
@@ -38,8 +38,7 @@ PORTALS = [
     (("boot", "N", 2.15, 3.45), ("utility", "S", 2.3, 3.45)),
     (("boot", "N", 4.4, 5.7), ("office", "S", .15, 1.6)),
     (("boot", "W", .9, 2.3), ("wc", "E", .9, 2.3)),
-    (("landing", "N", 0.35, 2.85), ("corridor", "S", 2.90, 5.40)),
-    (("corridor", "N", 1.85, 3.27), ("archie", "S", 0.29, 1.71)),
+    (("corridor", "N", 2.65, 4.07), ("archie", "S", 1.09, 2.51)),
 ]
 
 # main furniture footprints (x0, y0, x1, y1), room-local tiles
@@ -68,7 +67,13 @@ SOLIDS = {
     # stairwell (east side) and balustrade; south and west strips stay walkable
     "landing": [(0.02, 3.18, 1.58, 7.15), (1.50, 3.10, 1.74, 7.22),
                 (0.05, 2.95, 1.74, 3.20)],
-    "corridor": [(10.85, 0.75, 11.35, 1.45)],   # clothes basket at the west dead end
+    "corridor": [
+        (9.95, 2.35, 10.55, 3.20),    # clothes basket at the west dead end
+        (1.72, 3.58, 2.52, 3.85),     # radiator between the bedroom doors
+        (2.55, 0.00, 2.90, 1.65),     # landing void, east of the arch
+        (5.40, 0.00, 11.40, 1.65),    # landing void, west of the arch
+        (2.90, 0.00, 5.40, 1.48),     # landing void, south of the arch strip
+    ],
     "archie": [
         (4.60, 2.35, 6.35, 5.95),   # bed
         (4.25, 5.40, 4.70, 6.20),   # bedside
@@ -76,7 +81,7 @@ SOLIDS = {
         (0.02, 3.95, 0.78, 6.32),   # bookcase
         (0.05, 1.65, 0.95, 3.75),   # desk
         (0.90, 2.05, 1.55, 2.95),   # chair
-        (2.35, 0.02, 4.30, 0.58),   # navy cabinet
+        (2.65, 0.02, 4.60, 0.58),   # navy cabinet
         (5.20, 0.02, 6.38, 0.95),   # wardrobe
         (2.35, 6.05, 4.10, 6.38),   # radiator
     ],
@@ -88,9 +93,18 @@ R = 0.22                     # Archie's footprint radius (tiles)
 # up; walk onto the open north end of the landing well to come down.
 STAIR_LINKS = [
     dict(room="hall", x0=0.28, y0=2.68, x1=1.52, y1=2.99,
-         dest="landing", dx=2.05, dy=7.35),
+         dest="landing", dx=2.05, dy=7.25),
     dict(room="landing", x0=0.28, y0=7.16, x1=1.52, y1=7.55,
          dest="hall", dx=2.05, dy=2.55),
+]
+
+# The arch sits on the passage's south edge (y = 1.65), not the bounding
+# rectangle's south wall (that's the lobby bulge beside the stairwell).
+ARCH_LINKS = [
+    dict(room="corridor", x0=2.90, y0=1.62, x1=5.40, y1=1.82,
+         dest="landing", map_x=(0.35, 2.85), dy=7.50),
+    dict(room="landing", x0=0.35, y0=7.78, x1=2.85, y1=8.20,
+         dest="corridor", map_x=(2.90, 5.40), dy=2.05),
 ]
 
 
@@ -145,9 +159,13 @@ def crossing(room, x, y):
 
 
 def stair_crossing(room, x, y):
-    """If (x, y) is on a stair link, the (room, x, y) at the other end."""
-    for link in STAIR_LINKS:
+    """If (x, y) is on a stair or arch zone, the (room, x, y) at the other end."""
+    for link in list(STAIR_LINKS) + list(ARCH_LINKS):
         if link["room"] == room and link["x0"] <= x <= link["x1"] and link["y0"] <= y <= link["y1"]:
+            if "map_x" in link:
+                t = 0.0 if link["x1"] == link["x0"] else (x - link["x0"]) / (link["x1"] - link["x0"])
+                dx = link["map_x"][0] + t * (link["map_x"][1] - link["map_x"][0])
+                return link["dest"], dx, link["dy"]
             return link["dest"], link["dx"], link["dy"]
     return None
 

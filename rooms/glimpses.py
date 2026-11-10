@@ -18,7 +18,7 @@ UTILITY = (16.6, 2.65)
 OFFICE = (20.85, 2.65)
 WC = (23.2, -0.65)
 LANDING = (6.55, -8.25)
-CORRIDOR = (4.00, -0.20)
+CORRIDOR = (4.00, -1.85)
 ARCHIE = (5.56, 2.00)
 
 PINE = ((196, 116, 56), (178, 100, 46))
@@ -261,15 +261,17 @@ def landing_zone():
 
 
 def corridor_zone():
-    _floor("honey", 0, 0, 11.4, 2.2, seed=9)
-    _wall_y(2.2, 0, 11.4, (188, 190, 192))
-    _wall_x(11.4, 0, 2.2, (188, 190, 192))
-    hc.box(10.9, 0.8, 11.35, 1.4, 36, 74, (158, 160, 164))
+    """L-shaped floor: east lobby plus the narrow passage to the west."""
+    _floor("honey", 0, 0, 2.55, 3.85, seed=9)
+    _floor("honey", 2.55, 1.65, 11.4, 3.85, seed=9)
+    _wall_y(3.85, 0, 11.4, (188, 190, 192))
+    _wall_x(11.4, 1.65, 3.85, (188, 190, 192))
+    hc.box(10.9, 2.4, 11.35, 3.2, 36, 74, (158, 160, 164))
 
 
 landing_from_corridor = _open(CORRIDOR, LANDING, landing_zone)
 corridor_from_landing = _open(LANDING, CORRIDOR, corridor_zone)
-BATH = (1.40, -0.20)   # east bathroom, west wall meets the corridor's east wall
+BATH = (1.40, -1.85)   # east bathroom, west wall meets the corridor's east wall
 bathroom_from_corridor = _open(CORRIDOR, BATH, bathroom_zone)
 
 

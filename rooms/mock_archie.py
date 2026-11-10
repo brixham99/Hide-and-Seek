@@ -34,7 +34,7 @@ GINGHAM = (198, 88, 94)
 WICKER = (186, 142, 86)
 TEDDY = (168, 118, 70)
 
-DOOR = (0.29, 1.71)             # south wall -> corridor (east end)
+DOOR = (1.09, 2.51)             # south wall -> corridor (east end)
 WINDOW = (2.35, 4.05)           # north wall, opposite the door wall
 
 
@@ -145,11 +145,11 @@ def desk_and_chair():
 
 
 def navy_cabinet():
-    box(2.40, 0.08, 4.25, 0.58, 0, 72, NAVY, top=shade(NAVY, 1.12))
+    box(2.70, 0.08, 4.55, 0.58, 0, 72, NAVY, top=shade(NAVY, 1.12))
     # two doors
-    box(2.48, 0.16, 3.28, 0.52, 8, 64, shade(NAVY, 1.08))
-    box(3.36, 0.16, 4.16, 0.52, 8, 64, shade(NAVY, 1.08))
-    for xx in (2.88, 3.76):
+    box(2.78, 0.16, 3.58, 0.52, 8, 64, shade(NAVY, 1.08))
+    box(3.66, 0.16, 4.46, 0.52, 8, 64, shade(NAVY, 1.08))
+    for xx in (3.18, 4.06):
         cyl(xx, 0.52, 0.03, 34, 40, (180, 184, 188))
 
 
@@ -171,7 +171,7 @@ def flag_print():
     """A framed grid of coloured rectangles above the navy cabinet (far south wall)."""
     if hc.FLIP:
         return
-    x0, x1, z0, z1 = 2.55, 4.10, 108, 178
+    x0, x1, z0, z1 = 2.85, 4.40, 108, 178
     qy(0.03, x0 - 0.04, x1 + 0.04, z0 - 3, z1 + 3, shade((48, 42, 36), KY))
     cols, rows = 6, 5
     rnd = random.Random(9)

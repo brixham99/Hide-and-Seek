@@ -48,7 +48,7 @@ def _door_glimpses(view, kwargs):
                  "E": [(0.9, g.wc_from_boot)]},
         "landing": {"S": [(0.35, g.corridor_from_landing)],
                     "E": [(0.50, g.warm_beyond_west)]},
-        "corridor": {"S": [(1.85, g.archie_from_corridor), (0.20, g.warm_beyond_north)]},
+        "corridor": {"S": [(2.65, g.archie_from_corridor), (0.28, g.warm_beyond_north)]},
     }
     want = table.get(view, {})
     for side, key in (("S", "doors_S"), ("E", "doors_E")):
@@ -181,7 +181,7 @@ def build_all(quiet=False):
 
 
 # Bump when saved room images must be rebuilt (opposite view added).
-CACHE_REV = "16"
+CACHE_REV = "17"
 
 
 def cache_ok():

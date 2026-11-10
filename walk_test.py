@@ -151,17 +151,22 @@ def through(g, to_room):
     return ok
 
 
-def through_stairs(g, to_room):
-    """Walk from the current room onto its stair link to to_room."""
-    link = next((L for L in house.STAIR_LINKS if L["room"] == g.room and L["dest"] == to_room), None)
+def through_stairs(g, to_room, links=None, label="stairs"):
+    """Walk from the current room onto a stair or arch zone to to_room."""
+    links = list(house.STAIR_LINKS if links is None else links)
+    link = next((L for L in links if L["room"] == g.room and L["dest"] == to_room), None)
     if link is None:
-        FAIL.append(f"no stair {g.room} -> {to_room}")
+        FAIL.append(f"no {label} {g.room} -> {to_room}")
         return False
     frm = g.room
     # stand just outside the zone, then walk into it
     mx = (link["x0"] + link["x1"]) / 2
     if frm == "hall":
         ax, ay, world = mx, link["y0"] - 0.18, "S"   # face north, into the stairs
+    elif frm == "landing" and to_room == "corridor":
+        ax, ay, world = mx, link["y0"] - 0.22, "S"   # face north, through the arch
+    elif frm == "corridor" and to_room == "landing":
+        ax, ay, world = mx, link["y1"] + 0.22, "N"   # face south, through the arch
     else:
         ax, ay, world = mx, link["y1"] + 0.18, "N"   # face south, into the well
     if not go_to(g, ax, ay):
@@ -176,9 +181,9 @@ def through_stairs(g, to_room):
     step(g)
     settle(g)
     ok = g.room == to_room and house.free(g.room, g.x, g.y)
-    print(f"  {frm:8s} -> {to_room:8s} via stairs: {'OK' if ok else 'FAILED (now in ' + g.room + ')'}")
+    print(f"  {frm:8s} -> {to_room:8s} via {label}: {'OK' if ok else 'FAILED (now in ' + g.room + ')'}")
     if not ok:
-        FAIL.append(f"stairs {frm} -> {to_room}")
+        FAIL.append(f"{label} {frm} -> {to_room}")
     return ok
 
 
@@ -241,6 +246,15 @@ def run(g):
             g.x, g.y = nearest_free("landing", 2.15, 7.70)
         g.view = house.view_for(g.room, g.x)
         through_stairs(g, link["dest"])
+    print("arch, both ways:")
+    for link in house.ARCH_LINKS:
+        g.room, g.view = link["room"], None
+        if link["room"] == "landing":
+            g.x, g.y = nearest_free("landing", 2.15, 7.40)
+        else:
+            g.x, g.y = nearest_free("corridor", 4.15, 2.40)
+        g.view = house.view_for(g.room, g.x)
+        through_stairs(g, link["dest"], links=house.ARCH_LINKS, label="arch")
 def main():
     os.makedirs(SHOTS, exist_ok=True)
     pygame.init()
