@@ -24,6 +24,7 @@ ROOMS = {
     "landing": dict(name="Landing", rw=3.2, rd=8.05, origin=(6.55, -8.25), views=[("landing", 0.0, 0, 99)]),
     "corridor": dict(name="Upstairs Corridor", rw=11.4, rd=3.85, origin=(4.00, -1.85), views=[("corridor", 0.0, 0, 99)]),
     "archie":  dict(name="Archie's Room", rw=6.4, rd=6.4, origin=(5.56, 2.00), views=[("archie", 0.0, 0, 99)]),
+    "bathroom": dict(name="The Bathroom", rw=4.6, rd=4.4, origin=(-0.60, -1.85), views=[("bathroom", 0.0, 0, 99)]),
 }
 VIEW_NAMES = {"kitchen": "Kitchen", "dining": "Dining Room"}
 KD_SPLIT = 8.2
@@ -39,6 +40,7 @@ PORTALS = [
     (("boot", "N", 4.4, 5.7), ("office", "S", .15, 1.6)),
     (("boot", "W", .9, 2.3), ("wc", "E", .9, 2.3)),
     (("corridor", "N", 2.65, 4.07), ("archie", "S", 1.09, 2.51)),
+    (("corridor", "E", 0.65, 2.15), ("bathroom", "W", 0.65, 2.15)),
 ]
 
 # main furniture footprints (x0, y0, x1, y1), room-local tiles
@@ -84,6 +86,13 @@ SOLIDS = {
         (2.65, 0.02, 4.60, 0.58),   # navy cabinet
         (5.20, 0.02, 6.38, 0.95),   # wardrobe
         (2.35, 6.05, 4.10, 6.38),   # radiator
+    ],
+    "bathroom": [
+        (0.80, 3.18, 3.85, 4.35),   # clawfoot bath
+        (0.05, 1.18, 0.68, 1.98),   # loo
+        (4.00, 2.25, 4.55, 2.95),   # pedestal basin
+        (0.08, 3.12, 0.66, 4.20),   # ladder shelf
+        (3.00, 3.08, 3.95, 3.30),   # glass shower screen
     ],
 }
 

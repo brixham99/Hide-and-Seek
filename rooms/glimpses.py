@@ -233,19 +233,20 @@ def warm_beyond_north():
 
 
 def bathroom_zone():
-    """Blue walls, patterned tiles and a white WC — the east bathroom glimpse.
-    x = 2.6 is the doorway wall (do not draw it); x = 0 is the far east wall."""
-    blue = (70, 110, 150)
-    _floor("flags", 0, 0, 2.55, 2.4, seed=18)
-    _wall_y(0, 0, 2.55, blue)
-    _wall_x(0, 0, 2.4, blue)
-    _wall_y(2.4, 0, 2.55, blue)
-    # shuttered window on the far wall
-    hc.qx(0.04, 0.55, 1.85, 70, 170, hc.shade((220, 214, 200), hc.KX))
-    for u0, u1 in ((0.55, 1.15), (1.25, 1.85)):
-        hc.qx(0.05, u0, u1, 78, 162, hc.shade((186, 176, 158), hc.KX))
-    hc.box(1.55, 1.35, 2.35, 2.10, 0, 42, (248, 248, 246))
-    hc.box(1.60, 1.75, 2.30, 2.20, 42, 78, (248, 248, 246))
+    """Pale blue walls, encaustic-style floor, the bath and the loo."""
+    blue = (168, 188, 202)
+    import paint
+    w, h = 4.6, 4.4
+    pal = ((150, 94, 58), (168, 98, 62), (224, 210, 186), (120, 132, 140), (198, 180, 150))
+    tex = paint.flagstones(w, h, 18, pal, row=0.34)
+    paint.stamp(tex, 0, 0, 4.6, 4.4, 0)
+    _wall_y(0, 0, 4.6, blue)
+    _wall_x(0, 0, 4.4, blue)
+    _wall_y(4.4, 0, 4.6, blue)
+    hc.qx(0.04, 0.95, 2.75, 70, 198, hc.shade((244, 242, 236), hc.KX))
+    hc.box(0.88, 3.22, 3.78, 4.24, 18, 58, (248, 248, 246))
+    hc.box(0.10, 1.22, 0.62, 1.92, 0, 42, (248, 248, 246))
+    hc.box(0.08, 1.32, 0.36, 1.82, 40, 82, (248, 248, 246))
 
 
 def landing_zone():
@@ -271,8 +272,9 @@ def corridor_zone():
 
 landing_from_corridor = _open(CORRIDOR, LANDING, landing_zone)
 corridor_from_landing = _open(LANDING, CORRIDOR, corridor_zone)
-BATH = (1.40, -1.85)   # east bathroom, west wall meets the corridor's east wall
+BATH = (-0.60, -1.85)  # east bathroom, west wall meets the corridor's east wall
 bathroom_from_corridor = _open(CORRIDOR, BATH, bathroom_zone)
+corridor_from_bathroom = _open(BATH, CORRIDOR, corridor_zone)
 
 
 def archie_zone():
