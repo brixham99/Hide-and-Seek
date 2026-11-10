@@ -33,7 +33,7 @@ WHITE_ = (244, 242, 236)
 
 # openings
 ARCH = (0.35, 2.85)             # north wall -> corridor
-MASTER_DOOR = (2.05, 3.30)      # west wall -> master bedroom
+MASTER_DOOR = (0.50, 1.75)      # west wall -> master bedroom (south end, opposite the SE bedroom door)
 SE_BED_DOOR = (0.45, 1.70)      # east wall -> SE bedroom
 WINDOW = (0.85, 2.15)           # south wall
 WELL_X0, WELL_X1 = 0.02, 1.62

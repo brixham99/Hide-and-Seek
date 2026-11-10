@@ -4,8 +4,10 @@
 A narrow east-west passage north of the Landing (11.4 x 2.2 tiles). South
 wall: arched opening back to the landing (aligned with the landing's north
 arch) and a recessed niche. East wall: open doorway into the bathroom (blue
-glimpse). North wall: doorways to the dressing room and the unbuilt
-bedrooms. West end: a dead-end with a grey clothes basket (fabric bag on a
+glimpse). North wall: two doorways opposite a shared lobby — Archie's Room
+(the 11'8 x 11'4 bedroom, nearest the arch) and the north-east
+bedroom. The dressing room and north-west bathroom do not open
+onto this corridor. West end: a dead-end with a grey clothes basket (fabric bag on a
 metal frame). Pale oak laminate, light grey walls, white skirting, a
 radiator. The loft hatch is left out (no ceiling in the cut-away view).
 """
@@ -30,11 +32,10 @@ FABRIC = (158, 160, 164)
 ARCH = (2.90, 5.40)
 # east wall: bathroom
 BATH_DOOR = (0.35, 1.85)
-# north wall doors (unbuilt rooms)
-NE_BED = (1.50, 2.80)
-MID_BED = (4.50, 5.80)
-DRESSING = (8.50, 9.85)
-NW_BATH = (10.15, 11.15)
+# north wall: only two doors, facing a small lobby just west of the bathroom
+# (floorplan). East of the pair is the bathroom at the corridor's end.
+ARCHIE_DOOR = (1.85, 3.27)   # Archie's Room (11'8 x 11'4), east end of its south wall
+NE_BED = (0.20, 1.55)        # NE bedroom (11'6 x 11'4), SW corner onto the same lobby
 
 
 def oak_floor():
@@ -95,7 +96,7 @@ def main():
     clothes_basket(RW - 0.48, RD * 0.52)
     place_sprite("archie", 4.2, 1.1)
     ghost_near_walls(WALL,
-                     doors_S=[NE_BED, MID_BED, DRESSING, NW_BATH],
+                     doors_S=[ARCHIE_DOOR, NE_BED],
                      doors_E=[])
     finish("Hide and Seek - Upstairs Corridor (mock-up)", OUT,
            subtitle="First Floor", copies=() if ARGS else ("shots/hs_corridor_mock.png",))
