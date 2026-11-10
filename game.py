@@ -8,7 +8,7 @@ camera, so the same key still moves him the way he is facing on screen.
 A gamepad works too
 (stick or d-pad). Esc quits. Rooms are the mock-up renders (build_rooms.py);
 every internal doorway is open, and walking through one switches the view
-(the Kitchen and Dining Room slide at the beam). The room images are built
+with a fade (the Kitchen and Dining Room included, at the beam). The room images are built
 into cache/ automatically on the first run.
 
     python3 game.py
@@ -33,7 +33,7 @@ TURN_S = 0.22                    # a quarter turn; held keys repeat at this pace
 FACING_ORDER = ("E", "S", "W", "N")          # clockwise on screen (Right = +1)
 DIRS = {"E": (1, 0), "S": (0, 1), "W": (-1, 0), "N": (0, -1)}   # engine facings: E = +x (screen SE) ...
 SPRITE = {"N": "ne", "E": "se", "S": "sw", "W": "nw"}
-FADE_S, SLIDE_S = 0.35, 0.55
+FADE_S = 0.35
 SLIDE_NUDGE = 0.30               # how far Archie will sidestep to pass a corner, tiles
 
 
@@ -142,7 +142,7 @@ class Game:
     def update(self, dt, turn, move):
         if self.trans:
             kind, t, *rest = self.trans
-            t += dt / (SLIDE_S if kind == "slide" else FADE_S)
+            t += dt / FADE_S
             self.trans = None if t >= 1 else (kind, t, *rest)
         self.turn_cd = max(0.0, self.turn_cd - dt)
         if turn and self.turn_cd <= 0:
@@ -169,9 +169,12 @@ class Game:
                 if cr:
                     self.change_room(*cr)
         v = house.view_for(self.room, self.x, self.view)
-        if v != self.view:                                   # the beam: slide
-            self.trans = ("slide", 0.0, None, self.view, v)
+        if v != self.view:                                   # kitchen <-> dining at the beam
+            snap = pygame.Surface((WIN_W, WIN_H), 0, 24)
+            snap.blit(self.screen, (0, 0))
+            old = self.view
             self.view = v
+            self.trans = ("fade", 0.0, snap, old, v)
             self.log.append((self.room, v[0]))
 
     def _slide(self, dx, dy):
@@ -346,29 +349,10 @@ class Game:
         self._hint = self._make_hint()
         self.trans = ("fade", 0.0, snap, self.view, self.view)
 
-    def draw_view(self, view, offset=(0, 0), alpha=255, player=True):
-        """Paint one view into the 24-bit frame (used by the transition below)."""
-        layer = self._layers[1]
-        layer.set_alpha(None)
-        layer.fill((8, 8, 9))
-        self._paint_view(layer, view, player=player)
-        layer.set_alpha(None if alpha >= 255 else alpha)
-        self.frame.blit(layer, offset)
-        if alpha < 255:
-            layer.set_alpha(None)
-
     def draw(self):
         self.frame.set_alpha(None)
         self.frame.fill((8, 8, 9))
-        if self.trans and self.trans[0] == "slide":
-            _, t, _, a, b = self.trans
-            e = t * t * (3 - 2 * t)
-            # the same world point sits at different screen spots in the two halves
-            pa, pb = self.to_screen(a, self.x, self.y), self.to_screen(b, self.x, self.y)
-            d = (pb[0] - pa[0], pb[1] - pa[1])
-            self.draw_view(a, offset=(round(-d[0] * e), round(-d[1] * e)), player=False)
-            self.draw_view(b, offset=(round(d[0] * (1 - e)), round(d[1] * (1 - e))), alpha=int(255 * e))
-        elif self.trans and self.trans[0] == "fade":
+        if self.trans and self.trans[0] == "fade":
             _, t, snap, a, b = self.trans
             self._paint_view(self.frame, b)
             snap.set_alpha(int(255 * (1 - t)))

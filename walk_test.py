@@ -94,7 +94,7 @@ def walk(g, segs, shot=None):
             if rem < game.SPEED * DT / 2:
                 break
             step(g, 0, 1)
-            if shot and g.trans and g.trans[0] == "slide" and g.trans[1] > .45:
+            if shot and g.trans and g.trans[0] == "fade" and g.trans[1] > .45:
                 pygame.image.save(g.screen, shot)
                 print("  saved", shot)
                 shot = None
@@ -207,10 +207,10 @@ def run(g):
     snap(g, "3_drawing_room")
     through(g, "kd")
     go_to(g, 9.5, 2.5)
-    go_to(g, 6.2, 2.5, shot=os.path.join(SHOTS, "hs_walk_4_kitchen_to_dining_slide.png"))
+    go_to(g, 6.2, 2.5)
     settle(g)
     if g.view[0] != "dining":
-        FAIL.append("kitchen -> dining slide")
+        FAIL.append("kitchen -> dining")
     print(f"  kitchen  -> dining   across the beam: {'OK' if g.view[0] == 'dining' else 'FAILED'}")
     through(g, "boot")
     through(g, "utility")

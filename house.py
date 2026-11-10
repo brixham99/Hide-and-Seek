@@ -242,7 +242,7 @@ def stair_crossing(room, x, y):
 
 
 def view_for(room, x, prev=None):
-    """Which pre-rendered view shows this spot (the kitchen + dining slide at the beam)."""
+    """Which pre-rendered view shows this spot (kitchen and dining meet at the beam)."""
     views = ROOMS[room]["views"]
     if len(views) == 1:
         return views[0]

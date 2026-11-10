@@ -1438,7 +1438,7 @@ def ext_car(side, u0, u1, t0, t1, col=(150, 155, 160), h=34, cabin=24):
 # world y = tiles northwards from its south wall (0 .. KD_DEP; y = KD_DEP is
 # the garden wall). Dining = world x 0 .. KD_SPLIT (east), kitchen = KD_SPLIT
 # .. KD_LEN (west, by the Boot Room). Too big for one screen at engine scale,
-# it is shown as two camera framings that slide along x; each framing is an
+# it is shown as two camera framings along x; each framing is an
 # ordinary room for the helpers (local x = world x - its x0):
 #   kitchen view (x0 = KD_SPLIT): open on its back-left side (x = 0, the
 #       beam); the dining half recedes beyond it, faded (fade_x).
