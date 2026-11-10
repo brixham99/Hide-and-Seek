@@ -10,6 +10,7 @@ hinged glass screen at the west end, a wooden ladder shelf at the east
 end. East wall: tall sash with white plantation shutters, the close-
 coupled loo beneath it and a small framed picture. West wall: open
 doorway back to the corridor and a pedestal basin near the door.
+South wall: open doorway into Holly's Room (the SE bedroom), near the basin.
 Ceiling spots are left out (ceiling-light rule). No internal door leaf.
 """
 import math
@@ -35,6 +36,8 @@ CREAM = (222, 208, 184)
 DOOR = (0.65, 2.15)
 # east wall (x = 0): tall sash
 WINDOW = (0.95, 2.75)
+# south wall (y = 0) -> Holly's Room, west end near the basin
+HOLLY_DOOR = (2.90, 4.30)
 
 
 def garden_east(side, rnd):
@@ -217,11 +220,13 @@ def main():
     background()
     encaustic_floor()
     wall_shell(WALL)
+    import glimpses
     if not hc.FLIP:
         metro_tiles("W", RD - 1.45, RD)          # east return around the bath
         ext = exterior_layer({"W": garden_east}, haze=(170, 188, 150))
         sash_window("W", *WINDOW, ext, z0=70, z1=198, curtains=None)
         plantation_shutters("W", *WINDOW, z0=70, z1=198)
+        back_opening("N", *HOLLY_DOOR, glimpses.holly_from_bathroom)
     wall_trim()
     clawfoot_bath()
     rain_shower()

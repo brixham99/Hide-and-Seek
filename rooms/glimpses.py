@@ -206,6 +206,17 @@ office_from_boot = _open(BOOT, OFFICE, office_zone)
 wc_from_boot = _open(BOOT, WC, wc_zone)
 
 
+def holly_zone():
+    """Warm unbuilt interior of Holly's Room (SE bedroom, 6.9 x 6.4).
+    North wall is the doorway wall from the bathroom — leave it undrawn."""
+    _floor("honey", 0.0, 0.0, 6.9, 6.4, seed=7)
+    _wall_y(0, 0.0, 6.9, CREAM)
+    _wall_x(0, 0.0, 6.4, CREAM)
+    _wall_x(6.9, 0.0, 6.4, CREAM)
+    # a simple bed along the east wall, so the peek reads as a bedroom
+    hc.box(0.15, 1.80, 1.85, 4.70, 0, 48, (232, 224, 214))
+    hc.box(0.20, 1.90, 1.75, 2.55, 48, 62, (186, 92, 96))
+
 def warm_room():
     """A plain neighbouring bedroom just east of this room (x < 0)."""
     _floor("honey", -4.0, 0.0, 0.0, 4.2, seed=3)
@@ -273,6 +284,7 @@ def corridor_zone():
 landing_from_corridor = _open(CORRIDOR, LANDING, landing_zone)
 corridor_from_landing = _open(LANDING, CORRIDOR, corridor_zone)
 BATH = (-0.60, -1.85)  # east bathroom, west wall meets the corridor's east wall
+HOLLY = (-0.60, -8.25)  # SE bedroom (Holly's Room), north wall = bathroom south
 bathroom_from_corridor = _open(CORRIDOR, BATH, bathroom_zone)
 corridor_from_bathroom = _open(BATH, CORRIDOR, corridor_zone)
 
@@ -291,3 +303,6 @@ def archie_zone():
 
 archie_from_corridor = _open(CORRIDOR, ARCHIE, archie_zone)
 corridor_from_archie = _open(ARCHIE, CORRIDOR, corridor_zone)
+
+holly_from_bathroom = _open(BATH, HOLLY, holly_zone)
+holly_from_landing = _open(LANDING, HOLLY, holly_zone)

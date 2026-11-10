@@ -175,7 +175,7 @@ def main():
         ext = exterior_layer({"N": front_garden})
         sash_window("N", *WINDOW, ext, curtains=GREY_CURTAIN)
         radiator(*WINDOW)
-        back_opening("W", *SE_BED_DOOR, glimpses.warm_room)
+        back_opening("W", *SE_BED_DOOR, glimpses.holly_from_landing)
     wall_trim()
     balustrade()
     parliament_canvas()
