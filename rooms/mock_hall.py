@@ -37,6 +37,7 @@ import sys
 import house_common as hc
 hc.init_room(3.2, 8.05)
 from house_common import *  # noqa: E402,F401,F403
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_hall_mock.png"
@@ -242,7 +243,7 @@ def west_wall_hung():
     """Faint: radiator cover, the mirror's back, the kitchen door folded back."""
     with hung_layer(alpha=120):
         c = (242, 242, 238)
-        box(RW - .38, 2.5, RW - .02, 4.2, 0, 88, c, top=shade(c, 1.02))
+        iso_paint.paint_box(RW - .38, 2.5, RW - .02, 4.2, 0, 88, "hall_radiator", front="W", col=c)
         for i in range(14):
             yy = 2.6 + i * .11
             qx(RW - .379, yy, yy + .04, 10, 76, shade(c, KX * .78))

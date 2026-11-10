@@ -301,7 +301,7 @@ class Game:
 
     def _hud_on(self, target):
         name = house.label(self.room, self.view)
-        way = "north-west" if self.flipped else "south-east"
+        way = "looking south" if self.flipped else "looking north"
         label = self._make_label(name + "  ·  " + way)
         target.blit(label, (16, 14))
         hint_at = (WIN_W - self._hint.get_width() - 16, WIN_H - self._hint.get_height() - 14)
@@ -329,7 +329,7 @@ class Game:
         return box
 
     def _make_hint(self):
-        way = "north-west" if self.flipped else "south-east"
+        way = "south" if self.flipped else "north"
         text = f"Left / Right turn    Up / Down walk    V looking {way}    Esc quits"
         txt = self.small.render(text, True, (214, 204, 178))
         sh = self.small.render(text, True, (12, 10, 12))

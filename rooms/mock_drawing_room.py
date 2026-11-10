@@ -118,11 +118,6 @@ def cupboards(y0, y1, d):
     iso_paint.paint_box(0, y0, d, y1, 0, 96, "drawing_cupboard", front="W", col=col)
     iso_paint.paint_box(0, y0, d, y1, 99, WALL_H - 24, "drawing_cupboard", front="W", col=col)
     line((d, y0, 97.5), (d, y1, 97.5), shade(GREEN, .6), 2)
-    w = y1 - y0
-    for (za, zb) in ((8, 90), (106, WALL_H - 32)):
-        for i in range(2):
-            painted.door_front("W", 0, y0, d, y1, za, zb,
-                               0.04 + i * 0.5, 0.46 + i * 0.5, 0.0, 1.0, col)
     # top of the upper cupboards meets the cornice
     poly([P(0, y0, WALL_H - 24), P(d, y0, WALL_H - 24), P(d, y1, WALL_H - 24), P(0, y1, WALL_H - 24)], shade(col, KT))
 
@@ -130,30 +125,9 @@ def cupboards(y0, y1, d):
 def bookcase(x0, x1, dpt=0.6, h=108):
     """White glazed bookcase cabinet on the back (y=0) wall, red lamp on top."""
     col = WHITE
-    box(x0, 0, x1, dpt, 0, 8, shade(col, .9))
-    box(x0, 0, x1, dpt, 8, h, col)
-    box(x0 - .04, -0.0, x1 + .04, dpt + .04, h, h + 6, col)
-    rnd = random.Random(9)
-    spines = [(160, 40, 40), (40, 70, 120), (220, 190, 70), (60, 110, 70), (200, 120, 60), (230, 220, 200), (110, 40, 60), (30, 30, 30)]
-    shelves = [(16, 44), (50, 76), (82, 102)]
-    for i in range(2):
-        a = x0 + (x1 - x0) * (0.05 + i * 0.48)
-        b = x0 + (x1 - x0) * (0.47 + i * 0.48)
-        qy(dpt + .002, a, b, 12, h - 4, shade(col, KY * .9), shade(col, .55))
-        ga, gb = a + .07, b - .07
-        qy(dpt + .004, ga, gb, 16, h - 8, (48, 44, 40))
-        for za, zb in shelves:
-            u = ga + .01
-            while u < gb - .03:
-                bw = rnd.uniform(.035, .07)
-                top = zb - rnd.uniform(0, 7)
-                qy(dpt + .006, u, min(gb, u + bw), za, top, shade(rnd.choice(spines), KY * rnd.uniform(.85, 1.0)))
-                u += bw + .004
-            qy(dpt + .007, ga, gb, za - 3, za, shade(col, KY * .85))
-        # glass sheen and glazing bars
-        qy(dpt + .009, ga, gb, 44, 46, shade(col, KY))
-        qy(dpt + .009, ga, gb, 76, 78, shade(col, KY))
-        poly([P(ga + .05, dpt + .009, 20), P(ga + .1, dpt + .009, 20), P(ga + .22, dpt + .009, h - 12), P(ga + .17, dpt + .009, h - 12)], (255, 255, 255))
+    iso_paint.paint_box(x0, 0, x1, dpt, 0, 8, "drawing_bookcase", front="N", col=shade(col, .9))
+    iso_paint.paint_box(x0, 0, x1, dpt, 8, h, "drawing_bookcase", front="N", col=col)
+    iso_paint.paint_box(x0 - .04, -0.0, x1 + .04, dpt + .04, h, h + 6, "drawing_bookcase", front="N", col=col)
     # red lamp
     lx, ly = x0 + .35, dpt / 2
     cyl(lx, ly, .07, h + 6, h + 14, (60, 50, 44))
@@ -286,13 +260,13 @@ def piano(x0, x1, y0, y1, h=126):
     cx0 = x0 + kb                                  # front of the tall case
     kz0, kz1 = 56, 65                              # keybed
     # tall case against the wall
-    box(cx0, y0, x1, y1, 0, h, wood, top=lid)
+    iso_paint.paint_box(cx0, y0, x1, y1, 0, h, "drawing_piano_case", front="E", col=wood)
     # lower front panel under the keyboard (slightly recessed)
-    box(x0 + 0.05, y0 + 0.03, cx0 + 0.01, y1 - 0.03, 0, kz0, wood)
+    iso_paint.paint_box(x0 + 0.05, y0 + 0.03, cx0 + 0.01, y1 - 0.03, 0, kz0, "drawing_piano_case_lower", front="E", col=wood)
     # cheek blocks and keybed
-    box(x0, y0, cx0, y0 + 0.10, kz0 - 2, kz1 + 10, wood, top=lid)
-    box(x0, y1 - 0.10, cx0, y1, kz0 - 2, kz1 + 10, wood, top=lid)
-    box(x0, y0 + 0.10, cx0, y1 - 0.10, kz0, kz1, wood, top=shade(wood, 0.82))
+    iso_paint.paint_box(x0, y0, cx0, y0 + 0.10, kz0 - 2, kz1 + 10, "drawing_piano_case", front="E", col=wood)
+    iso_paint.paint_box(x0, y1 - 0.10, cx0, y1, kz0 - 2, kz1 + 10, "drawing_piano_case", front="E", col=wood)
+    iso_paint.paint_box(x0, y0 + 0.10, cx0, y1 - 0.10, kz0, kz1, "drawing_piano_case", front="E", col=wood)
     # white keys along the wall; tops read from above in both views, fronts
     # only when the playing side faces the camera
     ivory = (236, 232, 220)
@@ -319,12 +293,12 @@ def piano(x0, x1, y0, y1, h=126):
             box(x0 + 0.09, a, cx0 - 0.08, b, kz1 + 0.6, kz1 + 5.2, ebony,
                 top=shade(ebony, 1.2), ol=False)
     # fallboard / nameboard just above the keys
-    box(cx0 - 0.07, y0 + 0.08, cx0 + 0.12, y1 - 0.08, kz1 + 6, kz1 + 20, wood, top=lid)
+    iso_paint.paint_box(cx0 - 0.07, y0 + 0.08, cx0 + 0.12, y1 - 0.08, kz1 + 6, kz1 + 20, "drawing_piano_case", front="E", col=wood)
     # music stand and a sheet, only on the playing side
     if show_front:
         my0 = (y0 + y1) / 2 - 0.42
         my1 = (y0 + y1) / 2 + 0.42
-        box(cx0 - 0.06, my0, cx0 + 0.05, my1, kz1 + 20, kz1 + 54, wood, top=lid)
+        iso_paint.paint_box(cx0 - 0.06, my0, cx0 + 0.05, my1, kz1 + 20, kz1 + 54, "drawing_piano_case", front="E", col=wood)
         qx(cx0 - 0.062, my0 + 0.08, my1 - 0.08, kz1 + 24, kz1 + 50, (232, 226, 214))
         # decorative upper panel (inlay suggestion from the photo)
         qx(cx0 - 0.008, y0 + 0.18, y1 - 0.18, kz1 + 22, h - 10, shade(wood, 0.82))

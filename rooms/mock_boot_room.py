@@ -22,6 +22,7 @@ import house_common as hc
 hc.init_room(6.4, 3.1)
 from house_common import *  # noqa: E402,F401,F403
 import painted  # noqa: E402
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_boot_room_mock.png"
@@ -100,16 +101,14 @@ def settle(x0, x1, d=0.72):
         u += .11
     box(x0, 0, x1, .07, 96, 104, SAGE_DOOR)
     # seat
-    box(x0 + .06, .06, x1 - .06, d, 40, 48, OLD_PINE)
-    painted.wood_top(x0 + .06, .06, x1 - .06, d, 48, OLD_PINE)
+    iso_paint.paint_box(x0 + .06, .06, x1 - .06, d, 40, 48, "boot_pine", front="S", col=OLD_PINE)
     for i in range(1, 3):
         line((x0 + .06, .06 + (d - .06) * i / 3, 48), (x1 - .06, .06 + (d - .06) * i / 3, 48), shade(OLD_PINE, .7), 1)
     # yellow bag on the seat
     box(x1 - .8, .2, x1 - .3, .55, 48, 58, (232, 200, 40))
     # sage end panels
     for ex in (x0, x1 - .1):
-        box(ex, 0, ex + .1, d, 0, 74, SAGE_DOOR)
-        qy(d + .002, ex + .02, ex + .08, 30, 60, shade(SAGE_DOOR, KY * .85))
+        iso_paint.paint_box(ex, 0, ex + .1, d, 0, 74, "boot_sage", front="S", col=SAGE_DOOR)
 
 
 def wire_basket(x0, x1, z0, z1, n=0.22):

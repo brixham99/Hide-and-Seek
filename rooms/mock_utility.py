@@ -31,6 +31,7 @@ import house_common as hc
 hc.init_room(3.6, 5.8)
 from house_common import *  # noqa: E402,F401,F403
 import painted  # noqa: E402
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_utility_mock.png"
@@ -57,7 +58,7 @@ def door_leaf():
 
 def washer(y0, y1, x1=.95):
     """White front-loader under the worktop, door facing west into the room (+x)."""
-    box(.02, y0, x1 - .04, y1, 4, CH - 6, (244, 244, 242))
+    iso_paint.paint_box(.02, y0, x1 - .04, y1, 4, CH - 6, "washer", front="W", col=(244, 244, 242))
     cy, cz = (y0 + y1) / 2, 40
     ring = [P(x1 - .039, cy + .27 * math.cos(t), cz + 17 * math.sin(t)) for t in [i * math.pi / 12 for i in range(24)]]
     poly(ring, (190, 194, 198))
@@ -71,11 +72,8 @@ def east_run(y0, y1, d=1.0):
     then the grey low two-door cupboard; white shelves above."""
     grey = (130, 134, 136)
     washer(y1 - 1.02, y1 - .02)
-    box(0, y0, d - .04, y1 - 1.06, 4, CH - 6, grey)
-    painted.door_front("W", 0, y0, d - .04, y1 - 1.06, 4, CH - 6, 0.04, 0.48, 0.08, 0.94, grey)
-    painted.door_front("W", 0, y0, d - .04, y1 - 1.06, 4, CH - 6, 0.52, 0.96, 0.08, 0.94, grey)
-    box(0, y0, d, y1, CH - 6, CH, WOOD, top=shade(WOOD, 1.12))
-    painted.wood_top(0, y0, d, y1, CH, WOOD)
+    iso_paint.paint_box(0, y0, d - .04, y1 - 1.06, 4, CH - 6, "utility_grey", front="W", col=grey)
+    iso_paint.paint_box(0, y0, d, y1, CH - 6, CH, "utility_wood", front="W", col=WOOD)
     rnd = random.Random(4)
     for zz in (132, 180):
         box(0, y0 + .1, .42, y1 - .1, zz, zz + 4, (242, 242, 238))
@@ -92,8 +90,7 @@ def north_run(x0, x1, sink, d=1.0):
     """North wall: short worktop over the first washer (door faces away), belfast sink in the NW corner."""
     a, b = sink
     box(x0, RD - d, a, RD, 4, CH - 6, (244, 244, 242))                    # washer 1 (seen from behind)
-    box(x0, RD - d - .02, a, RD, CH - 6, CH, WOOD, top=shade(WOOD, 1.12))
-    painted.wood_top(x0, RD - d - .02, a, RD, CH, WOOD)
+    iso_paint.paint_box(x0, RD - d - .02, a, RD, CH - 6, CH, "utility_wood", front="S", col=WOOD)
     box(a, RD - d, x1, RD, 4, 56, (240, 240, 236))
     box(a, RD - d - .06, x1 - .05, RD - .05, 56, CH + 1, (248, 248, 246), top=(236, 238, 238))
     qz(CH + 1.2, a + .08, RD - d + .04, x1 - .13, RD - .2, (176, 182, 186))
@@ -101,7 +98,7 @@ def north_run(x0, x1, sink, d=1.0):
 
 
 def tall_cupboard(y0, y1, d=.9, h=212):
-    painted.wardrobe(0, y0, d, y1, 0, h, col=(242, 242, 238), doors=2, front="W")
+    iso_paint.paint_box(0, y0, d, y1, 0, h, "utility_wardrobe", front="W", col=(242, 242, 238))
 
 
 def clothes_rail(x, y0, y1, z=196):

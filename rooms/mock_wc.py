@@ -33,6 +33,7 @@ import sys
 import house_common as hc
 hc.init_room(1.65, 3.1)
 from house_common import *  # noqa: E402,F401,F403
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_wc_mock.png"
@@ -159,7 +160,7 @@ def basin():
     # towel on a little rail under the front
     box(x0 + .1, d - .02, x1 - .1, d + .02, top - 22, top - 19, CHROME, ol=False)
     box(x0 + .14, d - .03, x1 - .14, d + .01, top - 64, top - 20, (120, 124, 128), top=(140, 144, 148))
-    box(x0, 0, x1, d - .04, top - 18, top, (246, 246, 244), top=(250, 250, 248))
+    iso_paint.paint_box(x0, 0, x1, d - .04, top - 18, top, "wc_ceramic", front="S", col=(246, 246, 244))
     qz(top + .3, x0 + .07, .14, x1 - .07, d - .12, (210, 214, 216))
     qz(top + .4, x0 + .1, .17, x1 - .1, d - .15, (188, 194, 198))
     cx = (x0 + x1) / 2
@@ -185,7 +186,7 @@ def toilet():
     cx = .84
     cy0 = RD - .34
     # pan: pedestal, then bowl rim and seat/lid
-    box(cx - .17, cy0 - .7, cx + .17, cy0, 0, 30, shade(w, .96))
+    iso_paint.paint_box(cx - .17, cy0 - .7, cx + .17, cy0, 0, 30, "wc_ceramic", front="S", col=shade(w, .96))
     fl_ellipse(cx, cy0 - .48, .3, .42, shade(w, .9), 30)
     box(cx - .3, cy0 - .5, cx + .3, cy0, 30, 40, w, ol=False)
     poly([P(cx + .3 * math.cos(t), cy0 - .5 + .44 * math.sin(t), 40) for t in [math.pi + i * math.pi / 12 for i in range(13)]] +
@@ -193,7 +194,7 @@ def toilet():
     poly([P(cx + .3 * math.cos(t), cy0 - .5 + .44 * math.sin(t), 40) for t in [math.pi + i * math.pi / 12 for i in range(13)]],
          shade(w, KT), outline=(170, 170, 172))
     # cistern
-    box(cx - .32, cy0, cx + .32, RD - .01, 40, 96, w, top=(238, 238, 236))
+    iso_paint.paint_box(cx - .32, cy0, cx + .32, RD - .01, 40, 96, "wc_ceramic", front="S", col=w)
     box(cx - .06, RD - .2, cx + .06, RD - .14, 96, 99, CHROME, ol=False)            # flush button
 
 

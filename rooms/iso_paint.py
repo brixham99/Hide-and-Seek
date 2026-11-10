@@ -68,16 +68,16 @@ def _role_for_x(front, x_is_east):
     return "side"
 
 
-def paint_box(x0, y0, x1, y1, z0, z1, kind, front="S", col=(90, 70, 50), shade_k=None):
+def paint_box(x0, y0, x1, y1, z0, z1, kind, front="S", col=(90, 70, 50), shade_k=None, faces="xyz"):
     """Textured box on the existing footprint. `front` is the face with the
     front sheet (S/N/E/W in house axes)."""
     sheets = kind_sheets(kind)
-    box(x0, y0, x1, y1, z0, z1, col, top=shade(col, 1.04), ol=False)
+    box(x0, y0, x1, y1, z0, z1, col, top=shade(col, 1.04), ol=False, faces=faces)
     y_face, x_face = (y0, x0) if hc.FLIP else (y1, x1)
     sk = shade_k or {"y": 1.0, "x": 0.88, "z": 1.06}
     # +y / -y face
     y_tex = sheets.get(_role_for_y(front, y_face == y0))
-    if y_tex is not None:
+    if y_tex is not None and "y" in faces:
         A = P(x0, y_face, z1)
         B = P(x1, y_face, z1)
         C = P(x0, y_face, z0)
@@ -85,7 +85,7 @@ def paint_box(x0, y0, x1, y1, z0, z1, kind, front="S", col=(90, 70, 50), shade_k
         paint_quad(y_tex, A, B, C, sk["y"], D=D)
     # +x / -x face
     x_tex = sheets.get(_role_for_x(front, x_face == x0))
-    if x_tex is not None:
+    if x_tex is not None and "x" in faces:
         A = P(x_face, y1, z1)
         B = P(x_face, y0, z1)
         C = P(x_face, y1, z0)
@@ -93,7 +93,7 @@ def paint_box(x0, y0, x1, y1, z0, z1, kind, front="S", col=(90, 70, 50), shade_k
         paint_quad(x_tex, A, B, C, sk["x"], D=D)
     # top
     z_tex = sheets.get("top")
-    if z_tex is not None:
+    if z_tex is not None and "z" in faces:
         A = P(x0, y0, z1)
         B = P(x1, y0, z1)
         C = P(x0, y1, z1)

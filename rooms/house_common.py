@@ -1510,9 +1510,8 @@ def farmhouse_table(x0, y0, x1, y1, h=74, col=(196, 150, 96)):
     for lx, ly in ((x0 + .15, y0 + .15), (x1 - .15, y0 + .15), (x0 + .15, y1 - .15), (x1 - .15, y1 - .15)):
         turned_leg(lx, ly, 0, h - 8, shade(col, .85), .07)
     box(x0 + .1, y0 + .1, x1 - .1, y1 - .1, h - 16, h - 6, shade(col, .85), ol=False)
-    box(x0, y0, x1, y1, h - 6, h, col, top=shade(col, 1.08))
-    import paint
-    paint.stamp(paint.pine_top(x1 - x0, y1 - y0, seed=7, c1=shade(col, 1.15), c2=shade(col, 0.78)), x0, y0, x1, y1, h)
+    import iso_paint
+    iso_paint.paint_box(x0, y0, x1, y1, h - 6, h, "dining_pine", front="S", col=col)
 
 
 def ladder_chair(x, y, facing="E", col=(236, 234, 228)):

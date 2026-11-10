@@ -11,6 +11,7 @@ import pygame
 
 import house_common as hc
 import painted
+import iso_paint
 from house_common import (P, poly, line, qx, qy, qz, box, cyl, cone, fl_ellipse, shade, art,  # noqa: F401
                           KX, KY, KT, WALL_H, DOOR_H, BRASS, OAK, WHITE, CREAM, GRANITE, STEEL,
                           PINE_TOP, BURGUNDY, PALE_GREY, OFF_WHITE, turned_leg, bar_stool,
@@ -96,11 +97,7 @@ def plate_rack(x0, x1, z0=124, z1=222, d=.42):
 
 def larder(x0, x1, hinge="left", d=1.1, h=192):
     """A tall single-door larder-style stainless fridge or freezer, door facing north into the room."""
-    box(x0, 0, x1, d, 0, h, STEEL, top=shade(STEEL, 1.05))
-    qy(d + .001, x0 + .03, x1 - .03, 4, h - 4, shade(STEEL, KY * 1.02))
-    hx = x1 - .14 if hinge == "left" else x0 + .11
-    qy(d + .02, hx, hx + .03, 80, 150, (205, 207, 210))
-    qy(d + .002, x0 + .18, x0 + .28, 10, h - 10, shade(STEEL, KY * 1.15))
+    iso_paint.paint_box(x0, 0, x1, d, 0, h, "kitchen_larder", front="N", col=STEEL)
 
 
 def wine_corner(x0, x1, d=1.0):
@@ -126,7 +123,7 @@ def island(x0, y0, x1, y1, h=96):
     """Pale grey T&G island, chunky pine top; drawers over open slatted shelves
     of bowls on the north (sink-side, +y) face; plain T&G end facing west (+x)."""
     box(x0 + .08, y0 + .08, x1 - .08, y1 - .08, 0, 8, (110, 112, 110), ol=False)
-    box(x0 + .05, y0 + .05, x1 - .05, y1 - .05, 8, h - 12, PALE_GREY)
+    iso_paint.paint_box(x0 + .05, y0 + .05, x1 - .05, y1 - .05, 8, h - 12, "kitchen_island", front="N", col=PALE_GREY, faces="x")
     Y = y1 - .049
     if hc.FLIP:
         # tongue-and-groove on the south end, the face this camera sees
@@ -157,9 +154,7 @@ def island(x0, y0, x1, y1, h=96):
             c = rnd.choice([(240, 240, 236), (90, 150, 140), (200, 170, 120), (180, 190, 200)])
             poly([P(xx, Y + .01, zz + 12), P(xx + .32, Y + .01, zz + 12), P(xx + .28, Y + .01, zz + 22), P(xx + .04, Y + .01, zz + 22)], shade(c, KY * 1.1))
             xx += .42
-    box(x0 - .08, y0 - .08, x1 + .08, y1 + .08, h - 12, h, PINE_TOP, top=shade(PINE_TOP, 1.06))
-    import paint
-    paint.stamp(paint.pine_top(x1 - x0 + .16, y1 - y0 + .16, seed=12), x0 - .08, y0 - .08, x1 + .08, y1 + .08, h)
+    iso_paint.paint_box(x0 - .08, y0 - .08, x1 + .08, y1 + .08, h - 12, h, "dining_pine", front="N", col=PINE_TOP)
     cyl(x0 + (x1 - x0) * .45, (y0 + y1) / 2, .26, h, h + 10, (196, 150, 90), top=(214, 170, 100))
 
 
@@ -430,13 +425,7 @@ def dresser(x0, x1, col=(214, 216, 212)):
     open plate shelves above; faces north into the room."""
     d = .8
     box(x0, 0, x1, d, 0, 8, shade(col, .8), ol=False)
-    box(x0, 0, x1, d, 8, 84, col)
-    n = 4
-    for i in range(n):
-        painted.drawer_front("N", x0, 0, x1, d, 8, 84,
-                             i / n + 0.02, (i + 1) / n - 0.02, 52 / 76, 72 / 76, col)
-        painted.door_front("N", x0, 0, x1, d, 8, 84,
-                           i / n + 0.02, (i + 1) / n - 0.02, 6 / 76, 48 / 76, col)
+    iso_paint.paint_box(x0, 0, x1, d, 8, 84, "dining_dresser", front="N", col=col)
     box(x0 - .04, 0, x1 + .04, d + .05, 84, 90, shade(col, 1.04))
     # upper: open shelves with plates, jugs and a picture propped up
     du = .42
@@ -478,11 +467,7 @@ def dining_east_wall_items(ext):
     hc.wall_quad("W", c0 + .43, c1 - .43, 126, 206, shade((196, 206, 210), KX), .025)
     # chest of drawers
     wood = (132, 84, 48)
-    box(0, c0, .8, c1, 0, 88, wood, top=shade(wood, 1.12))
-    for r in range(3):
-        for half in ((c0 + .06, (c0 + c1) / 2 - .02), ((c0 + c1) / 2 + .02, c1 - .06)):
-            qx(.801, half[0], half[1], 12 + r * 24, 32 + r * 24, shade(wood, KX * .9))
-            fl_ellipse(.81, (half[0] + half[1]) / 2, .01, .03, BRASS, 22 + r * 24)
+    iso_paint.paint_box(0, c0, .8, c1, 0, 88, "dining_chest", front="W", col=wood)
     # green lamp, photo frames, plants
     cyl(.35, c1 - .35, .08, 88, 130, (70, 110, 90))
     cone(.35, c1 - .35, .25, .19, 130, 166, (110, 150, 130))
