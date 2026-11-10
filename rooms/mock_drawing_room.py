@@ -16,6 +16,7 @@ import house_common as hc
 hc.init_room(7.3, 7.8, oy=262)
 from house_common import *  # noqa: E402,F401,F403
 import painted  # noqa: E402
+import iso_paint  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 DEBUG = "--exterior-debug" in sys.argv
@@ -114,8 +115,8 @@ def chimney():
 def cupboards(y0, y1, d):
     """Tall built-in white panelled cupboards in the alcove: two doors below, two above."""
     col = WHITE
-    box(0, y0, d, y1, 0, 96, col)
-    box(0, y0, d, y1, 99, WALL_H - 24, col, ol=True)
+    iso_paint.paint_box(0, y0, d, y1, 0, 96, "drawing_cupboard", front="W", col=col)
+    iso_paint.paint_box(0, y0, d, y1, 99, WALL_H - 24, "drawing_cupboard", front="W", col=col)
     line((d, y0, 97.5), (d, y1, 97.5), shade(GREEN, .6), 2)
     w = y1 - y0
     for (za, zb) in ((8, 90), (106, WALL_H - 32)):
@@ -197,21 +198,21 @@ def sofa():
     xr = RW - dep                               # inner edge of the return
     bh, sh, ah = 92, 44, 64
     # back cushions against the y=0 wall
-    painted.fabric_box(xa + .35, 0, RW, .5, 0, bh, c)
+    iso_paint.paint_box(xa + .35, 0, RW, .5, 0, bh, "drawing_sofa", front="S", col=c)
     # seat of the long leg and the return
-    painted.fabric_box(xa + .35, .5, xr, dep, 0, sh, c)
-    painted.fabric_box(xr, .5, RW - .5, yb - .35, 0, sh, c)
+    iso_paint.paint_box(xa + .35, .5, xr, dep, 0, sh, "drawing_sofa", front="S", col=c)
+    iso_paint.paint_box(xr, .5, RW - .5, yb - .35, 0, sh, "drawing_sofa", front="W", col=c)
     # seat cushion seams
     for xx in (xa + .35 + (xr - xa - .35) / 2,):
         line((xx, .5, sh), (xx, dep, sh), shade(c, .7), 1)
         line((xx, dep, 6), (xx, dep, sh), shade(c, .7), 1)
     line((xr, (yb - .35 + .5) / 2 + .3, sh), (RW - .5, (yb - .35 + .5) / 2 + .3, sh), shade(c, .7), 1)
     # arm at the far-left end of the long leg
-    painted.fabric_box(xa, 0, xa + .35, dep, 0, ah, c)
+    iso_paint.paint_box(xa, 0, xa + .35, dep, 0, ah, "drawing_sofa", front="S", col=c)
     # back cushions along the x=RW (near) wall: we see their backs, nearer than the seat
-    painted.fabric_box(RW - .5, .5, RW, yb - .35, 0, bh, c)
+    iso_paint.paint_box(RW - .5, .5, RW, yb - .35, 0, bh, "drawing_sofa", front="W", col=c)
     # arm at the front end of the return
-    painted.fabric_box(xr, yb - .35, RW, yb, 0, ah, c)
+    iso_paint.paint_box(xr, yb - .35, RW, yb, 0, ah, "drawing_sofa", front="W", col=c)
     # scatter cushions (green velvet, charcoal, pink, cream)
     cush = [((xa + .5, .52), (210, 170, 168), 0), ((xa + 1.0, .52), (226, 222, 206), 0),
             ((xa + 1.75, .52), (78, 78, 82), 0), ((xa + 2.35, .52), (34, 82, 64), 0), ((xr - .1, .52), (34, 82, 64), 0)]
@@ -225,8 +226,7 @@ def coffee_table(x0, y0, x1, y1, h=46):
     top = (172, 118, 66)
     for (lx, ly) in ((x0 + .15, y0 + .12), (x1 - .2, y0 + .12), (x0 + .15, y1 - .17), (x1 - .2, y1 - .17)):
         box(lx, ly, lx + .06, ly + .06, 0, h - 8, (110, 70, 40), ol=False)
-    box(x0, y0, x1, y1, h - 8, h, top)
-    painted.wood_top(x0, y0, x1, y1, h, top)
+    iso_paint.paint_box(x0, y0, x1, y1, h - 8, h, "drawing_oak", front="S", col=top)
     for i in range(1, 3):                     # plank joints
         yy = y0 + (y1 - y0) * i / 3
         line((x0, yy, h), (x1, yy, h), shade(top, .65), 1)
@@ -259,10 +259,9 @@ def tv_stand(x0, x1, y0, y1):
     """Low wooden stand against the near (y=RD) wall; the TV faces the sofa, so we see its back."""
     c = OAK
     for (lx) in (x0 + .05, x1 - .15):
-        box(lx, y0, lx + .1, y1, 0, 46, c)
+        iso_paint.paint_box(lx, y0, lx + .1, y1, 0, 46, "drawing_oak", front="S", col=c)
     box(x0 + .1, y0 + .05, x1 - .1, y1 - .05, 18, 22, shade(c, .9))
-    box(x0, y0, x1, y1, 46, 52, c)
-    painted.wood_top(x0, y0, x1, y1, 52, c)
+    iso_paint.paint_box(x0, y0, x1, y1, 46, 52, "drawing_oak", front="S", col=c)
     # games console + basket hint on the shelf
     box(x1 - .55, y0 + .1, x1 - .35, y0 + .5, 52, 92, (236, 236, 236))
     # TV (back view, black) on a centre foot
