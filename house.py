@@ -133,13 +133,13 @@ SOLIDS = {
         (2.03, 5.26, 4.17, 5.68),   # hearth
     ],
     "master": [
-        (0.12, 2.68, 3.72, 5.58),   # king bed, head east, projecting west
-        (0.10, 2.05, 0.62, 2.60),   # bedside table, south of the head
-        (0.10, 5.66, 0.62, 6.22),   # bedside table, north of the head
+        (1.32, 4.18, 4.04, 7.62),   # king bed, head north, projecting south
+        (4.12, 7.10, 4.56, 7.68),   # bedside table, west of the head (by the dressing door)
+        (0.74, 7.10, 1.24, 7.68),   # bedside table, east of the head
         (5.40, 0.10, 7.15, 0.78),   # pine chest + TV, SW corner between the windows
         (6.02, 2.55, 7.20, 4.15),   # pine desk at the west window
         (5.32, 3.00, 5.86, 3.70),   # white chair
-        (3.15, 7.25, 4.25, 7.72),   # white bookcase
+        (0.12, 7.25, 0.90, 7.72),   # white bookcase, east end of the north wall
         (5.95, 7.08, 7.20, 7.80),   # chimney breast
         (5.83, 6.66, 7.20, 7.08),   # hearth
     ],

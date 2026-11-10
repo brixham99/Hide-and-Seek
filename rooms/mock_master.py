@@ -8,11 +8,12 @@ South wall (front): sash with pale blue floral curtains and rooftops
 beyond, a pine chest of drawers with a television. West wall: sash
 with the same curtains, a pine desk and white chair, radiator under
 each window. North wall: chimney breast with a white fireplace and
-black insert, an open doorway to the Dressing Room, a white bookcase
-with a globe. East wall: landing door at the south end; a king-size
-bed with a cane headboard against this wall (north of the door),
-white bedding, a bedside table and lamp on each side, projecting
-west onto a large pale blue-grey rug. Pine chest of drawers with a
+black insert, an open doorway to the Dressing Room (shifted a little
+west, next to the chimney, so the bed fits beside it), a king-size
+bed with a cane headboard against this wall projecting south onto a
+large pale blue-grey rug, a bedside table and lamp on each side of
+the head, and a white bookcase with a globe toward the east end.
+East wall: landing door at the south end. Pine chest of drawers with a
 television in the south-west corner, between the two sash windows.
 Ceiling pendant left out. No internal door leaf; no registration-plate
 lettering.
@@ -38,7 +39,7 @@ CUSHION = (176, 186, 196)     # blue-grey
 CANE = (186, 150, 96)
 
 LANDING_DOOR = (0.50, 1.75)     # east wall, south end -> landing
-DRESSING_DOOR = (4.40, 5.75)    # north wall, east of the chimney -> dressing room
+DRESSING_DOOR = (4.64, 5.88)    # north wall, just east of the chimney -> dressing room
 WIN_S = (1.45, 3.20)            # south wall (front)
 WIN_W = (2.55, 4.30)            # west wall
 BREAST = (5.95, 7.18, 0.72)     # chimney on the north wall: x0, x1, depth
@@ -68,7 +69,7 @@ def oak_floor():
 
 def pale_rug():
     """Large pale blue-grey rug under the bed, spreading into the room."""
-    box(0.30, 1.90, 5.20, 6.40, 0.4, 1.2, (196, 202, 208), top=shade((206, 210, 214), 1.04))
+    box(0.95, 3.15, 5.15, 7.45, 0.4, 1.2, (196, 202, 208), top=shade((206, 210, 214), 1.04))
 
 
 def hearth():
@@ -108,42 +109,43 @@ def fireplace_front():
 
 
 def wooden_bed():
-    """King-size bed: cane headboard against the east wall, north of the
-    landing door, projecting west into the middle of the room."""
-    x0, x1 = 0.12, 3.72          # head (east) ... foot (west)
-    y0, y1 = 2.68, 5.58
+    """King-size bed: cane headboard against the north wall, just east of
+    the dressing doorway, projecting south into the middle of the room."""
+    x0, x1 = 1.32, 4.04          # east ... west (width)
+    y0, y1 = 4.18, 7.62          # foot (south) ... head (north)
     # frame
     box(x0, y0, x1, y1, 0, 28, PINE, top=shade(PINE, 1.05))
     # white mattress and duvet
-    box(x0 + 0.10, y0 + 0.08, x1 - 0.10, y1 - 0.10, 28, 48, SHEET, top=shade(SHEET, 1.04))
-    box(x0 + 0.12, y0 + 0.10, x1 - 0.12, y1 - 0.12, 48, 54, shade(SHEET, 1.02), top=shade(SHEET, 1.06))
-    # pillows at the east (head)
-    mid = (y0 + y1) / 2
-    box(x0 + 0.18, y0 + 0.18, x0 + 0.88, mid - 0.06, 54, 70, SHEET, top=shade(SHEET, 1.05))
-    box(x0 + 0.18, mid + 0.06, x0 + 0.88, y1 - 0.18, 54, 70, SHEET, top=shade(SHEET, 1.05))
+    box(x0 + 0.08, y0 + 0.10, x1 - 0.08, y1 - 0.10, 28, 48, SHEET, top=shade(SHEET, 1.04))
+    box(x0 + 0.10, y0 + 0.12, x1 - 0.10, y1 - 0.12, 48, 54, shade(SHEET, 1.02), top=shade(SHEET, 1.06))
+    # pillows at the north (head)
+    mid = (x0 + x1) / 2
+    box(x0 + 0.18, y1 - 0.88, mid - 0.06, y1 - 0.18, 54, 70, SHEET, top=shade(SHEET, 1.05))
+    box(mid + 0.06, y1 - 0.88, x1 - 0.18, y1 - 0.18, 54, 70, SHEET, top=shade(SHEET, 1.05))
     # blue-grey cushion
-    box(x0 + 0.48, mid - 0.38, x0 + 1.10, mid + 0.38, 68, 80, CUSHION, top=shade(CUSHION, 1.08))
-    # cane headboard at the east
-    box(x0 - 0.04, y0 - 0.04, x0 + 0.12, y1 + 0.04, 28, 112, CANE, top=shade(CANE, 1.08))
+    box(mid - 0.38, y1 - 1.12, mid + 0.38, y1 - 0.48, 68, 80, CUSHION, top=shade(CUSHION, 1.08))
+    # cane headboard at the north
+    box(x0 - 0.04, y1 - 0.12, x1 + 0.04, y1 + 0.06, 28, 112, CANE, top=shade(CANE, 1.08))
     for i in range(7):
-        yy = y0 + 0.10 + i * (y1 - y0 - 0.20) / 6
-        box(x0 - 0.02, yy - 0.02, x0 + 0.10, yy + 0.02, 34, 106, shade(CANE, 0.85), ol=False)
+        xx = x0 + 0.10 + i * (x1 - x0 - 0.20) / 6
+        box(xx - 0.02, y1 - 0.10, xx + 0.02, y1 + 0.04, 34, 106, shade(CANE, 0.85), ol=False)
     for j in range(5):
         zz = 40 + j * 12
-        box(x0 - 0.02, y0 + 0.08, x0 + 0.10, y1 - 0.08, zz, zz + 3, shade(CANE, 0.9), ol=False)
-    # foot rail (west)
-    box(x1 - 0.08, y0, x1 + 0.04, y1, 20, 52, PINE, top=shade(PINE, 1.06))
+        box(x0 + 0.08, y1 - 0.10, x1 - 0.08, y1 + 0.04, zz, zz + 3, shade(CANE, 0.9), ol=False)
+    # foot rail (south)
+    box(x0, y0 - 0.04, x1, y0 + 0.08, 20, 52, PINE, top=shade(PINE, 1.06))
 
 
 def bedside_tables():
-    """A pine bedside table and lamp on each side of the head."""
+    """A pine bedside table and lamp on each side of the head, against
+    the north wall: one by the dressing door, one toward the east."""
     def one(x0, y0, x1, y1):
         box(x0, y0, x1, y1, 0, 48, PINE, top=shade(PINE, 1.1))
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
         cyl(cx, cy, 0.05, 48, 74, WHITE_)
         cyl(cx, cy, 0.14, 72, 90, (232, 228, 220), top=shade((232, 228, 220), 1.08))
-    one(0.10, 2.05, 0.62, 2.60)   # south of the head, toward the landing door
-    one(0.10, 5.66, 0.62, 6.22)   # north of the head, toward the north wall
+    one(4.12, 7.10, 4.56, 7.68)   # west of the head, next to the dressing door
+    one(0.74, 7.10, 1.24, 7.68)   # east of the head
 
 
 def pine_chest():
@@ -177,8 +179,8 @@ def pine_desk():
 
 
 def white_bookcase():
-    """White bookcase on the north wall, east of the dressing door, globe on top."""
-    x0, x1, y0, y1 = 3.15, 4.25, RD - 0.55, RD - 0.08
+    """White bookcase on the north wall, east of the bed, globe on top."""
+    x0, x1, y0, y1 = 0.12, 0.90, RD - 0.55, RD - 0.08
     box(x0, y0, x1, y1, 0, 118, WHITE_, top=shade(WHITE_, 1.05))
     rnd = random.Random(8)
     for z in (28, 56, 84):
@@ -204,11 +206,11 @@ def radiators():
 
 
 def wall_picture():
-    """Landscape print above the bed, on the east wall (far in SE)."""
-    if hc.FLIP:
+    """Landscape print above the bed, on the north wall (far in V)."""
+    if not hc.FLIP:
         return
-    qx(0.04, 3.35, 4.95, 128, 176, shade((120, 88, 48), KX))
-    qx(0.045, 3.45, 4.85, 134, 170, shade((186, 196, 176), KX))
+    qy(RD - 0.04, 1.70, 3.55, 128, 176, shade((120, 88, 48), KY))
+    qy(RD - 0.045, 1.80, 3.45, 134, 170, shade((186, 196, 176), KY))
 
 
 def floral_drapes_south():
@@ -256,7 +258,7 @@ def main():
     radiators()
     chimney_hung()
     wall_picture()
-    place_sprite("archie", 4.45, 2.35)
+    place_sprite("archie", 3.55, 3.15)
     ghost_near_walls(WALL,
                      doors_S=[DRESSING_DOOR],
                      windows_E=() if hc.FLIP else [WIN_W],
