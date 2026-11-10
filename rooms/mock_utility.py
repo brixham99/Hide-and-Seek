@@ -30,6 +30,7 @@ import sys
 import house_common as hc
 hc.init_room(3.6, 5.8)
 from house_common import *  # noqa: E402,F401,F403
+import painted  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_utility_mock.png"
@@ -71,12 +72,10 @@ def east_run(y0, y1, d=1.0):
     grey = (130, 134, 136)
     washer(y1 - 1.02, y1 - .02)
     box(0, y0, d - .04, y1 - 1.06, 4, CH - 6, grey)
-    m = (y0 + y1 - 1.06) / 2
-    for a, b in ((y0 + .05, m - .02), (m + .02, y1 - 1.1)):
-        qx(d - .039, a, b, 10, CH - 12, shade(grey, KX * 1.04))
-    for yy in (m - .07, m + .04):
-        qx(d - .037, yy, yy + .03, 60, 66, (60, 60, 64))
+    painted.door_front("W", 0, y0, d - .04, y1 - 1.06, 4, CH - 6, 0.04, 0.48, 0.08, 0.94, grey)
+    painted.door_front("W", 0, y0, d - .04, y1 - 1.06, 4, CH - 6, 0.52, 0.96, 0.08, 0.94, grey)
     box(0, y0, d, y1, CH - 6, CH, WOOD, top=shade(WOOD, 1.12))
+    painted.wood_top(0, y0, d, y1, CH, WOOD)
     rnd = random.Random(4)
     for zz in (132, 180):
         box(0, y0 + .1, .42, y1 - .1, zz, zz + 4, (242, 242, 238))
@@ -94,6 +93,7 @@ def north_run(x0, x1, sink, d=1.0):
     a, b = sink
     box(x0, RD - d, a, RD, 4, CH - 6, (244, 244, 242))                    # washer 1 (seen from behind)
     box(x0, RD - d - .02, a, RD, CH - 6, CH, WOOD, top=shade(WOOD, 1.12))
+    painted.wood_top(x0, RD - d - .02, a, RD, CH, WOOD)
     box(a, RD - d, x1, RD, 4, 56, (240, 240, 236))
     box(a, RD - d - .06, x1 - .05, RD - .05, 56, CH + 1, (248, 248, 246), top=(236, 238, 238))
     qz(CH + 1.2, a + .08, RD - d + .04, x1 - .13, RD - .2, (176, 182, 186))
@@ -101,13 +101,7 @@ def north_run(x0, x1, sink, d=1.0):
 
 
 def tall_cupboard(y0, y1, d=.9, h=212):
-    c = (242, 242, 238)
-    box(0, y0, d, y1, 0, h, c)
-    m = (y0 + y1) / 2
-    for a, b in ((y0 + .04, m - .015), (m + .015, y1 - .04)):
-        qx(d + .001, a, b, 8, h - 8, shade(c, KX * .96))
-    for yy in (m - .06, m + .03):
-        qx(d + .003, yy, yy + .02, 96, 118, (120, 120, 124))
+    painted.wardrobe(0, y0, d, y1, 0, h, col=(242, 242, 238), doors=2, front="W")
 
 
 def clothes_rail(x, y0, y1, z=196):
@@ -126,10 +120,7 @@ def clothes_rail(x, y0, y1, z=196):
 
 
 def wicker_basket(cx, cy):
-    c = (176, 140, 90)
-    cyl(cx, cy, .3, 0, 32, c, top=shade(c, .7))
-    for zz in (8, 16, 24):
-        line((cx - .3, cy + .3, zz), (cx + .3, cy + .3, zz), shade(c, .75), 1)
+    painted.basket(cx - .3, cy - .3, cx + .3, cy + .3, z1=32, col=(176, 140, 90))
 
 
 def west_wall_hung():

@@ -37,6 +37,7 @@ import sys
 import house_common as hc
 hc.init_room(7.1, 6.6)
 from house_common import *  # noqa: E402,F401,F403
+import painted  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_sitting_room_mock.png"
@@ -112,12 +113,7 @@ def floral_curtains(side, u0, u1, z1):
 
 
 def radiator(side, u0, u1, z0=14, z1=44):
-    k = wall_k(side)
-    wall_quad(side, u0, u1, z0, z1, shade((240, 240, 236), k), .06)
-    u = u0 + .06
-    while u < u1 - .03:
-        wall_quad(side, u, u + .015, z0 + 2, z1 - 2, shade((240, 240, 236), k * .82), .062)
-        u += .08
+    painted.radiator(side, u0, u1, z0, z1)
 
 
 # ------------------------------------------------------------- east wall
@@ -138,14 +134,9 @@ def east_wall():
 
 
 def side_table(y0, y1, x1=.66, h=58):
-    box(.08, y0, x1, y1, h - 5, h, DARK_WOOD, top=shade(DARK_WOOD, 1.2))
-    for lx, ly in ((.1, y0 + .02), (x1 - .07, y0 + .02), (.1, y1 - .07), (x1 - .07, y1 - .07)):
-        box(lx, ly, lx + .05, ly + .05, 0, h - 5, DARK_WOOD, ol=False)
-    box(.12, y0 + .04, x1 - .04, y1 - .04, 16, 19, DARK_WOOD, ol=False)
+    painted.table(.08, y0, x1, y1, h=h, col=DARK_WOOD, legs="square")
     cx, cy = .34, (y0 + y1) / 2 + .06
-    cyl(cx, cy, .1, h, h + 30, (200, 220, 218), top=(220, 236, 236))           # glass base
-    pygame.draw.line(screen, (160, 150, 120), P(cx, cy, h + 30), P(cx, cy, h + 48), 2 * S)
-    cyl(cx, cy, .3, h + 46, h + 82, (124, 146, 128), top=(150, 168, 150))       # grey-green drum shade
+    painted.lamp(cx, cy, h, shade_col=(124, 146, 128), base_col=(200, 220, 218), h=82)
     cyl(x1 - .14, y0 + .12, .06, h, h + 12, (24, 24, 26))                       # smart speaker
 
 
@@ -153,9 +144,7 @@ def armchair(x0, y0, x1, y1):
     """Cream boucle armchair, back to the east wall, facing west; light wood arms; bee cushion."""
     boucle = (234, 226, 210)
     aw = .2
-    box(x0 + .05, y0 + .05, x1 - .05, y1 - .05, 0, 12, shade(LIGHT_OAK, .8), ol=False)
-    box(x0, y0, x0 + .3, y1, 12, 92, boucle)                                    # back
-    box(x0 + .3, y0 + aw, x1, y1 - aw, 12, 42, boucle)                          # seat
+    painted.armchair(x0, y0, x1, y1, col=boucle, front="W", wood_arms=LIGHT_OAK)
     cushion_x(x0 + .42, y0 + aw + .1, y1 - aw - .1, 42, 82, (28, 28, 30))
     # gold bee on the cushion
     cy = (y0 + y1) / 2
@@ -165,10 +154,6 @@ def armchair(x0, y0, x1, y1):
         pygame.draw.line(screen, (28, 28, 30), (bx + dx * S, by - 3 * S), (bx + dx * S, by + 3 * S), S)
     pygame.draw.ellipse(screen, (226, 210, 160), (bx - 6 * S, by - 9 * S, 6 * S, 6 * S), S)
     pygame.draw.ellipse(screen, (226, 210, 160), (bx, by - 9 * S, 6 * S, 6 * S), S)
-    for ya, yb in ((y0, y0 + aw), (y1 - aw, y1)):                               # arms: wood frame, boucle pad
-        box(x0 + .3, ya, x1, yb, 12, 56, boucle)
-        box(x0 + .3, ya, x1 + .03, yb, 56, 62, LIGHT_OAK, top=shade(LIGHT_OAK, 1.12))
-        box(x1 - .06, ya + .04, x1, yb - .04, 0, 56, LIGHT_OAK, ol=False)
 
 
 def white_box(x0, y0, s=.3, h=22):
@@ -194,17 +179,7 @@ def south_wall():
 
 
 def bookcase(x0, x1, d=.55, h=92):
-    box(x0, 0, x1, d, 0, h, DARK_WOOD, top=shade(DARK_WOOD, 1.18))
-    rnd = random.Random(14)
-    spines = [(160, 40, 40), (40, 70, 120), (220, 190, 70), (60, 110, 70), (200, 120, 60), (230, 220, 200), (110, 40, 60), (30, 30, 30)]
-    qy(d + .002, x0 + .05, x1 - .05, 6, h - 6, (40, 28, 20))
-    for za, zb in ((8, 40), (46, 84)):
-        u = x0 + .06
-        while u < x1 - .08:
-            bw = rnd.uniform(.035, .07)
-            qy(d + .004, u, min(x1 - .06, u + bw), za, zb - rnd.uniform(0, 8), shade(rnd.choice(spines), KY * rnd.uniform(.85, 1.0)))
-            u += bw + .004
-        qy(d + .005, x0 + .05, x1 - .05, za - 3, za, shade(DARK_WOOD, KY * 1.1))
+    painted.bookcase(x0, 0, x1, d, 0, h, col=DARK_WOOD, front="N", shelves=2, seed=14)
     # plant and glass ornaments on top
     cyl(x0 + .35, .28, .1, h, h + 16, (220, 214, 200))
     bx, by = P(x0 + .35, .28, h + 16)
@@ -221,15 +196,15 @@ def corner_sofa():
     c = SLATE_BLUE
     x_end, dep, ch_y = 4.9, 1.6, 3.0
     bh, sh, ah = 88, 42, 60
-    box(0, 0, x_end, .45, 0, bh, c)                                 # back along the south wall
-    box(.3, .45, 1.6, ch_y, 0, sh, c)                               # chaise seat
-    box(0, .45, .3, ch_y, 0, ah - 6, c)                             # chaise's low outer arm (east side)
-    box(1.6, .45, x_end - .35, dep, 0, sh, c)                       # main seat
+    painted.fabric_box(0, 0, x_end, .45, 0, bh, c)                     # back along the south wall
+    painted.fabric_box(.3, .45, 1.6, ch_y, 0, sh, c)                 # chaise seat
+    painted.fabric_box(0, .45, .3, ch_y, 0, ah - 6, c)               # chaise's low outer arm (east side)
+    painted.fabric_box(1.6, .45, x_end - .35, dep, 0, sh, c)         # main seat
     for xx in (2.6, 3.6):
         line((xx, .45, sh), (xx, dep, sh), shade(c, .7), 1)
         line((xx, dep, 4), (xx, dep, sh), shade(c, .7), 1)
     line((.3, 1.7, sh), (1.6, 1.7, sh), shade(c, .7), 1)
-    box(x_end - .35, 0, x_end, dep, 0, ah, c)                       # west arm
+    painted.fabric_box(x_end - .35, 0, x_end, dep, 0, ah, c)         # west arm
     for x, col in ((.45, (226, 184, 180)), (1.05, (232, 224, 206)), (1.8, (70, 60, 70)),
                    (2.5, (226, 184, 180)), (3.25, (232, 224, 206)), (3.9, (226, 184, 180))):
         cushion_y(x, x + .55, .66, sh, sh + 38, col)
@@ -282,7 +257,7 @@ def tv_cabinet(x0, x1, d=.55, h=50):
     """Teal cabinet in the west alcove (left of the fireplace when you face it),
     with the television standing on it, clear of the chimney breast."""
     y0 = RD - d
-    box(x0, y0, x1, RD - .02, 0, h, SAGE_CAB, top=shade(SAGE_CAB, 1.1))
+    painted.cabinet(x0, y0, x1, RD - .02, 0, h, col=SAGE_CAB, doors=2, front="S", cornice=True)
     tx0, tx1 = x0 + .18, x1 - .18
     ty = y0 + .12
     box(tx0, ty, tx1, ty + .1, h, h + 8, BLACK)
@@ -340,15 +315,15 @@ def pink_sofa(y0, y1):
     c = VELVET
     x0, x1 = RW - 1.55, RW - .1
     bh, sh, ah = 86, 42, 60
-    box(x0, y0 + .3, x1 - .45, y1 - .3, 0, sh, c)                   # seat
+    painted.fabric_box(x0, y0 + .3, x1 - .45, y1 - .3, 0, sh, c)     # seat
     for yy in ((y0 + y1) / 2,):
         line((x0, yy, sh), (x1 - .45, yy, sh), shade(c, .7), 1)
     for ya, yb in ((y0, y0 + .3),):
-        box(x0, ya, x1, yb, 0, ah, c)                               # south arm
+        painted.fabric_box(x0, ya, x1, yb, 0, ah, c)                 # south arm
     for yy, col in ((y0 + .4, (236, 228, 210)), (y1 - .95, (236, 228, 210))):
         cushion_x(x1 - .5, yy, yy + .55, sh, sh + 36, col)
-    box(x1 - .45, y0, x1, y1, 0, bh, c)                             # back (nearest us)
-    box(x0, y1 - .3, x1, y1, 0, ah, c)                              # north arm
+    painted.fabric_box(x1 - .45, y0, x1, y1, 0, bh, c)               # back (nearest us)
+    painted.fabric_box(x0, y1 - .3, x1, y1, 0, ah, c)                # north arm
     for k in range(3):                                              # velvet sheen on the back
         yy = y0 + .4 + k * (y1 - y0 - .8) / 2
         line((x1 + .001, yy, 12), (x1 + .001, yy + .25, bh - 10), shade(c, 1.12), 1)

@@ -10,6 +10,7 @@ import random
 import pygame
 
 import house_common as hc
+import painted
 from house_common import (P, poly, line, qx, qy, qz, box, cyl, cone, fl_ellipse, shade, art,  # noqa: F401
                           KX, KY, KT, WALL_H, DOOR_H, BRASS, OAK, WHITE, CREAM, GRANITE, STEEL,
                           PINE_TOP, BURGUNDY, PALE_GREY, OFF_WHITE, turned_leg, bar_stool,
@@ -431,13 +432,11 @@ def dresser(x0, x1, col=(214, 216, 212)):
     box(x0, 0, x1, d, 0, 8, shade(col, .8), ol=False)
     box(x0, 0, x1, d, 8, 84, col)
     n = 4
-    w = (x1 - x0) / n
     for i in range(n):
-        a, b = x0 + i * w + .04, x0 + (i + 1) * w - .04
-        qy(d + .001, a, b, 60, 80, shade(col, KY * .94))
-        fl_ellipse((a + b) / 2, d + .01, .025, .015, (240, 240, 236), 70)
-        qy(d + .001, a, b, 14, 56, shade(col, KY * .94))
-        qy(d + .002, a + .06, b - .06, 18, 52, shade(col, KY * 1.02))
+        painted.drawer_front("N", x0, 0, x1, d, 8, 84,
+                             i / n + 0.02, (i + 1) / n - 0.02, 52 / 76, 72 / 76, col)
+        painted.door_front("N", x0, 0, x1, d, 8, 84,
+                           i / n + 0.02, (i + 1) / n - 0.02, 6 / 76, 48 / 76, col)
     box(x0 - .04, 0, x1 + .04, d + .05, 84, 90, shade(col, 1.04))
     # upper: open shelves with plates, jugs and a picture propped up
     du = .42

@@ -21,6 +21,7 @@ import sys
 import house_common as hc
 hc.init_room(6.4, 3.1)
 from house_common import *  # noqa: E402,F401,F403
+import painted  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_boot_room_mock.png"
@@ -100,6 +101,7 @@ def settle(x0, x1, d=0.72):
     box(x0, 0, x1, .07, 96, 104, SAGE_DOOR)
     # seat
     box(x0 + .06, .06, x1 - .06, d, 40, 48, OLD_PINE)
+    painted.wood_top(x0 + .06, .06, x1 - .06, d, 48, OLD_PINE)
     for i in range(1, 3):
         line((x0 + .06, .06 + (d - .06) * i / 3, 48), (x1 - .06, .06 + (d - .06) * i / 3, 48), shade(OLD_PINE, .7), 1)
     # yellow bag on the seat

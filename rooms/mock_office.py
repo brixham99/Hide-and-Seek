@@ -30,6 +30,7 @@ import sys
 import house_common as hc
 hc.init_room(3.6, 6.0)
 from house_common import *  # noqa: E402,F401,F403
+import painted  # noqa: E402
 
 ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = ARGS[0] if ARGS else "shots/hs_office_mock.png"
@@ -124,7 +125,8 @@ def shelving(y0, y1, x0=RW - .72, x1=RW - .04, h=190):
 def desk(y0, y1, d=1.1, h=74, col=(150, 154, 158)):
     box(.05, y0 + .05, .6, y0 + .6, 0, h - 4, col)                 # drawer pedestal (south end of the desk)
     for i in range(3):
-        qx(.601, y0 + .08, y0 + .57, 6 + i * 22, 24 + i * 22, shade(col, KX * .92))
+        painted.drawer_front("W", .05, y0 + .05, .6, y0 + .6, 0, h - 4,
+                             0.06, 0.94, (6 + i * 22) / (h - 4), (24 + i * 22) / (h - 4), col)
     for yy in (y1 - .08,):
         box(d - .08, yy, d - .02, yy + .05, 0, h - 4, col, ol=False)
     box(0, y0, d, y1, h - 4, h, col, top=shade(col, 1.08))
@@ -144,16 +146,13 @@ def office_chair(x, y):
         t = a * 2 * math.pi / 5
         line((x, y, 6), (x + .28 * math.cos(t), y + .28 * math.sin(t), 4), blk, 3)
     cyl(x, y, .03, 6, 44, (80, 80, 84))
-    box(x - .25, y - .25, x + .25, y + .25, 44, 52, blk)
-    box(x + .2, y - .22, x + .28, y + .22, 52, 118, blk)        # back on the +x side (sitter faces the desk)
+    painted.fabric_box(x - .25, y - .25, x + .25, y + .25, 44, 52, blk)
+    painted.fabric_box(x + .2, y - .22, x + .28, y + .22, 52, 118, blk)   # back on the +x side (sitter faces the desk)
 
 
 def side_table(y0, y1, x0, x1):
     w = (244, 244, 240)
-    for yy in (y0 + .03, y1 - .07):
-        for xx in (x0 + .03, x1 - .07):
-            box(xx, yy, xx + .04, yy + .04, 0, 56, w, ol=False)
-    box(x0, y0, x1, y1, 56, 60, w)
+    painted.table(x0, y0, x1, y1, h=60, col=w, legs="square")
     qz(60.5, x0 + .15, y0 + .1, x0 + .33, y1 - .1, (230, 230, 228))     # a spare keyboard
 
 
@@ -164,12 +163,12 @@ def armchair(x0, y0, x1, y1):
     aw, back_d = .22, .3                  # arm width, backrest depth (tiles)
     seat_z, arm_z, back_z = 42, 62, 100
     dark = shade(TAN, .78)
-    box(x0 + .04, y0 + .04, x1 - .04, y1 - .04, 0, 10, shade(TAN, .55), ol=False)      # plinth
-    box(x0, y0, x1, y0 + back_d, 10, back_z, TAN, top=shade(TAN, 1.12))               # backrest
+    painted.fabric_box(x0 + .04, y0 + .04, x1 - .04, y1 - .04, 0, 10, shade(TAN, .55))  # plinth
+    painted.fabric_box(x0, y0, x1, y0 + back_d, 10, back_z, TAN)                       # backrest
     qy(y0 + back_d + .001, x0 + aw, x1 - aw, seat_z + 4, back_z - 6, shade(TAN, KY * 1.05))
-    box(x0, y0, x0 + aw, y1, 10, arm_z, TAN, top=shade(TAN, 1.14))                    # far (east) arm
-    box(x0 + aw, y0 + back_d, x1 - aw, y1 - .02, 10, seat_z - 6, dark)                # seat base
-    box(x0 + aw, y0 + back_d, x1 - aw, y1 - .02, seat_z - 6, seat_z, TAN, top=shade(TAN, 1.16))   # seat cushion
+    painted.fabric_box(x0, y0, x0 + aw, y1, 10, arm_z, TAN)                            # far (east) arm
+    painted.fabric_box(x0 + aw, y0 + back_d, x1 - aw, y1 - .02, 10, seat_z - 6, dark)  # seat base
+    painted.fabric_box(x0 + aw, y0 + back_d, x1 - aw, y1 - .02, seat_z - 6, seat_z, TAN)           # seat cushion
     line((x0 + aw, y1 - .02, seat_z - 3), (x1 - aw, y1 - .02, seat_z - 3), shade(TAN, .65), 1)
     # Union Jack cushion standing on the seat, leaning back against the backrest
     c0, c1 = x0 + aw + .07, x1 - aw - .07
@@ -178,16 +177,14 @@ def armchair(x0, y0, x1, y1):
     Wf = lambda u, z: P(u, yb + (yt - yb) * (z - zb) / (zt - zb), z)
     poly([P(c1, yb, zb), P(c1 + .05, yb - .05, zb), P(c1 + .05, yt - .05, zt), P(c1, yt, zt)], shade((20, 40, 110), KX * .8))   # its side
     draw_polys(union_jack(Wf, c0, c1, zb, zt, KY))
-    box(x1 - aw, y0, x1, y1, 10, arm_z, TAN, top=shade(TAN, 1.14))                    # near (west) arm
+    painted.fabric_box(x1 - aw, y0, x1, y1, 10, arm_z, TAN)                            # near (west) arm
     for ax in (x0, x1 - aw):                                                           # rolled arm fronts
         qy(y1 + .001, ax + .03, ax + aw - .03, arm_z - 10, arm_z - 3, shade(TAN, KY * 1.12))
 
 
 def tv_bench(y0, y1, d=.6):
     """Low white TV bench against the east wall, the big TV's screen facing west into the room."""
-    box(.02, y0, d, y1, 0, 44, (240, 240, 236))
-    qx(d + .001, y0 + .05, (y0 + y1) / 2 - .02, 8, 38, shade((240, 240, 236), KX * .93))
-    qx(d + .001, (y0 + y1) / 2 + .02, y1 - .05, 8, 38, shade((240, 240, 236), KX * .93))
+    painted.cabinet(.02, y0, d, y1, 0, 44, col=(240, 240, 236), doors=2, front="W", cornice=False)
     box(.2, (y0 + y1) / 2 - .12, .38, (y0 + y1) / 2 + .12, 44, 50, (30, 30, 32), ol=False)
     box(.24, y0 + .1, .32, y1 - .1, 52, 132, (26, 26, 28))
     qx(.321, y0 + .14, y1 - .14, 56, 128, (34, 44, 60))
