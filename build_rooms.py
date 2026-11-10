@@ -27,7 +27,8 @@ MOCK = os.path.join(HERE, "rooms")
 CACHE = os.path.join(HERE, "cache")
 VIEWS = {"hall": "mock_hall", "sitting": "mock_sitting_room", "drawing": "mock_drawing_room",
          "kitchen": "mock_kitchen", "dining": "mock_dining", "boot": "mock_boot_room",
-         "utility": "mock_utility", "office": "mock_office", "wc": "mock_wc"}
+         "utility": "mock_utility", "office": "mock_office", "wc": "mock_wc",
+         "landing": "mock_landing", "corridor": "mock_corridor"}
 
 if MOCK not in sys.path:
     sys.path.insert(0, MOCK)
@@ -45,6 +46,10 @@ def _door_glimpses(view, kwargs):
         "kitchen": {"E": [(0.2, g.boot_from_kitchen)]},
         "boot": {"S": [(2.15, g.utility_from_boot), (4.4, g.office_from_boot)],
                  "E": [(0.9, g.wc_from_boot)]},
+        "landing": {"S": [(0.35, g.corridor_from_landing)],
+                    "E": [(2.05, g.warm_beyond_west)]},
+        "corridor": {"S": [(1.50, g.warm_beyond_north), (4.50, g.warm_beyond_north),
+                           (8.50, g.warm_beyond_north), (10.15, g.warm_beyond_north)]},
     }
     want = table.get(view, {})
     for side, key in (("S", "doors_S"), ("E", "doors_E")):
@@ -177,7 +182,7 @@ def build_all(quiet=False):
 
 
 # Bump when saved room images must be rebuilt (opposite view added).
-CACHE_REV = "13"
+CACHE_REV = "14"
 
 
 def cache_ok():

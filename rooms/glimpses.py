@@ -17,6 +17,8 @@ BOOT = (16.6, -0.65)
 UTILITY = (16.6, 2.65)
 OFFICE = (20.85, 2.65)
 WC = (23.2, -0.65)
+LANDING = (6.55, -8.25)
+CORRIDOR = (4.00, -0.20)
 
 PINE = ((196, 116, 56), (178, 100, 46))
 DARK = ((96, 62, 40), (78, 50, 32))
@@ -201,3 +203,70 @@ boot_from_wc = _open(WC, BOOT, boot_zone)
 utility_from_boot = _open(BOOT, UTILITY, utility_zone)
 office_from_boot = _open(BOOT, OFFICE, office_zone)
 wc_from_boot = _open(BOOT, WC, wc_zone)
+
+
+def warm_room():
+    """A plain neighbouring bedroom just east of this room (x < 0)."""
+    _floor("honey", -4.0, 0.0, 0.0, 4.2, seed=3)
+    _wall_y(0, -4.0, 0.0, CREAM)
+    _wall_x(-4.0, 0.0, 4.2, CREAM)
+    _wall_y(4.2, -4.0, 0.0, CREAM)
+
+
+def warm_beyond_west():
+    """A plain room just west of this one (x > RW), for opposite-view west doors."""
+    rw = hc.RW
+    _floor("honey", rw, 0.0, rw + 4.0, 4.2, seed=5)
+    _wall_y(0, rw, rw + 4.0, CREAM)
+    _wall_x(rw + 4.0, 0.0, 4.2, CREAM)
+    _wall_y(4.2, rw, rw + 4.0, CREAM)
+
+
+def warm_beyond_north():
+    """A plain room just north of this one (y > RD), for opposite-view north doors."""
+    rw, rd = hc.RW, hc.RD
+    _floor("honey", 0.0, rd, rw, rd + 3.6, seed=4)
+    _wall_y(rd + 3.6, 0.0, rw, CREAM)
+    _wall_x(0.0, rd, rd + 3.6, CREAM)
+    _wall_x(rw, rd, rd + 3.6, CREAM)
+
+
+def bathroom_zone():
+    """Blue walls, patterned tiles and a white WC — the east bathroom glimpse.
+    x = 2.6 is the doorway wall (do not draw it); x = 0 is the far east wall."""
+    blue = (70, 110, 150)
+    _floor("flags", 0, 0, 2.55, 2.4, seed=18)
+    _wall_y(0, 0, 2.55, blue)
+    _wall_x(0, 0, 2.4, blue)
+    _wall_y(2.4, 0, 2.55, blue)
+    # shuttered window on the far wall
+    hc.qx(0.04, 0.55, 1.85, 70, 170, hc.shade((220, 214, 200), hc.KX))
+    for u0, u1 in ((0.55, 1.15), (1.25, 1.85)):
+        hc.qx(0.05, u0, u1, 78, 162, hc.shade((186, 176, 158), hc.KX))
+    hc.box(1.55, 1.35, 2.35, 2.10, 0, 42, (248, 248, 246))
+    hc.box(1.60, 1.75, 2.30, 2.20, 42, 78, (248, 248, 246))
+
+
+def landing_zone():
+    """Oak floor, grey walls, the well rail and the jute rug, in landing tiles."""
+    _floor("honey", 1.65, 0, 3.2, 8.05, seed=6)
+    _floor("honey", 0, 0, 3.2, 3.15, seed=6)
+    _floor("honey", 0, 7.18, 3.2, 8.05, seed=6)
+    hc.qz(-2, 0.06, 3.2, 1.62, 7.16, (52, 50, 48))
+    _wall_y(0, 0, 3.2, (188, 190, 192))
+    _wall_x(0, 0, 3.15, (188, 190, 192))
+    hc.box(1.52, 6.35, 1.70, 7.12, 88, 100, (112, 48, 32))
+    hc.cyl(2.15, 2.15, 0.85, 0.4, 0.8, (186, 166, 122))
+
+
+def corridor_zone():
+    _floor("honey", 0, 0, 11.4, 2.2, seed=9)
+    _wall_y(2.2, 0, 11.4, (188, 190, 192))
+    _wall_x(11.4, 0, 2.2, (188, 190, 192))
+    hc.box(10.9, 0.8, 11.35, 1.4, 36, 74, (158, 160, 164))
+
+
+landing_from_corridor = _open(CORRIDOR, LANDING, landing_zone)
+corridor_from_landing = _open(LANDING, CORRIDOR, corridor_zone)
+BATH = (1.40, -0.20)   # east bathroom, west wall meets the corridor's east wall
+bathroom_from_corridor = _open(CORRIDOR, BATH, bathroom_zone)

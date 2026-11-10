@@ -51,7 +51,8 @@ def load_views():
         print("Building the room images (first run only)...")
         build_rooms.build_all(quiet=True)
     views = {}
-    names = ("hall", "sitting", "drawing", "kitchen", "dining", "boot", "utility", "office", "wc")
+    names = ("hall", "sitting", "drawing", "kitchen", "dining", "boot", "utility", "office", "wc",
+             "landing", "corridor")
     for v in names:
         for suffix in ("", "_r"):
             key = v + suffix
@@ -163,6 +164,10 @@ class Game:
             cr = house.crossing(self.room, self.x, self.y)
             if cr:
                 self.change_room(*cr)
+            else:
+                cr = house.stair_crossing(self.room, self.x, self.y)
+                if cr:
+                    self.change_room(*cr)
         v = house.view_for(self.room, self.x, self.view)
         if v != self.view:                                   # the beam: slide
             self.trans = ("slide", 0.0, None, self.view, v)

@@ -21,6 +21,8 @@ ROOMS = {
     "utility": dict(name="Utility", rw=3.6, rd=5.8, origin=(16.6, 2.65), views=[("utility", 0.0, 0, 99)]),
     "office":  dict(name="Office", rw=3.6, rd=6.0, origin=(20.85, 2.65), views=[("office", 0.0, 0, 99)]),
     "wc":      dict(name="Dragon Toilet", rw=1.65, rd=3.1, origin=(23.2, -0.65), views=[("wc", 0.0, 0, 99)]),
+    "landing": dict(name="Landing", rw=3.2, rd=8.05, origin=(6.55, -8.25), views=[("landing", 0.0, 0, 99)]),
+    "corridor": dict(name="Upstairs Corridor", rw=11.4, rd=2.2, origin=(4.00, -0.20), views=[("corridor", 0.0, 0, 99)]),
 }
 VIEW_NAMES = {"kitchen": "Kitchen", "dining": "Dining Room"}
 KD_SPLIT = 8.2
@@ -35,6 +37,7 @@ PORTALS = [
     (("boot", "N", 2.15, 3.45), ("utility", "S", 2.3, 3.45)),
     (("boot", "N", 4.4, 5.7), ("office", "S", .15, 1.6)),
     (("boot", "W", .9, 2.3), ("wc", "E", .9, 2.3)),
+    (("landing", "N", 0.35, 2.85), ("corridor", "S", 2.90, 5.40)),
 ]
 
 # main furniture footprints (x0, y0, x1, y1), room-local tiles
@@ -60,9 +63,22 @@ SOLIDS = {
     "office": [(.02, 1.65, .6, 3.6), (0, 3.8, 1.1, 5.92), (1.3, 4.65, 1.8, 5.15), (2.2, .25, 3.3, 1.35),
                (2.55, 3.95, 3.2, 4.6), (2.88, 4.95, 3.56, 5.95)],
     "wc": [(.6, 1.9, 1.08, 3.1), (0, 2.76, .36, 3.1), (.92, 0, 1.6, .6)],
+    # stairwell (east side) and balustrade; south and west strips stay walkable
+    "landing": [(0.02, 3.18, 1.58, 7.15), (1.50, 3.10, 1.74, 7.22),
+                (0.05, 2.95, 1.74, 3.20)],
+    "corridor": [(10.85, 0.75, 11.35, 1.45)],   # clothes basket at the west dead end
 }
 
 R = 0.22                     # Archie's footprint radius (tiles)
+
+# Walk onto the bottom step in the Hall (just south of the stair solid) to go
+# up; walk onto the open north end of the landing well to come down.
+STAIR_LINKS = [
+    dict(room="hall", x0=0.28, y0=2.68, x1=1.52, y1=2.99,
+         dest="landing", dx=2.05, dy=7.35),
+    dict(room="landing", x0=0.28, y0=7.16, x1=1.52, y1=7.55,
+         dest="hall", dx=2.05, dy=2.55),
+]
 
 
 def portals_of(room):
@@ -112,6 +128,14 @@ def crossing(room, x, y):
             inset = R + 0.1
             nx, ny = {"S": (tu, inset), "N": (tu, trd - inset), "E": (inset, tu), "W": (trw - inset, tu)}[twall]
             return troom, nx, ny
+    return None
+
+
+def stair_crossing(room, x, y):
+    """If (x, y) is on a stair link, the (room, x, y) at the other end."""
+    for link in STAIR_LINKS:
+        if link["room"] == room and link["x0"] <= x <= link["x1"] and link["y0"] <= y <= link["y1"]:
+            return link["dest"], link["dx"], link["dy"]
     return None
 
 

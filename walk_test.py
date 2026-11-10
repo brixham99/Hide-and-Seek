@@ -151,6 +151,37 @@ def through(g, to_room):
     return ok
 
 
+def through_stairs(g, to_room):
+    """Walk from the current room onto its stair link to to_room."""
+    link = next((L for L in house.STAIR_LINKS if L["room"] == g.room and L["dest"] == to_room), None)
+    if link is None:
+        FAIL.append(f"no stair {g.room} -> {to_room}")
+        return False
+    frm = g.room
+    # stand just outside the zone, then walk into it
+    mx = (link["x0"] + link["x1"]) / 2
+    if frm == "hall":
+        ax, ay, world = mx, link["y0"] - 0.18, "S"   # face north, into the stairs
+    else:
+        ax, ay, world = mx, link["y1"] + 0.18, "N"   # face south, into the well
+    if not go_to(g, ax, ay):
+        return False
+    face(g, screen_facing(world, g.flipped))
+    for _ in range(160):
+        step(g, 0, 1)
+        if g.room != frm:
+            break
+    for _ in range(8):
+        step(g, 0, 1)
+    step(g)
+    settle(g)
+    ok = g.room == to_room and house.free(g.room, g.x, g.y)
+    print(f"  {frm:8s} -> {to_room:8s} via stairs: {'OK' if ok else 'FAILED (now in ' + g.room + ')'}")
+    if not ok:
+        FAIL.append(f"stairs {frm} -> {to_room}")
+    return ok
+
+
 def snap(g, name):
     p = os.path.join(SHOTS, f"hs_walk_{name}.png")
     pygame.image.save(g.screen, p)
@@ -192,9 +223,24 @@ def run(g):
         for a, b in ((p, q), (q, p)):
             g.room, g.view = a[0], None
             rm = house.ROOMS[a[0]]
-            g.x, g.y = nearest_free(a[0], rm["rw"] / 2, rm["rd"] / 2) if a[0] != "kd" else nearest_free("kd", 9.5, 2.5)
+            if a[0] == "kd":
+                sx, sy = 9.5, 2.5
+            elif a[0] == "landing":
+                sx, sy = 2.15, 2.20
+            else:
+                sx, sy = rm["rw"] / 2, rm["rd"] / 2
+            g.x, g.y = nearest_free(a[0], sx, sy)
             g.view = house.view_for(g.room, g.x)
             through(g, b[0])
+    print("stairs, both ways:")
+    for link in house.STAIR_LINKS:
+        g.room, g.view = link["room"], None
+        if link["room"] == "hall":
+            g.x, g.y = nearest_free("hall", 2.05, 2.40)
+        else:
+            g.x, g.y = nearest_free("landing", 2.15, 7.70)
+        g.view = house.view_for(g.room, g.x)
+        through_stairs(g, link["dest"])
 def main():
     os.makedirs(SHOTS, exist_ok=True)
     pygame.init()
