@@ -207,15 +207,17 @@ wc_from_boot = _open(BOOT, WC, wc_zone)
 
 
 def holly_zone():
-    """Warm unbuilt interior of Holly's Room (SE bedroom, 6.9 x 6.4).
-    North wall is the doorway wall from the bathroom — leave it undrawn."""
+    """Pale pink walls, oak floor and the main furniture of Holly's Room.
+    North (bathroom) and west (landing) doorway walls are left undrawn."""
+    pink = (226, 188, 192)
     _floor("honey", 0.0, 0.0, 6.9, 6.4, seed=7)
-    _wall_y(0, 0.0, 6.9, CREAM)
-    _wall_x(0, 0.0, 6.4, CREAM)
-    _wall_x(6.9, 0.0, 6.4, CREAM)
-    # a simple bed along the east wall, so the peek reads as a bedroom
-    hc.box(0.15, 1.80, 1.85, 4.70, 0, 48, (232, 224, 214))
-    hc.box(0.20, 1.90, 1.75, 2.55, 48, 62, (186, 92, 96))
+    _wall_y(0, 0.0, 6.9, pink)
+    _wall_x(0, 0.0, 6.4, pink)
+    hc.box(5.20, 2.55, 6.78, 5.90, 0, 48, (244, 236, 232))
+    hc.box(5.25, 5.00, 6.72, 5.85, 48, 62, (236, 214, 216))
+    hc.box(0.12, 0.10, 1.15, 1.10, 0, 160, (168, 118, 72))
+    hc.box(6.35, 1.80, 6.82, 2.45, 0, 150, (244, 242, 236))
+    hc.box(0.12, 2.35, 1.20, 3.65, 48, 56, (196, 150, 92))
 
 def warm_room():
     """A plain neighbouring bedroom just east of this room (x < 0)."""
@@ -243,31 +245,36 @@ def warm_beyond_north():
     _wall_x(rw, rd, rd + 3.6, CREAM)
 
 
-def bathroom_zone():
+def bathroom_zone(south_wall=True):
     """Pale blue walls, encaustic-style floor, the bath and the loo."""
-    blue = (168, 188, 202)
+    blue = (176, 196, 210)
     import paint
     w, h = 4.6, 4.4
     pal = ((150, 94, 58), (168, 98, 62), (224, 210, 186), (120, 132, 140), (198, 180, 150))
     tex = paint.flagstones(w, h, 18, pal, row=0.34)
     paint.stamp(tex, 0, 0, 4.6, 4.4, 0)
-    _wall_y(0, 0, 4.6, blue)
+    if south_wall:
+        _wall_y(0, 0, 4.6, blue)
     _wall_x(0, 0, 4.4, blue)
     _wall_y(4.4, 0, 4.6, blue)
     hc.qx(0.04, 0.95, 2.75, 70, 198, hc.shade((244, 242, 236), hc.KX))
     hc.box(0.88, 3.22, 3.78, 4.24, 18, 58, (248, 248, 246))
     hc.box(0.10, 1.22, 0.62, 1.92, 0, 42, (248, 248, 246))
     hc.box(0.08, 1.32, 0.36, 1.82, 40, 82, (248, 248, 246))
+    hc.box(4.05, 2.28, 4.52, 2.92, 0, 72, (248, 248, 246))
+    if not south_wall:
+        _wall_x(4.6, 0.0, 4.4, blue)
 
 
-def landing_zone():
+def landing_zone(east_wall=True):
     """Oak floor, grey walls, the well rail and the jute rug, in landing tiles."""
     _floor("honey", 1.65, 0, 3.2, 8.05, seed=6)
     _floor("honey", 0, 0, 3.2, 3.15, seed=6)
     _floor("honey", 0, 7.18, 3.2, 8.05, seed=6)
     hc.qz(-2, 0.06, 3.2, 1.62, 7.16, (52, 50, 48))
     _wall_y(0, 0, 3.2, (188, 190, 192))
-    _wall_x(0, 0, 3.15, (188, 190, 192))
+    if east_wall:
+        _wall_x(0, 0, 3.15, (188, 190, 192))
     hc.box(1.52, 6.35, 1.70, 7.12, 88, 100, (112, 48, 32))
     hc.cyl(2.15, 2.15, 0.85, 0.4, 0.8, (186, 166, 122))
 
@@ -306,3 +313,5 @@ corridor_from_archie = _open(ARCHIE, CORRIDOR, corridor_zone)
 
 holly_from_bathroom = _open(BATH, HOLLY, holly_zone)
 holly_from_landing = _open(LANDING, HOLLY, holly_zone)
+bathroom_from_holly = _open(HOLLY, BATH, lambda: bathroom_zone(south_wall=False))
+landing_from_holly = _open(HOLLY, LANDING, lambda: landing_zone(east_wall=False))

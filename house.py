@@ -25,8 +25,6 @@ ROOMS = {
     "corridor": dict(name="Upstairs Corridor", rw=11.4, rd=3.85, origin=(4.00, -1.85), views=[("corridor", 0.0, 0, 99)]),
     "archie":  dict(name="Archie's Room", rw=6.4, rd=6.4, origin=(5.56, 2.00), views=[("archie", 0.0, 0, 99)]),
     "bathroom": dict(name="The Bathroom", rw=4.6, rd=4.4, origin=(-0.60, -1.85), views=[("bathroom", 0.0, 0, 99)]),
-    # reserved: SE bedroom 12'11 x 11'5, south of the bathroom and east of the landing.
-    # No mock yet (no photos); bathroom and landing doorways show a warm glimpse.
     "holly": dict(name="Holly's Room", rw=6.9, rd=6.4, origin=(-0.60, -8.25), views=[("holly", 0.0, 0, 99)]),
 }
 VIEW_NAMES = {"kitchen": "Kitchen", "dining": "Dining Room"}
@@ -44,7 +42,10 @@ PORTALS = [
     (("boot", "W", .9, 2.3), ("wc", "E", .9, 2.3)),
     (("corridor", "N", 2.65, 4.07), ("archie", "S", 1.09, 2.51)),
     (("corridor", "E", 0.65, 2.15), ("bathroom", "W", 0.65, 2.15)),
+    (("bathroom", "S", 2.90, 4.30), ("holly", "N", 2.90, 4.30)),
+    (("landing", "E", 0.45, 1.70), ("holly", "W", 0.45, 1.70)),
 ]
+
 
 # main furniture footprints (x0, y0, x1, y1), room-local tiles
 SOLIDS = {
@@ -97,7 +98,20 @@ SOLIDS = {
         (0.08, 3.12, 0.66, 4.20),   # ladder shelf
         (3.00, 3.08, 3.95, 3.30),   # glass shower screen
     ],
-    "holly": [],
+    "holly": [
+        (5.18, 2.55, 6.78, 5.95),   # white metal bed along the west wall
+        (0.08, 4.05, 0.72, 5.55),   # oak chest, east wall
+        (0.12, 2.30, 1.28, 3.70),   # pine desk
+        (1.35, 2.70, 1.95, 3.30),   # desk chair
+        (0.10, 0.08, 1.18, 1.15),   # oak double wardrobe, SE corner
+        (1.24, 0.18, 1.72, 0.70),   # fabric toy basket
+        (2.90, 0.12, 3.60, 0.62),   # doll's house
+        (3.50, 0.40, 4.26, 1.16),   # beanbag
+        (4.15, 0.10, 5.55, 0.58),   # lilac cabinet
+        (6.32, 1.78, 6.82, 2.48),   # white wardrobe by the landing door
+        (0.55, 5.68, 2.50, 6.40),   # chimney breast
+        (0.43, 5.26, 2.62, 5.68),   # hearth
+    ],
 }
 
 R = 0.22                     # Archie's footprint radius (tiles)
