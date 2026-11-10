@@ -276,31 +276,89 @@ def tv_stand(x0, x1, y0, y1):
 
 
 def piano(x0, x1, y0, y1, h=126):
-    """Upright piano against the near (x=RW) wall, by the hall door; keyboard faces into the room."""
-    c = (110, 62, 38)
-    box(x0, y0, x1, y1, 0, h, c, top=shade(c, 1.12))
-    # side panel detail (y1 face) and back panelling (x1 face)
-    qy(y1 + .003, x0 + .08, x1 - .08, 12, h - 12, shade(c, KY * .9), shade(c, .55))
-    for i in range(3):
-        a = y0 + (y1 - y0) * (0.06 + i * 0.32)
-        qx(x1 + .003, a, a + (y1 - y0) * .26, 14, h - 14, shade(c, KX * .92), shade(c, .5))
-    # keyboard ledge sticking out on the room side (just visible at the far end)
-    # lamp with a wicker shade, photo frames, plant
-    lx, ly = x0 + .45, y0 + .35
-    cyl(lx, ly, .07, h, h + 10, (210, 200, 180))
+    """Upright piano against the west (x = RW) wall, by the kitchen doorway.
+
+    The keyboard faces into the room (east, the x = x0 side). The usual
+    south-east camera looks at the back of the case, so the keys stay unseen
+    apart from their tops; the opposite view looks at the playing side.
+    """
+    wood = (118, 68, 40)
+    lid = shade(wood, 1.14)
+    kb = 0.26                                      # keyboard projects into the room
+    cx0 = x0 + kb                                  # front of the tall case
+    kz0, kz1 = 56, 65                              # keybed
+    # tall case against the wall
+    box(cx0, y0, x1, y1, 0, h, wood, top=lid)
+    # lower front panel under the keyboard (slightly recessed)
+    box(x0 + 0.05, y0 + 0.03, cx0 + 0.01, y1 - 0.03, 0, kz0, wood)
+    # cheek blocks and keybed
+    box(x0, y0, cx0, y0 + 0.10, kz0 - 2, kz1 + 10, wood, top=lid)
+    box(x0, y1 - 0.10, cx0, y1, kz0 - 2, kz1 + 10, wood, top=lid)
+    box(x0, y0 + 0.10, cx0, y1 - 0.10, kz0, kz1, wood, top=shade(wood, 0.82))
+    # white keys along the wall; tops read from above in both views, fronts
+    # only when the playing side faces the camera
+    ivory = (236, 232, 220)
+    ivory2 = (220, 214, 200)
+    n_w = 16
+    ky0, ky1 = y0 + 0.11, y1 - 0.11
+    iw = (ky1 - ky0) / n_w
+    show_front = bool(FLIP)
+    for i in range(n_w):
+        a = ky0 + i * iw
+        b = a + iw - 0.012
+        qz(kz1 + 0.6, x0 + 0.03, a, cx0 - 0.05, b, ivory if i % 2 == 0 else ivory2)
+        if show_front:
+            qx(x0 + 0.015, a, b, kz1 - 0.4, kz1 + 0.6, ivory if i % 2 == 0 else ivory2)
+    # black keys in the usual 2+3 grouping
+    ebony = (34, 30, 28)
+    for oct0 in range(0, n_w, 7):
+        for off in (0, 1, 3, 4, 5):
+            i = oct0 + off
+            if i >= n_w - 1:
+                continue
+            mid = ky0 + (i + 1) * iw
+            a, b = mid - iw * 0.30, mid + iw * 0.30
+            box(x0 + 0.09, a, cx0 - 0.08, b, kz1 + 0.6, kz1 + 5.2, ebony,
+                top=shade(ebony, 1.2), ol=False)
+    # fallboard / nameboard just above the keys
+    box(cx0 - 0.07, y0 + 0.08, cx0 + 0.12, y1 - 0.08, kz1 + 6, kz1 + 20, wood, top=lid)
+    # music stand and a sheet, only on the playing side
+    if show_front:
+        my0 = (y0 + y1) / 2 - 0.42
+        my1 = (y0 + y1) / 2 + 0.42
+        box(cx0 - 0.06, my0, cx0 + 0.05, my1, kz1 + 20, kz1 + 54, wood, top=lid)
+        qx(cx0 - 0.062, my0 + 0.08, my1 - 0.08, kz1 + 24, kz1 + 50, (232, 226, 214))
+        # decorative upper panel (inlay suggestion from the photo)
+        qx(cx0 - 0.008, y0 + 0.18, y1 - 0.18, kz1 + 22, h - 10, shade(wood, 0.82))
+        mid = (y0 + y1) / 2
+        qx(cx0 - 0.012, mid - 0.35, mid + 0.35, kz1 + 36, h - 22, shade(wood, 0.68))
+    # side of the case (the end this camera sees) and a simple back, not cupboard doors
+    if FLIP:
+        qy(y0 - 0.003, x0 + 0.02, x1 - 0.03, 8, h - 8, shade(wood, KY * 0.94), shade(wood, 0.5))
+    else:
+        qy(y1 + 0.003, x0 + 0.02, x1 - 0.03, 8, h - 8, shade(wood, KY * 0.94), shade(wood, 0.5))
+        qx(x1 + 0.003, y0 + 0.12, y1 - 0.12, 16, h - 16, shade(wood, KX * 0.88), shade(wood, 0.5))
+    # lamp, photo frames and spider plant on the lid (as in the house photos)
+    lx, ly = (cx0 + x1) / 2, y0 + 0.38
+    cyl(lx, ly, 0.07, h, h + 10, (210, 200, 180))
     pygame.draw.line(screen, (200, 180, 120), P(lx, ly, h + 10), P(lx, ly, h + 30), 2 * S)
-    cone(lx, ly, .21, .13, h + 26, h + 52, (204, 150, 80))
-    for (fy, fh, col) in ((y0 + .85, 26, (220, 200, 170)), (y0 + 1.25, 22, (40, 36, 32)), (y0 + 1.65, 30, (230, 225, 215))):
-        box(x0 + .3, fy, x0 + .36, fy + .25, h, h + fh, col)
-        qx(x0 + .362, fy + .04, fy + .21, h + 4, h + fh - 4, (120, 110, 100))
-    # spider plant
-    cyl(x0 + .45, y1 - .35, .1, h, h + 14, (236, 236, 236))
+    cone(lx, ly, 0.21, 0.13, h + 26, h + 52, (204, 150, 80))
+    for (fy, fh, col) in ((y0 + 0.85, 26, (220, 200, 170)),
+                          (y0 + 1.25, 22, (40, 36, 32)),
+                          (y0 + 1.65, 30, (230, 225, 215))):
+        box(cx0 + 0.12, fy, cx0 + 0.18, fy + 0.25, h, h + fh, col)
+        if FLIP:
+            qx(cx0 + 0.118, fy + 0.04, fy + 0.21, h + 4, h + fh - 4, (120, 110, 100))
+        else:
+            qx(cx0 + 0.182, fy + 0.04, fy + 0.21, h + 4, h + fh - 4, (120, 110, 100))
+    cyl(cx0 + 0.22, y1 - 0.35, 0.1, h, h + 14, (236, 236, 236))
     rnd = random.Random(5)
-    bx, by = P(x0 + .45, y1 - .35, h + 14)
+    bx, by = P(cx0 + 0.22, y1 - 0.35, h + 14)
     for _ in range(14):
         a = rnd.uniform(-2.6, -0.5)
         L = rnd.uniform(14, 26) * S
-        pygame.draw.line(screen, (90, 150, 70), (bx, by), (bx + math.cos(a) * L, by + math.sin(a) * L * .9), 2 * S)
+        pygame.draw.line(screen, (90, 150, 70), (bx, by),
+                         (bx + math.cos(a) * L, by + math.sin(a) * L * 0.9), 2 * S)
 
 
 def pendant(x, y):
