@@ -280,12 +280,17 @@ def landing_zone(east_wall=True):
     hc.cyl(2.15, 2.15, 0.85, 0.4, 0.8, (186, 166, 122))
 
 
-def corridor_zone():
+def corridor_zone(north_wall=True):
     """L-shaped floor: east lobby plus the narrow passage to the west."""
+    grey = (188, 190, 192)
     _floor("honey", 0, 0, 2.55, 3.85, seed=9)
     _floor("honey", 2.55, 1.65, 11.4, 3.85, seed=9)
-    _wall_y(3.85, 0, 11.4, (188, 190, 192))
-    _wall_x(11.4, 1.65, 3.85, (188, 190, 192))
+    if north_wall:
+        _wall_y(3.85, 0, 11.4, grey)
+    else:
+        _wall_y(0, 0, 2.55, grey)
+        _wall_x(0, 0, 3.85, grey)
+    _wall_x(11.4, 1.65, 3.85, grey)
     hc.box(10.9, 2.4, 11.35, 3.2, 36, 74, (158, 160, 164))
 
 
@@ -316,3 +321,22 @@ holly_from_bathroom = _open(BATH, HOLLY, holly_zone)
 holly_from_landing = _open(LANDING, HOLLY, holly_zone)
 bathroom_from_holly = _open(HOLLY, BATH, lambda: bathroom_zone(south_wall=False))
 landing_from_holly = _open(HOLLY, LANDING, lambda: landing_zone(east_wall=False))
+
+
+UPOFFICE = (-0.60, 2.00)  # north of the corridor lobby, east of Archie's Room
+
+
+def upoffice_zone():
+    """Blue-grey walls, oak floor, the sofa, desk and chest."""
+    blue = (176, 188, 196)
+    _floor("honey", 0, 0, 6.2, 6.4, seed=13)
+    _wall_y(6.4, 0, 6.2, blue)
+    _wall_x(0, 0, 6.4, blue)
+    _wall_x(6.2, 0, 6.4, blue)
+    hc.box(0.10, 1.60, 0.72, 5.00, 0, 52, (236, 232, 224))
+    hc.box(4.90, 4.10, 6.10, 5.70, 48, 56, (36, 38, 42))
+    hc.box(3.30, 0.10, 4.70, 0.65, 0, 78, (168, 118, 72))
+
+
+upoffice_from_corridor = _open(CORRIDOR, UPOFFICE, upoffice_zone)
+corridor_from_upoffice = _open(UPOFFICE, CORRIDOR, lambda: corridor_zone(north_wall=False))

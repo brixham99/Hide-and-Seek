@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static isometric mock-up of the Office (the plan's STUDY, 3.3 m x 2.0 m)
+"""Static isometric mock-up of the Downstairs Office (the plan's STUDY, 3.3 m x 2.0 m)
 for 'Hide and Seek', in the house camera convention (looking plan-south-east).
 
 On the plan the study sits at the back of the house's west wing, between the
@@ -225,7 +225,7 @@ def main():
         ext = exterior_layer({"S": hedge}, haze=(156, 184, 168))
         sash_on_far("S", *WINDOW, ext, z0=100, z1=200, cols=2)
         clocks_hung()
-    img = finish("Hide and Seek - Office (mock-up)", OUT)
+    img = finish("Hide and Seek - Downstairs Office (mock-up)", OUT)
     if not ARGS:      # close-up of the armchair
         a, b = P(2.2, 1.35, 0), P(3.3, .25, 104)
         cx, cy = (a[0] + b[0]) / 2 / S, (a[1] + b[1]) / 2 / S

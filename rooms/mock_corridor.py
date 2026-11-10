@@ -12,7 +12,7 @@ landing/stairwell, not corridor (no floor there).
 
 South of the passage: arched opening to the landing. East of the lobby:
 bathroom doorway. West dead end: clothes basket. North wall: Archie's
-door, a gap with a radiator, then the NE bedroom door. Loft hatch left out.
+door, a gap with a radiator, then the Upstairs Office door. Loft hatch left out.
 """
 import math
 import random
@@ -41,7 +41,7 @@ ARCH = (2.90, 5.40)
 BATH_DOOR = (0.65, 2.15)
 # north wall: two doors with a gap (partition + radiator) between them
 ARCHIE_DOOR = (2.65, 4.07)   # Archie's Room, east end of its south wall
-NE_BED = (0.28, 1.60)        # NE bedroom, west end of its south wall
+NE_BED = (0.28, 1.60)        # Upstairs Office, west end of its south wall
 RAD = (1.72, 2.52)           # radiator on the north wall, in the gap
 
 

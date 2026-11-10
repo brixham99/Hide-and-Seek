@@ -19,11 +19,12 @@ ROOMS = {
                     views=[("dining", 0.0, -99, 8.2), ("kitchen", 8.2, 8.2, 99)]),
     "boot":    dict(name="Boot Room", rw=6.4, rd=3.1, origin=(16.6, -0.65), views=[("boot", 0.0, 0, 99)]),
     "utility": dict(name="Utility", rw=3.6, rd=5.8, origin=(16.6, 2.65), views=[("utility", 0.0, 0, 99)]),
-    "office":  dict(name="Office", rw=3.6, rd=6.0, origin=(20.85, 2.65), views=[("office", 0.0, 0, 99)]),
+    "office":  dict(name="Downstairs Office", rw=3.6, rd=6.0, origin=(20.85, 2.65), views=[("office", 0.0, 0, 99)]),
     "wc":      dict(name="Dragon Toilet", rw=1.65, rd=3.1, origin=(23.2, -0.65), views=[("wc", 0.0, 0, 99)]),
     "landing": dict(name="Landing", rw=3.2, rd=8.05, origin=(6.55, -8.25), views=[("landing", 0.0, 0, 99)]),
     "corridor": dict(name="Upstairs Corridor", rw=11.4, rd=3.85, origin=(4.00, -1.85), views=[("corridor", 0.0, 0, 99)]),
     "archie":  dict(name="Archie's Room", rw=6.4, rd=6.4, origin=(5.56, 2.00), views=[("archie", 0.0, 0, 99)]),
+    "upoffice": dict(name="Upstairs Office", rw=6.2, rd=6.4, origin=(-0.60, 2.00), views=[("upoffice", 0.0, 0, 99)]),
     "bathroom": dict(name="The Bathroom", rw=4.6, rd=4.4, origin=(-0.60, -1.85), views=[("bathroom", 0.0, 0, 99)]),
     "holly": dict(name="Holly's Room", rw=6.9, rd=6.4, origin=(-0.60, -8.25), views=[("holly", 0.0, 0, 99)]),
 }
@@ -41,6 +42,7 @@ PORTALS = [
     (("boot", "N", 4.4, 5.7), ("office", "S", .15, 1.6)),
     (("boot", "W", .9, 2.3), ("wc", "E", .9, 2.3)),
     (("corridor", "N", 2.65, 4.07), ("archie", "S", 1.09, 2.51)),
+    (("corridor", "N", 0.28, 1.60), ("upoffice", "S", 4.88, 6.20)),
     (("corridor", "E", 0.65, 2.15), ("bathroom", "W", 0.65, 2.15)),
     (("bathroom", "S", 0.22, 1.62), ("holly", "N", 0.22, 1.62)),
     (("landing", "E", 0.45, 1.70), ("holly", "W", 0.45, 1.70)),
@@ -97,6 +99,14 @@ SOLIDS = {
         (4.00, 2.25, 4.55, 2.95),   # pedestal basin
         (0.08, 3.12, 0.66, 4.20),   # ladder shelf
         (3.00, 3.08, 3.95, 3.30),   # glass shower screen
+    ],
+    "upoffice": [
+        (0.08, 1.55, 0.80, 5.05),   # cream sofa, east wall
+        (0.12, 5.12, 0.58, 5.62),   # side table
+        (3.22, 0.08, 4.72, 0.68),   # oak chest by the door
+        (4.88, 4.00, 6.10, 5.80),   # black desk
+        (4.16, 4.45, 4.70, 5.35),   # office chair
+        (2.53, 6.24, 4.07, 6.38),   # radiator
     ],
     "holly": [
         (3.38, 3.58, 6.78, 5.14),   # white metal bed, head west, parallel to chimney
