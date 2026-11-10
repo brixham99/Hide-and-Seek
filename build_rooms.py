@@ -33,7 +33,29 @@ if MOCK not in sys.path:
     sys.path.insert(0, MOCK)
 
 
-def build(view):
+def _door_glimpses(view, kwargs):
+    """The opposite view turns the old near wall into the far wall, so the
+    doors that used to be on the ghost wall need a real view through them."""
+    import house_common as hc
+    import glimpses as g
+    table = {
+        "hall": {"S": [(1.9, g.kitchen_from_hall)], "E": [(0.6, g.drawing_from_hall)]},
+        "sitting": {"E": [(0.75, g.hall_from_sitting)]},
+        "drawing": {"S": [(5.75, g.kitchen_from_drawing)]},
+        "kitchen": {"E": [(0.2, g.boot_from_kitchen)]},
+        "boot": {"S": [(2.15, g.utility_from_boot), (4.4, g.office_from_boot)],
+                 "E": [(0.9, g.wc_from_boot)]},
+    }
+    want = table.get(view, {})
+    for side, key in (("S", "doors_S"), ("E", "doors_E")):
+        for span in kwargs.get(key, ()) or ():
+            a = span[0]
+            for a0, fn in want.get(side, ()):
+                if abs(a - a0) < 0.08:
+                    hc.opening_into(side, span[0], span[1], fn)
+
+
+def build(view, flip=False):
     sys.argv = [sys.argv[0], os.path.join(CACHE, "_unused.png")]   # non-empty ARGS: mocks skip their close-ups
     import pygame
     import house_common as hc
@@ -43,6 +65,10 @@ def build(view):
     hc.init_room(mod.RW, mod.RD, ox=mod.OX, oy=mod.OY)
     mod.screen = hc.screen
     mod.OX, mod.OY, mod.RW, mod.RD = hc.OX, hc.OY, hc.RW, hc.RD
+    name = view + ("_r" if flip else "")
+    fg_extra = pygame.Surface(hc.screen.get_size(), pygame.SRCALPHA) if flip else None
+    if flip:
+        hc.begin_flip(fg_extra)
 
     saved = []
 
@@ -53,6 +79,11 @@ def build(view):
     fg = []
 
     def ghost(*a, **k):
+        if flip:
+            # these walls are the far ones now: paint them on the room, solid
+            saved_ghost(*a, **k)
+            _door_glimpses(view, k)
+            return
         layer = pygame.Surface(hc.screen.get_size(), pygame.SRCALPHA)
         with hc.drawing_on(layer):
             saved_ghost(*a, **k)
@@ -66,16 +97,18 @@ def build(view):
         img = pygame.Surface((hc.WIN_W, hc.WIN_H), depth=24)
         img.blit(scaled, (0, 0))
         hc.vignette(img)
-        pygame.image.save(img, os.path.join(CACHE, f"{view}_bg.png"))
+        pygame.image.save(img, os.path.join(CACHE, f"{name}_bg.png"))
         top = pygame.Surface((hc.WIN_W, hc.WIN_H), pygame.SRCALPHA)
         for layer in fg:
             top.blit(pygame.transform.smoothscale(layer, (hc.WIN_W, hc.WIN_H)), (0, 0))
-        pygame.image.save(top, os.path.join(CACHE, f"{view}_fg.png"))
+        if fg_extra is not None:
+            top.blit(pygame.transform.smoothscale(fg_extra, (hc.WIN_W, hc.WIN_H)), (0, 0))
+        pygame.image.save(top, os.path.join(CACHE, f"{name}_fg.png"))
         depth = hc.raster_depth()
-        np.save(os.path.join(CACHE, f"{view}_depth.npy"), np.clip(depth, 0, 1024).astype(np.float16))
-        with open(os.path.join(CACHE, f"{view}.json"), "w") as f:
-            json.dump({"OX": hc.OX, "OY": hc.OY, "RW": hc.RW, "RD": hc.RD}, f)
-        print("built", view, f"({len(hc._occluders)} occluders)")
+        np.save(os.path.join(CACHE, f"{name}_depth.npy"), np.clip(depth, 0, 1024).astype(np.float16))
+        with open(os.path.join(CACHE, f"{name}.json"), "w") as f:
+            json.dump({"OX": hc.OX, "OY": hc.OY, "RW": hc.RW, "RD": hc.RD, "flip": flip}, f)
+        print("built", name, f"({len(hc._occluders)} occluders)")
         return img
 
     def back_doorway(side, a, b, col):
@@ -95,7 +128,23 @@ def build(view):
             orig_pl = hc.HMG.polys_layer
 
             def polys_layer(polys):
+                if hc.FLIP and polys:
+                    for col, pts in polys:
+                        if len(pts) >= 3:
+                            hc.poly(pts, col)
+                    return pygame.Surface((1, 1), pygame.SRCALPHA), (0, 0)
                 return orig_pl(polys) if polys else (pygame.Surface((1, 1), pygame.SRCALPHA), (0, 0))
+
+            patch(hc.HMG, "polys_layer", polys_layer)
+        elif flip:
+            orig_pl = hc.HMG.polys_layer
+
+            def polys_layer(polys):
+                if polys:
+                    for col, pts in polys:
+                        if len(pts) >= 3:
+                            hc.poly(pts, col)
+                return pygame.Surface((1, 1), pygame.SRCALPHA), (0, 0)
 
             patch(hc.HMG, "polys_layer", polys_layer)
         if view == "boot":
@@ -110,6 +159,7 @@ def build(view):
             patch(mod, "drawing_door_polys", lambda: [])
         mod.main()
     finally:
+        hc.end_flip()
         for obj, name, old in reversed(saved):
             setattr(obj, name, old)
 
@@ -120,26 +170,29 @@ def build_all(quiet=False):
     os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
     os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
     for v in VIEWS:
-        build(v)
+        build(v, flip=False)
+        build(v, flip=True)
     with open(os.path.join(CACHE, "REV"), "w") as f:
         f.write(CACHE_REV + "\n")
 
 
-# Bump when saved room images must be rebuilt (macOS alpha-safe canvas).
-CACHE_REV = "4"
+# Bump when saved room images must be rebuilt (opposite view added).
+CACHE_REV = "9"
 
 
 def cache_ok():
     rev = os.path.join(CACHE, "REV")
     if not os.path.exists(rev) or open(rev).read().strip() != CACHE_REV:
         return False
+    names = [v for v in VIEWS] + [v + "_r" for v in VIEWS]
     return all(os.path.exists(os.path.join(CACHE, f"{v}{ext}"))
-               for v in VIEWS for ext in ("_bg.png", "_fg.png", ".json", "_depth.npy"))
+               for v in names for ext in ("_bg.png", "_fg.png", ".json", "_depth.npy"))
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] in VIEWS:
+    if len(sys.argv) > 1 and sys.argv[1].replace("_r", "") in VIEWS:
         os.makedirs(CACHE, exist_ok=True)
-        build(sys.argv[1])
+        arg = sys.argv[1]
+        build(arg.replace("_r", ""), flip=arg.endswith("_r"))
     else:
         build_all("-q" in sys.argv)

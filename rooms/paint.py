@@ -359,8 +359,17 @@ def stamp(tex, x0, y0, x1, y1, z=0.0, mask="rect"):
     sy = (iy0 + np.arange(sh) + 0.5) / S
     xmy = (sx[:, None] - OX) / HW
     xpy = (sy[None, :] - OY + z) / HH
-    wx = (xpy + xmy) / 2 + X_OFF
-    wy = (xpy - xmy) / 2 + Y_OFF
+    if hc.FLIP:
+        # P() spun the room; invert that before sampling the texture
+        xd = (xpy + xmy) / 2
+        yd = (xpy - xmy) / 2
+        wx = hc.RW - xd + X_OFF
+        wy = hc.RD - yd + Y_OFF
+        close = xd + yd
+    else:
+        wx = (xpy + xmy) / 2 + X_OFF
+        wy = (xpy - xmy) / 2 + Y_OFF
+        close = None
     m = (wx >= x0) & (wx <= x1) & (wy >= y0) & (wy <= y1)
     if mask == "ellipse":
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
@@ -375,6 +384,10 @@ def stamp(tex, x0, y0, x1, y1, z=0.0, mask="rect"):
     ty = np.clip((v * (th - 1)).astype(np.int32), 0, th - 1)
     col = np.zeros((sw, sh, 3), np.uint8)
     col[m] = tex[ty[m], tx[m]]
+    if close is not None and hc._zbuf is not None and screen is hc._room_screen:
+        zb = hc._zbuf[ix0:ix1, iy0:iy1]
+        m = m & (close >= zb - 1e-4)
+        zb[m] = close[m]
     # Write the floor pixels straight into the canvas. An SRCALPHA blit onto a
     # macOS surface that itself has alpha clears every pixel whose source alpha
     # is 0, which erases the room inside the floor's bounding box.

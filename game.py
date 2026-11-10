@@ -2,7 +2,10 @@
 """Hide and Seek - walkable prototype of the downstairs.
 
 Archie walks the house with Haunted Mansion's tank controls: Left/Right (A/D)
-turn a quarter turn, Up/Down (W/S) walk forward/back. A gamepad works too
+turn a quarter turn, Up/Down (W/S) walk forward/back. V looks at the room from
+the opposite side. Walking stays camera-relative: Up always goes away from the
+camera, so the same key still moves him the way he is facing on screen.
+A gamepad works too
 (stick or d-pad). Esc quits. Rooms are the mock-up renders (build_rooms.py);
 every internal doorway is open, and walking through one switches the view
 (the Kitchen and Dining Room slide at the beam). The room images are built
@@ -48,15 +51,18 @@ def load_views():
         print("Building the room images (first run only)...")
         build_rooms.build_all(quiet=True)
     views = {}
-    for v in ("hall", "sitting", "drawing", "kitchen", "dining", "boot", "utility", "office", "wc"):
-        p = os.path.join(CACHE, f"{v}_bg.png")
-        with open(os.path.join(CACHE, f"{v}.json")) as f:
-            meta = json.load(f)
-        depth_path = os.path.join(CACHE, f"{v}_depth.npy")
-        depth = np.load(depth_path) if os.path.exists(depth_path) else None
-        views[v] = dict(bg=pygame.image.load(p).convert(),
-                        fg=pygame.image.load(os.path.join(CACHE, f"{v}_fg.png")).convert_alpha(),
-                        depth=depth, **meta)
+    names = ("hall", "sitting", "drawing", "kitchen", "dining", "boot", "utility", "office", "wc")
+    for v in names:
+        for suffix in ("", "_r"):
+            key = v + suffix
+            p = os.path.join(CACHE, f"{key}_bg.png")
+            with open(os.path.join(CACHE, f"{key}.json")) as f:
+                meta = json.load(f)
+            depth_path = os.path.join(CACHE, f"{key}_depth.npy")
+            depth = np.load(depth_path) if os.path.exists(depth_path) else None
+            views[key] = dict(bg=pygame.image.load(p).convert(),
+                              fg=pygame.image.load(os.path.join(CACHE, f"{key}_fg.png")).convert_alpha(),
+                              depth=depth, **meta)
     return views
 
 
@@ -96,6 +102,7 @@ class Game:
         self.shadow = pygame.Surface((60, 24), pygame.SRCALPHA)
         pygame.draw.ellipse(self.shadow, (0, 0, 0, 80), self.shadow.get_rect())
         self.room, self.x, self.y, self.facing = "hall", 1.6, 1.2, "N"
+        self.flipped = False          # True: camera on the opposite side of every room
         self.view = house.view_for(self.room, self.x)
         self.dist = 0.0
         self.moving = False
@@ -146,6 +153,8 @@ class Game:
         self.moving = False
         if move:
             dx, dy = DIRS[self.facing]
+            if self.flipped:             # screen-up stays "away from the camera"
+                dx, dy = -dx, -dy
             step = SPEED * dt * move
             ox, oy = self.x, self.y
             if self._slide(dx * step, dy * step):
@@ -199,15 +208,21 @@ class Game:
         self.log.append((room, self.view[0]))
 
     # ---------------------------------------------------------------- drawing
+    def vid(self, view):
+        return view[0] + ("_r" if self.flipped else "")
+
     def to_screen(self, view, x, y, z=0.0):
-        m = self.views[view[0]]
+        m = self.views[self.vid(view)]
         lx = x - view[1]
+        if m.get("flip"):
+            lx, y = m["RW"] - lx, m["RD"] - y
         return m["OX"] + (lx - y) * HW, m["OY"] + (lx + y) * HH - z
 
     def _occlude(self, img, dest, view):
         """Punch the sprite where a closer solid covers it. `dest` is the
         sprite's top-left on the unshifted view."""
-        depth = self.views[view[0]].get("depth")
+        depth = self.views[self.vid(view)].get("depth")
+        flipped = self.views[self.vid(view)].get("flip")
         if depth is None:
             return img
         w, h = img.get_size()
@@ -222,13 +237,20 @@ class Game:
         # is touching doesn't swallow him
         lx = self.x - view[1]
         thr = np.float16(lx + self.y - 0.04)
-        if np.max(sub) <= thr:
+        # normal view: closer solids have a larger x+y. opposite view: smaller.
+        if flipped:
+            hide = (sub > 0) & (sub < thr)
+            if not np.any(hide):
+                return img
+        elif np.max(sub) <= thr:
             return img
+        else:
+            hide = sub > thr
         out = img.copy()
         alpha = pygame.surfarray.pixels_alpha(out)
         sx, sy = x0 - dest[0], y0 - dest[1]
         region = alpha[sx:sx + (x1 - x0), sy:sy + (y1 - y0)]
-        region[sub > thr] = 0
+        region[hide] = 0
         del alpha
         return out
 
@@ -249,7 +271,7 @@ class Game:
         return rect.inflate(2, 2).clip(pygame.Rect(0, 0, WIN_W, WIN_H))
 
     def _blit_fg(self, surf, view, dest_rect=None):
-        crop, fr = self._fg[view[0]]
+        crop, fr = self._fg[self.vid(view)]
         if fr.w == 0:
             return
         if dest_rect is None:
@@ -263,7 +285,7 @@ class Game:
 
     def _paint_view(self, target, view, player=True):
         """One room onto a 24-bit surface: background, Archie, ghost walls."""
-        m = self.views[view[0]]
+        m = self.views[self.vid(view)]
         target.blit(m["bg"], (0, 0))
         if player:
             self.draw_archie(target, view)
@@ -271,7 +293,8 @@ class Game:
 
     def _hud_on(self, target):
         name = house.label(self.room, self.view)
-        label = self._make_label(name)
+        way = "north-west" if self.flipped else "south-east"
+        label = self._make_label(name + "  ·  " + way)
         target.blit(label, (16, 14))
         hint_at = (WIN_W - self._hint.get_width() - 16, WIN_H - self._hint.get_height() - 14)
         target.blit(self._hint, hint_at)
@@ -298,12 +321,25 @@ class Game:
         return box
 
     def _make_hint(self):
-        txt = self.small.render("Left / Right turn     Up / Down walk     Esc quits", True, (214, 204, 178))
-        sh = self.small.render("Left / Right turn     Up / Down walk     Esc quits", True, (12, 10, 12))
+        way = "north-west" if self.flipped else "south-east"
+        text = f"Left / Right turn    Up / Down walk    V looking {way}    Esc quits"
+        txt = self.small.render(text, True, (214, 204, 178))
+        sh = self.small.render(text, True, (12, 10, 12))
         box = pygame.Surface((txt.get_width() + 4, txt.get_height() + 2), pygame.SRCALPHA)
         box.blit(sh, (2, 1))
         box.blit(txt, (0, 0))
         return box
+
+    def toggle_view(self):
+        """Look at every room from the opposite side. The choice sticks when
+        Archie walks through a door, so the house doesn't spin under him."""
+        if self.trans:
+            return
+        snap = pygame.Surface((WIN_W, WIN_H), 0, 24)
+        snap.blit(self.screen, (0, 0))
+        self.flipped = not self.flipped
+        self._hint = self._make_hint()
+        self.trans = ("fade", 0.0, snap, self.view, self.view)
 
     def draw_view(self, view, offset=(0, 0), alpha=255, player=True):
         """Paint one view into the 24-bit frame (used by the transition below)."""
@@ -350,6 +386,8 @@ def main():
             if e.type == pygame.QUIT or (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE):
                 pygame.quit()
                 return
+            if e.type == pygame.KEYDOWN and e.key == pygame.K_v:
+                g.toggle_view()
         g.update(dt, *g.read_input())
         g.draw()
 

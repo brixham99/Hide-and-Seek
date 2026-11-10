@@ -279,14 +279,39 @@ def hearth():
 
 
 def tv_cabinet(x0, x1, d=.55, h=50):
-    """Sage low cabinet in the west alcove; the TV faces south, so we see its back."""
+    """Teal cabinet in the west alcove (left of the fireplace when you face it),
+    with the television standing on it, clear of the chimney breast."""
     y0 = RD - d
     box(x0, y0, x1, RD - .02, 0, h, SAGE_CAB, top=shade(SAGE_CAB, 1.1))
-    tx0, tx1, ty = x0 + .2, x1 - .2, RD - .3
-    box((tx0 + tx1) / 2 - .3, ty - .1, (tx0 + tx1) / 2 + .3, ty + .1, h, h + 4, BLACK)
-    box((tx0 + tx1) / 2 - .05, ty, (tx0 + tx1) / 2 + .05, ty + .06, h + 4, h + 16, BLACK)
-    box(tx0, ty, tx1, ty + .07, h + 12, h + 112, BLACK, top=(40, 40, 44))
-    qy(ty + .072, tx0 + .35, tx1 - .35, h + 30, h + 90, (34, 34, 36))
+    tx0, tx1 = x0 + .18, x1 - .18
+    ty = y0 + .12
+    box(tx0, ty, tx1, ty + .1, h, h + 8, BLACK)
+    box(tx0 + .15, ty + .02, tx1 - .15, ty + .08, h + 8, h + 62, BLACK, top=(28, 30, 32))
+    qy(ty + .02, tx0 + .28, tx1 - .28, h + 16, h + 54, (18, 22, 26))
+
+
+def fireplace_front():
+    """The south face of the chimney: dark painted breast, brick opening, mantel,
+    candles and the print. The usual view looks at the back of this wall."""
+    if not hc.FLIP:
+        return
+    x0, x1, d = BREAST
+    y = RD - d
+    grey = (96, 98, 102)
+    qy(y, x0 - 0.05, x1 + 0.05, 0, WALL_H, shade(grey, KY))
+    qy(y - 0.01, x0 + 0.35, x1 - 0.35, 6, 86, (150, 78, 62))          # exposed brick
+    qy(y - 0.02, x0 + 0.55, x1 - 0.55, 10, 70, (36, 34, 32))           # the opening
+    box(x0 - 0.12, y - 0.18, x1 + 0.12, y + 0.02, 92, 106, (236, 232, 224))
+    for xx, col in ((x0 + 0.25, (40, 36, 34)), (x0 + 0.55, (230, 220, 190)),
+                    (x1 - 0.7, (190, 150, 80)), (x1 - 0.35, (230, 220, 190))):
+        cyl(xx, y - 0.08, 0.045, 106, 128, col)
+    # framed print (the photo's picture over the mantel, not a mirror or a screen)
+    qy(y - 0.02, x0 + 0.48, x1 - 0.48, 126, 200, (36, 32, 30))
+    qy(y - 0.025, x0 + 0.60, x1 - 0.60, 132, 194, (232, 224, 206))
+    qy(y - 0.03, x0 + 0.70, x1 - 0.70, 140, 188, (196, 176, 142))       # sepia sky
+    qy(y - 0.032, x0 + 0.70, x1 - 0.70, 140, 162, (118, 100, 72))       # ground
+    qy(y - 0.034, x0 + 0.88, x0 + 1.25, 148, 176, (72, 60, 44))         # a tree
+    qy(y - 0.034, x1 - 1.35, x1 - 1.05, 150, 168, (86, 74, 52))
 
 
 def north_wall_hung():
@@ -351,8 +376,9 @@ def main():
     coffee_table()
     place_sprite("archie", 2.4, 4.55)
     pink_sofa(2.05, 5.35)
-    tv_cabinet(4.95, 6.95)
+    tv_cabinet(5.3, 6.85)
     north_wall_hung()
+    fireplace_front()
     ghost_near_walls(WALL, doors_E=[HALL_DOOR], curtains=None)
     finish("Hide and Seek - Sitting Room (mock-up)", OUT)
 

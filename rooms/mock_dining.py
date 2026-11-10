@@ -64,6 +64,8 @@ def kitchen_front():
 
 
 def beam_polys():
+    if hc.FLIP:
+        return []
     c = (238, 236, 230)
     a, b, z0 = RW - .16, RW + .16, WALL_H - 20
     return [(shade(c, KT), [P(a, 0, WALL_H), P(b, 0, WALL_H), P(b, RD, WALL_H), P(a, RD, WALL_H)]),

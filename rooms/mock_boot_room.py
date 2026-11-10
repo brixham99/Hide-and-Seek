@@ -245,10 +245,11 @@ def main():
     b = P(EXT_DOOR[1] + .1, 0, -10)
     x0, y0 = int(a[0] / S) - 10, int(a[1] / S) - 10
     x1, y1 = int(b[0] / S) + 10, int(b[1] / S) + 10
-    crop = img.subsurface((x0, y0, x1 - x0, y1 - y0)).copy()
-    crop = pygame.transform.smoothscale(crop, (crop.get_width() * 3, crop.get_height() * 3))
-    pygame.image.save(crop, CLOSE)
-    print(CLOSE)
+    if x1 > x0 > 0 and y1 > y0 > 0 and x1 <= img.get_width() and y1 <= img.get_height():
+        crop = img.subsurface((x0, y0, x1 - x0, y1 - y0)).copy()
+        crop = pygame.transform.smoothscale(crop, (crop.get_width() * 3, crop.get_height() * 3))
+        pygame.image.save(crop, CLOSE)
+        print(CLOSE)
 
 
 if __name__ == "__main__":

@@ -137,6 +137,10 @@ def raster_depth():
 
 
 def _proj1(x, y, z):
+    """Unscaled screen point. When the opposite view is being built, spin the
+    room 180° so the old near corner becomes the far one."""
+    if FLIP:
+        x, y = RW - x, RD - y
     return (OX + (x - y) * HW, OY + (x + y) * HH - z)
 
 
@@ -168,7 +172,15 @@ def _stamp_face(buf, corners, kind, val):
         m &= cross * sign >= -0.75
     if not m.any():
         return
-    if kind == "z":
+    if FLIP:
+        # same world x+y as the normal view, from the spun projection
+        if kind == "z":
+            d = RW + RD - (gy - OY + val) / HH
+        elif kind == "y":
+            d = RW - RD + 2 * val - (gx - OX) / HW
+        else:
+            d = RD - RW + 2 * val + (gx - OX) / HW
+    elif kind == "z":
         d = (gy - OY + val) / HH
     elif kind == "y":
         d = 2 * val + (gx - OX) / HW
@@ -180,12 +192,47 @@ def _stamp_face(buf, corners, kind, val):
 
 X_OFF = 0.0                            # world -> local x shift while drawing in world coords (see world())
 Y_OFF = 0.0                            # same for y (a doorway glimpse of another room)
+FLIP = False                           # opposite view: 180° around the room
+_zbuf = None                           # closeness (larger = nearer the flipped camera)
+_fg_surf = None                        # near walls, drawn over Archie
+_pinf = {}                             # screen point -> (local x, local y, z, closeness)
+
+
+def begin_flip(fg_surface):
+    """Start the opposite-view build. `fg_surface` receives the new near walls."""
+    global FLIP, _zbuf, _fg_surf, _pinf
+    FLIP = True
+    _zbuf = np.zeros((screen.get_width(), screen.get_height()), np.float32)
+    _fg_surf = fg_surface
+    _pinf = {}
+
+
+def end_flip():
+    global FLIP, _zbuf, _fg_surf, _pinf
+    FLIP = False
+    _zbuf = None
+    _fg_surf = None
+    _pinf = {}
+
+
+def _flip_draw():
+    """Z-sorted drawing only while painting the room itself, not a glimpse layer."""
+    return FLIP and _zbuf is not None and (screen is _room_screen or screen is _fg_surf)
 
 
 def P(x, y, z=0.0):
-    x = x - X_OFF
-    y = y - Y_OFF
-    return ((OX + (x - y) * HW) * S, (OY + (x + y) * HH - z) * S)
+    xl = x - X_OFF
+    yl = y - Y_OFF
+    if FLIP:
+        xd, yd = RW - xl, RD - yl
+        close = xd + yd
+    else:
+        xd, yd = xl, yl
+        close = xl + yl
+    pt = ((OX + (xd - yd) * HW) * S, (OY + (xd + yd) * HH - z) * S)
+    if FLIP:
+        _pinf[pt] = (xl, yl, z, close)
+    return pt
 
 
 class placed:
@@ -223,7 +270,79 @@ class world:
         X_OFF = self.prev
 
 
+def _near_plane(pts):
+    """A vertical face on the east or south wall. After the 180° spin those
+    two walls are the ones nearest the camera, so they belong on the ghost layer."""
+    infs = [_pinf.get(p) for p in pts]
+    if any(i is None for i in infs):
+        return False
+    xs = [i[0] for i in infs]
+    ys = [i[1] for i in infs]
+    zs = [i[2] for i in infs]
+    # only the wall slabs themselves, not the furniture standing against them
+    on_x = max(xs) - min(xs) < 0.2 and max(abs(v) for v in xs) < 0.12
+    on_y = max(ys) - min(ys) < 0.2 and max(abs(v) for v in ys) < 0.12
+    return (on_x or on_y) and max(zs) - min(zs) > 140
+
+
+def _tri_fill(target, a, b, c, da, db, dc, col, alpha, zwrite=True):
+    xs, ys = (a[0], b[0], c[0]), (a[1], b[1], c[1])
+    x0 = max(0, int(math.floor(min(xs))))
+    y0 = max(0, int(math.floor(min(ys))))
+    x1 = min(_zbuf.shape[0], int(math.ceil(max(xs))) + 1)
+    y1 = min(_zbuf.shape[1], int(math.ceil(max(ys))) + 1)
+    if x1 - x0 < 1 or y1 - y0 < 1:
+        return
+    gx = np.arange(x0, x1, dtype=np.float32)[:, None] + 0.5
+    gy = np.arange(y0, y1, dtype=np.float32)[None, :] + 0.5
+    area = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+    if abs(area) < 1:
+        return
+    def edge(p, q):
+        return (q[0] - p[0]) * (gy - p[1]) - (q[1] - p[1]) * (gx - p[0])
+    w0, w1, w2 = edge(b, c), edge(c, a), edge(a, b)
+    if area < 0:
+        w0, w1, w2, area = -w0, -w1, -w2, -area
+    m = (w0 >= -0.5) & (w1 >= -0.5) & (w2 >= -0.5)
+    if not np.any(m):
+        return
+    depth = (w0 * da + w1 * db + w2 * dc) / area
+    sub = _zbuf[x0:x1, y0:y1]
+    m &= depth >= sub - 1e-4
+    if not np.any(m):
+        return
+    if zwrite:
+        sub[m] = depth[m]
+    rgb = pygame.surfarray.pixels3d(target)
+    rgb[x0:x1, y0:y1][m] = col
+    del rgb
+    if target.get_masks()[3] or (target.get_flags() & pygame.SRCALPHA):
+        aa = pygame.surfarray.pixels_alpha(target)
+        aa[x0:x1, y0:y1][m] = alpha
+        del aa
+
+
+def _fill_poly(target, pts, col, alpha, zwrite=True):
+    infs = [_pinf.get(p) for p in pts]
+    if any(i is None for i in infs) or len(pts) < 3:
+        pygame.draw.polygon(target, col, pts)
+        return
+    col = tuple(int(c) for c in col[:3])
+    ds = [i[3] for i in infs]
+    for i in range(1, len(pts) - 1):
+        _tri_fill(target, pts[0], pts[i], pts[i + 1], ds[0], ds[i], ds[i + 1], col, alpha, zwrite)
+
+
 def poly(pts, col, outline=None, w=1):
+    if _flip_draw():
+        near = _near_plane(pts) and _fg_surf is not None
+        # Near walls are the ghost layer: a light tint, and they must not
+        # block the furniture drawn on the room behind them.
+        if near:
+            _fill_poly(_fg_surf, pts, col, 36, zwrite=False)
+        else:
+            _fill_poly(screen, pts, col, 255, zwrite=True)
+        return
     pygame.draw.polygon(screen, col, pts)
     if outline:
         pygame.draw.polygon(screen, outline, pts, max(1, int(w * S)))
@@ -251,10 +370,12 @@ KY, KX, KT = 0.90, 0.72, 1.04          # light: +y faces brighter than +x faces
 
 def box(x0, y0, x1, y1, z0, z1, col, top=None, ol=True, faces="xyz"):
     o = (lambda c: shade(c, 0.55)) if ol else (lambda c: None)
+    # The opposite view looks at the faces the usual camera never sees.
+    y_face, x_face = (y0, x0) if FLIP else (y1, x1)
     if "y" in faces:
-        c = shade(col, KY); qy(y1, x0, x1, z0, z1, c, o(c))
+        c = shade(col, KY); qy(y_face, x0, x1, z0, z1, c, o(c))
     if "x" in faces:
-        c = shade(col, KX); qx(x1, y0, y1, z0, z1, c, o(c))
+        c = shade(col, KX); qx(x_face, y0, y1, z0, z1, c, o(c))
     if "z" in faces:
         c = top or shade(col, KT); qz(z1, x0, y0, x1, y1, c, o(c))
     if "x" in faces or "y" in faces or "z" in faces:
@@ -409,8 +530,15 @@ class drawing_on:
 
 
 def out_pt(side, u, t, z=GROUND_Z):
-    """World point outside back wall `side`: u along the wall, t tiles out from it."""
-    return (u, -t, z) if side == "N" else (-t, u, z)
+    """World point outside a wall: u along the wall, t tiles out from it.
+    "N" is the south wall (y = 0), "W" the east wall (x = 0), "S" the north
+    wall (y = RD). The north wall faces the other way, so the iso shear
+    that lands a window on the ground runs with +t instead of -t."""
+    if side == "N":
+        return (u, -t, z)
+    if side == "S":
+        return (u + t, RD + t, z)
+    return (-t, u, z)
 
 
 def out_quad(side, u0, u1, t0, t1, col, z=GROUND_Z, ol=None):
@@ -478,17 +606,30 @@ def ext_picket_fence(side, u0, u1, t, h=46, col=(236, 234, 226)):
         p0, p1 = P(*out_pt(side, u, t, GROUND_Z)), P(*out_pt(side, u + w, t, GROUND_Z))
         p2, p3 = P(*out_pt(side, u + w, t, GROUND_Z + h)), P(*out_pt(side, u, t, GROUND_Z + h))
         tip = P(*out_pt(side, u + w / 2, t, GROUND_Z + h + 7))
-        poly([p0, p1, p2, tip, p3], shade(col, KY if side == "N" else KX), shade(col, .55))
+        poly([p0, p1, p2, tip, p3], shade(col, KY if side != "W" else KX), shade(col, .55))
         u += 0.17
     for k in (0, 1):     # posts
         uu = u0 + (u1 - u0) * k
-        box(*([uu - .05, -t - .05, uu + .05, -t + .05] if side == "N" else [-t - .05, uu - .05, -t + .05, uu + .05]),
-            GROUND_Z, GROUND_Z + h + 8, col)
+        if side == "S":
+            x, y, _ = out_pt(side, uu, t)
+            box(x - .05, y - .05, x + .05, y + .05, GROUND_Z, GROUND_Z + h + 8, col)
+        else:
+            box(*([uu - .05, -t - .05, uu + .05, -t + .05] if side == "N" else [-t - .05, uu - .05, -t + .05, uu + .05]),
+                GROUND_Z, GROUND_Z + h + 8, col)
 
 
 def ext_hedge(side, u0, u1, t0, t1, h=70, col=(36, 102, 42), rnd=None):
-    b = [u0, -t1, u1, -t0] if side == "N" else [-t1, u0, -t0, u1]
-    box(b[0], b[1], b[2], b[3], GROUND_Z, GROUND_Z + h, col)
+    if side == "S":
+        # a sheared slab, so it lands in the north-wall windows rather than
+        # an axis-aligned box on the wrong side of the house
+        z0, z1 = GROUND_Z, GROUND_Z + h
+        poly([P(*out_pt(side, u0, t0, z0)), P(*out_pt(side, u1, t0, z0)),
+              P(*out_pt(side, u1, t0, z1)), P(*out_pt(side, u0, t0, z1))], col)
+        poly([P(*out_pt(side, u0, t0, z1)), P(*out_pt(side, u1, t0, z1)),
+              P(*out_pt(side, u1, t1, z1)), P(*out_pt(side, u0, t1, z1))], shade(col, 1.12))
+    else:
+        b = [u0, -t1, u1, -t0] if side == "N" else [-t1, u0, -t0, u1]
+        box(b[0], b[1], b[2], b[3], GROUND_Z, GROUND_Z + h, col)
     rnd = rnd or random.Random(1)
     for _ in range(int((u1 - u0) * 10)):
         u = rnd.uniform(u0, u1)
@@ -618,7 +759,6 @@ def show_through(ext, pts, tint=(214, 230, 236), tint_a=22, glare=True):
     mask.fill((255, 255, 255, 0))
     pygame.draw.polygon(mask, (255, 255, 255, 255), loc)
     view.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-    screen.blit(view, (x0, y0))
     if tint_a:
         g = pygame.Surface((w, h), pygame.SRCALPHA)
         pygame.draw.polygon(g, (*tint, tint_a), loc)
@@ -632,7 +772,87 @@ def show_through(ext, pts, tint=(214, 230, 236), tint_a=22, glare=True):
             pygame.draw.polygon(m2, (255, 255, 255, 255), loc)
             streak.blit(m2, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
             g.blit(streak, (0, 0))
-        screen.blit(g, (x0, y0))
+        view.blit(g, (0, 0))
+    if _flip_draw():
+        _present_opening(view, x0, y0, pts)
+    else:
+        screen.blit(view, (x0, y0))
+
+
+def _present_opening(view, x0, y0, pts):
+    """Paste a masked opening onto the flipped room, in front of whatever is
+    farther away. A window in a near (ghost) wall must not paint over the room."""
+    if _near_plane(pts):
+        return
+    infs = [_pinf.get(p) for p in pts]
+    if any(i is None for i in infs):
+        screen.blit(view, (x0, y0))
+        return
+    src = pygame.surfarray.array3d(view)
+    salpha = pygame.surfarray.array_alpha(view)
+    near = _near_plane(pts) and _fg_surf is not None
+    ds = [i[3] for i in infs]
+    rgb = pygame.surfarray.pixels3d(screen)
+    fa = pygame.surfarray.pixels_alpha(_fg_surf) if near else None
+
+    def tri(a, b, c, da, db, dc):
+        xs, ys = (a[0], b[0], c[0]), (a[1], b[1], c[1])
+        xa = max(0, int(math.floor(min(xs))))
+        ya = max(0, int(math.floor(min(ys))))
+        xb = min(_zbuf.shape[0], int(math.ceil(max(xs))) + 1)
+        yb = min(_zbuf.shape[1], int(math.ceil(max(ys))) + 1)
+        if xb - xa < 1 or yb - ya < 1:
+            return
+        gx = np.arange(xa, xb, dtype=np.float32)[:, None] + 0.5
+        gy = np.arange(ya, yb, dtype=np.float32)[None, :] + 0.5
+        area = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+        if abs(area) < 1:
+            return
+        def edge(p, q):
+            return (q[0] - p[0]) * (gy - p[1]) - (q[1] - p[1]) * (gx - p[0])
+        w0, w1, w2 = edge(b, c), edge(c, a), edge(a, b)
+        if area < 0:
+            w0, w1, w2, area = -w0, -w1, -w2, -area
+        m = (w0 >= -0.5) & (w1 >= -0.5) & (w2 >= -0.5)
+        depth = (w0 * da + w1 * db + w2 * dc) / area
+        sub = _zbuf[xa:xb, ya:yb]
+        m &= depth >= sub - 1e-4
+        vx = np.broadcast_to((np.arange(xa, xb) - x0)[:, None], m.shape)
+        vy = np.broadcast_to((np.arange(ya, yb) - y0)[None, :], m.shape)
+        inside = (vx >= 0) & (vx < src.shape[0]) & (vy >= 0) & (vy < src.shape[1])
+        m &= inside
+        if not np.any(m):
+            return
+        vis = salpha[vx[m], vy[m]] > 16
+        if not np.any(vis):
+            return
+        sel = np.zeros_like(m)
+        sel[m] = vis
+        sub[sel] = depth[sel]
+        rgb[xa:xb, ya:yb][sel] = src[vx[sel], vy[sel]]
+        if fa is not None:
+            fa[xa:xb, ya:yb][sel] = 0
+
+    for i in range(1, len(pts) - 1):
+        tri(pts[0], pts[i], pts[i + 1], ds[0], ds[i], ds[i + 1])
+    del src, salpha, rgb
+    if fa is not None:
+        del fa
+
+
+def opening_into(side, a, b, draw, h=None):
+    """Neighbour room through a doorway on the old near wall (y = RD or x = RW).
+    Used by the opposite view, where that wall is the far one."""
+    h = DOOR_H if h is None else h
+    layer = pygame.Surface(screen.get_size(), depth=24)
+    layer.fill((22, 18, 20))
+    with drawing_on(layer):
+        draw()
+    if side == "S":
+        pts = [P(a, RD, 0), P(b, RD, 0), P(b, RD, h), P(a, RD, h)]
+    else:
+        pts = [P(RW, a, 0), P(RW, b, 0), P(RW, b, h), P(RW, a, h)]
+    show_through(layer, pts, tint_a=0)
 
 
 def sash_window(side, u0, u1, ext, z0=52, z1=206, curtains=PINK):
@@ -1233,7 +1453,12 @@ def _fade_content(layer, z_ref, tone):
     y0, y1 = int(rows[0]), int(rows[-1]) + 1
     sx = (np.arange(x0, x1)[:, None] / S - OX) / HW
     sy = (np.arange(y0, y1)[None, :] / S - OY + z_ref) / HH
-    xe = np.maximum((sx + sy) / 2, np.broadcast_to(sx, (x1 - x0, y1 - y0)))
+    xd = (sx + sy) / 2
+    if FLIP:
+        # the layer was drawn through the spun projection, so recover room x
+        xe = RW - xd
+    else:
+        xe = np.maximum(xd, np.broadcast_to(sx, (x1 - x0, y1 - y0)))
     t = np.clip(tone(xe), 0, 1)
     t = t * t * (3 - 2 * t)
     a[x0:x1, y0:y1] = (a[x0:x1, y0:y1] * t).astype(np.uint8)
@@ -1275,15 +1500,22 @@ def union_jack(Wf, u0, u1, z0, z1, k=1.0):
 
 def hung_layer(alpha=96):
     """Context for things hung on a ghost near wall (they face away): draw inside,
-    then they are blitted faint, like the wall itself."""
+    then they are blitted faint, like the wall itself. In the opposite view those
+    walls face the camera, so the same objects are drawn solid on the room."""
     class _Hung:
         def __enter__(self):
+            if FLIP:
+                self.skip = True
+                return screen
+            self.skip = False
             self.layer = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
             self.ctx = drawing_on(self.layer)
             self.ctx.__enter__()
             return self.layer
 
         def __exit__(self, *a):
+            if self.skip:
+                return False
             self.ctx.__exit__(*a)
             self.layer.set_alpha(alpha)
             screen.blit(self.layer, (0, 0))
