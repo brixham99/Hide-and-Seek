@@ -209,9 +209,6 @@ def beam_ends():
 def main():
     background()
     floor_flagstones(seed=5)
-    if not hc.FLIP:
-        threshold("S", *PANTRY, TERRACOTTA, depth=0.6)
-        threshold("S", *STUDY, TERRACOTTA, depth=0.6)
     mat(2.25, 1.15, 3.85, 2.25)
     wall_shell(SAGE_WALL)
     ext = exterior_layer({"N": drive_side}, haze=(196, 202, 206))

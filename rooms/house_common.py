@@ -797,7 +797,7 @@ def show_through(ext, pts, tint=(214, 230, 236), tint_a=22, glare=True):
     if _flip_draw():
         # Near windows (glass tint) must not paint the garden over the room.
         # Near doorways have no glass (tint_a == 0) and should show the next room.
-        _present_opening(view, x0, y0, pts, allow_near=(tint_a == 0))
+        _present_opening(view, x0, y0, pts, allow_near=False)
     else:
         screen.blit(view, (x0, y0))
 
@@ -864,12 +864,13 @@ def _present_opening(view, x0, y0, pts, allow_near=False):
         del fa
 
 
-def opening_into(side, a, b, draw, h=None):
+def opening_into(side, a, b, draw, h=None, fill=(226, 220, 208)):
     """Neighbour room through a doorway on the old near wall (y = RD or x = RW).
-    Used by the opposite view, where that wall is the far one."""
+    Used by the opposite view, where that wall is the far one.
+    `fill` is the colour shown if the neighbour drawing leaves a gap."""
     h = DOOR_H if h is None else h
     layer = pygame.Surface(screen.get_size(), depth=24)
-    layer.fill((22, 18, 20))
+    layer.fill(fill)
     with drawing_on(layer):
         draw()
     if side == "S":
@@ -1125,7 +1126,7 @@ def reveal(side, a, b, draw, h=DOOR_H):
     """Run `draw` (neighbour geometry, in its own tiles via `placed`) and show
     it only through this doorway, so the frame and the wall clip it."""
     layer = pygame.Surface(screen.get_size(), depth=24)
-    layer.fill((22, 18, 20))
+    layer.fill((226, 220, 208))
     with drawing_on(layer):
         draw()
     show_through(layer, opening_polygon(side, a, b, h), tint_a=0)
@@ -1157,7 +1158,7 @@ def reveal_near(side, a, b, draw, depth=1.55, fill=(232, 228, 216)):
 def back_opening(side, a, b, draw, h=DOOR_H, col=WHITE):
     """Open doorway in a back wall: neighbour through the hole, architrave on top."""
     layer = pygame.Surface(screen.get_size(), depth=24)
-    layer.fill((22, 18, 20))
+    layer.fill((226, 220, 208))
     with drawing_on(layer):
         draw()
     doorway_back(side, a, b, layer, h=h, col=col)
@@ -1281,12 +1282,10 @@ def ghost_near_walls(wall_col=GREEN, trim_col=WHITE, doors_S=(), doors_E=(), win
     open_E: no wall at x = RW at all (an open-plan join onto the next view of the same room);
     open_W: the back-left side is open instead (drop the near wall's corner post at x = 0).
     window_z / window_cols: sill/head height and vertical bars of the faint near-wall windows."""
-    for spec in openings:
-        side, a, b, draw = spec[:4]
-        fill = spec[4] if len(spec) > 4 else (232, 228, 216)
-        reveal_near(side, a, b, draw, fill=fill)
+    # Near-wall doorways are a ghost frame only. The next room is shown
+    # solely through far-wall openings (doorway_back / opening_into).
     z0, z1 = window_z
-    t = 0.08
+    t = 0.0 if FLIP else 0.08
     WS = lambda u, z, n: P(u, RD + n, z)
     WE = lambda u, z, n: P(RW + n, u, z)
     faces, trim = [], []
@@ -1337,6 +1336,9 @@ def ghost_near_walls(wall_col=GREEN, trim_col=WHITE, doors_S=(), doors_E=(), win
         trim.append((shade(cap, .7), [WS(RW + .22, -SLAB, .22), WS(RW + .22, WALL_H, .22), WS(RW + .22, WALL_H, 0), WS(RW + .22, -SLAB, 0)]))
     if not open_W:
         trim.append((shade(cap, .7), [WS(0, -SLAB, .22), WS(0, WALL_H, .22), WS(.06, WALL_H, .22), WS(.06, -SLAB, .22)]))
+    if FLIP and not open_E:
+        # close the hairline gap where the two far walls meet at (RW, RD)
+        box(RW - 0.04, RD - 0.04, RW + 0.04, RD + 0.04, 0, WALL_H, wall_col, ol=False)
     if faces:
         layer, at = HMG.polys_layer(faces)
         layer.set_alpha(34)

@@ -64,6 +64,10 @@ def kitchen_zone(x0, y0, x1, y1):
     """Slate floor, cream walls and the island, in kitchen world tiles."""
     _floor("slate", x0, y0, x1, y1, seed=8)
     _wall_y(8.4, max(0, x0), min(16.4, x1), CREAM)          # garden wall, far side of this view
+    if x1 >= 16.2:
+        _wall_x(16.4, max(0, y0), min(8.4, y1), CREAM)     # west wall (boot end)
+    if x0 <= 0.2:
+        _wall_x(0.0, max(0, y0), min(8.4, y1), CREAM)      # east wall (dining end)
     # island: chunky pine top on a pale base (only the part that falls in the opening shows)
     hc.box(10.15, 3.85, 13.45, 5.35, 8, 84, (204, 206, 202))
     hc.box(10.02, 3.72, 13.58, 5.48, 84, 96, (200, 156, 100))
@@ -135,6 +139,8 @@ def utility_zone():
     """Terracotta floor, white machines and the sink run."""
     _floor("quarry", 0, 0, 3.6, 5.8, seed=9)
     _wall_x(0, 0, 5.8, (244, 244, 242))
+    _wall_x(3.6, 0, 5.8, (244, 244, 242))
+    _wall_y(5.8, 0, 3.6, (244, 244, 242))
     hc.box(0.04, 2.6, 0.92, 3.55, 4, 86, (244, 244, 242))     # washer
     hc.box(0.04, 3.55, 0.92, 4.85, 4, 86, (244, 244, 242))
     hc.box(0.9, 4.85, 3.5, 5.7, 0, 90, (244, 244, 242))       # north run
@@ -145,6 +151,8 @@ def office_zone():
     """Terracotta floor, white panelling, the grey desk and the tan chair."""
     _floor("quarry", 0, 0, 3.6, 6.0, seed=6)
     _wall_x(0, 0, 6.0, (214, 214, 210))
+    _wall_x(3.6, 0, 6.0, (214, 214, 210))
+    _wall_y(6.0, 0, 3.6, (214, 214, 210))
     hc.box(0.1, 3.8, 1.2, 5.9, 0, 74, (120, 124, 130))        # desk
     hc.box(2.2, 0.25, 3.3, 1.35, 0, 72, (178, 118, 70))       # tan armchair
     hc.box(0.05, 1.65, 0.55, 3.5, 20, 120, (34, 34, 36))      # shelving
@@ -153,9 +161,11 @@ def office_zone():
 def wc_zone():
     """Teal above a white tiled dado, basin and toilet."""
     _floor("flags", 0, 0, 1.65, 3.1, seed=21)
-    # south wall only; the boot room looks through the east wall
+    # south wall; the boot room looks through the east wall
     hc.qy(0, 0, 1.65, 0, 100, (240, 240, 236))
     hc.qy(0.01, 0, 1.65, 100, hc.WALL_H, hc.shade(TEAL, hc.KY))
+    _wall_x(1.65, 0, 3.1, TEAL)
+    _wall_y(3.1, 0, 1.65, TEAL)
     hc.box(0.95, 0.08, 1.55, 0.55, 48, 78, (248, 248, 246))   # basin
     hc.box(0.5, 2.15, 1.15, 3.0, 0, 42, (248, 248, 246))      # toilet
 
@@ -168,9 +178,16 @@ def _open(here, there, draw):
     return go
 
 
-kitchen_from_hall = _open(HALL, KD, lambda: kitchen_zone(6.2, 0.0, 13.8, 6.5))
+kitchen_from_hall = _open(HALL, KD, lambda: kitchen_zone(6.2, 0.0, 13.8, 8.4))
 kitchen_from_boot = _open(BOOT, KD, lambda: kitchen_zone(9.8, 0.0, 16.4, 8.2))
-kitchen_from_drawing = _open(DRAWING, KD, lambda: kitchen_zone(11.5, 0.0, 16.4, 5.5))
+
+
+def kitchen_from_drawing():
+    """The mock door sits a little west of the house-grid pairing, so shift the
+    kitchen until its south doorway (14.9-16.15) lines up with the drawing
+    door (5.75-7.0) and the west wall closes anything past the room."""
+    with hc.placed(14.9 - 5.75, 0.0 - 7.8):
+        kitchen_zone(12.0, 0.0, 16.4, 8.4)
 hall_from_kitchen = _open(KITCHEN_VIEW, HALL, hall_zone)
 hall_from_sitting = _open(SITTING, HALL, lambda: hall_zone(east_wall=False))
 hall_from_drawing = _open(DRAWING, HALL, hall_zone)
