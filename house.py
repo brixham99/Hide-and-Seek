@@ -23,6 +23,7 @@ ROOMS = {
     "wc":      dict(name="Dragon Toilet", rw=1.65, rd=3.1, origin=(23.2, -0.65), views=[("wc", 0.0, 0, 99)]),
     "landing": dict(name="Landing", rw=3.2, rd=8.05, origin=(6.55, -8.25), views=[("landing", 0.0, 0, 99)]),
     "corridor": dict(name="Upstairs Corridor", rw=11.4, rd=2.2, origin=(4.00, -0.20), views=[("corridor", 0.0, 0, 99)]),
+    "archie":  dict(name="Archie's Room", rw=6.4, rd=6.4, origin=(5.56, 2.00), views=[("archie", 0.0, 0, 99)]),
 }
 VIEW_NAMES = {"kitchen": "Kitchen", "dining": "Dining Room"}
 KD_SPLIT = 8.2
@@ -38,6 +39,7 @@ PORTALS = [
     (("boot", "N", 4.4, 5.7), ("office", "S", .15, 1.6)),
     (("boot", "W", .9, 2.3), ("wc", "E", .9, 2.3)),
     (("landing", "N", 0.35, 2.85), ("corridor", "S", 2.90, 5.40)),
+    (("corridor", "N", 1.85, 3.27), ("archie", "S", 0.29, 1.71)),
 ]
 
 # main furniture footprints (x0, y0, x1, y1), room-local tiles
@@ -67,6 +69,17 @@ SOLIDS = {
     "landing": [(0.02, 3.18, 1.58, 7.15), (1.50, 3.10, 1.74, 7.22),
                 (0.05, 2.95, 1.74, 3.20)],
     "corridor": [(10.85, 0.75, 11.35, 1.45)],   # clothes basket at the west dead end
+    "archie": [
+        (4.60, 2.35, 6.35, 5.95),   # bed
+        (4.25, 5.40, 4.70, 6.20),   # bedside
+        (4.70, 1.75, 6.25, 2.45),   # teddy and basket
+        (0.02, 3.95, 0.78, 6.32),   # bookcase
+        (0.05, 1.65, 0.95, 3.75),   # desk
+        (0.90, 2.05, 1.55, 2.95),   # chair
+        (2.35, 0.02, 4.30, 0.58),   # navy cabinet
+        (5.20, 0.02, 6.38, 0.95),   # wardrobe
+        (2.35, 6.05, 4.10, 6.38),   # radiator
+    ],
 }
 
 R = 0.22                     # Archie's footprint radius (tiles)
