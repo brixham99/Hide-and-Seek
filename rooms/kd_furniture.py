@@ -70,7 +70,6 @@ def drawer_unit(x0, x1):
     box(x0 + .05, RUN + .1, x1 - .05, RD, 10, 14, CAB, ol=False)
     box(x0 + .45, RUN + .3, x0 + .85, RUN + .7, 14, 42, (244, 244, 240))
     box(x0, RUN, x1, RD, 50, CH - 5, CAB)
-    worktop(x0 - .02, x1 + .02)
     box(x1 - .55, RUN + .25, x1 - .1, RUN + .7, CH, CH + 30, (30, 30, 32))     # air fryer
     cyl(x0 + .3, RUN + .45, .14, CH, CH + 14, (200, 200, 204))                 # stand mixer
     box(x0 + .22, RUN + .55, x0 + .38, RUN + .75, CH + 14, CH + 40, (200, 200, 204), ol=False)
@@ -178,15 +177,24 @@ def kitchen_island_and_stools():
 
 
 def kitchen_run_floor():
-    """The garden-wall run's floor-standing pieces (their fronts face south, away from the camera)."""
-    cyl(8.55, RD - .5, .27, 0, 70, STEEL, top=shade(STEEL, 1.1))       # pedal bins
-    cyl(9.15, RD - .5, .29, 0, 76, (60, 60, 62), top=(80, 80, 82))
+    """The garden-wall run's floor-standing pieces (their fronts face south, away from the camera).
+
+    One unbroken granite slab and base along the garden wall, broken only
+    for the range, then meeting the peninsula at a right-angle corner.
+    """
+    # bins stand on the floor in front of the run (photos), not on the worktop
+    cyl(8.55, RUN - 0.38, .27, 0, 70, STEEL, top=shade(STEEL, 1.1))
+    cyl(9.15, RUN - 0.38, .29, 0, 76, (60, 60, 62), top=(80, 80, 82))
+    px1 = PENINSULA[2]                               # kitchen-side edge of the peninsula
+    cx0, cx1 = 10.95, 12.55                          # range sits flush between the slabs
+    run_units(px1, 9.5)
     drawer_unit(9.5, 10.3)
-    run_units(12.6, 13.65)
-    worktop(12.6, 13.65)
-    range_cooker(10.95, 12.55)
+    run_units(10.3, cx0)
+    worktop(px1 - 0.04, cx0)                         # overlaps the peninsula slightly to close the mitre
+    range_cooker(cx0, cx1)
+    run_units(cx1, 13.65)
     run_units(13.65, KD_LEN)
-    worktop(13.65, KD_LEN)
+    worktop(cx1, KD_LEN)
     sink_top(13.7, 14.6)
 
 
@@ -212,7 +220,9 @@ def kitchen_seen_from_south():
         return
     y = RUN - 0.02
     # shaker doors on the base run, in the spans the units already occupy
-    _shaker(12.65, 13.6, y, 12, 78, n=1)          # the bay beside the sink: dishwasher
+    _shaker(8.22, 9.45, y, 12, 78)                # under the east window, up to the drawer unit
+    _shaker(10.35, 10.90, y, 12, 78)              # between the drawer unit and the range
+    _shaker(12.58, 13.6, y, 12, 78, n=1)          # the bay beside the sink: dishwasher
     qy(y - 0.015, 12.85, 13.4, 28, 62, shade((186, 190, 192), KY))
     _shaker(14.7, 16.25, y, 12, 78)
     # burgundy range: two oven doors and a handle, on its existing front
@@ -367,7 +377,7 @@ def peninsula():
     kitchen/west side), running south from the garden-wall run at the split."""
     x0, y0, x1, y1 = PENINSULA
     box(x0 + .06, y0 + .06, x1 - .06, y1, 0, 6, (90, 88, 84), ol=False)
-    box(x0, y0, x1 - .04, y1, 6, CH - 5, CAB)
+    box(x0, y0, x1, y1, 6, CH - 5, CAB)
     n = 4
     for i in range(n):          # cupboard doors and drawers on the +x (kitchen) face
         a = y0 + .05 + i * (y1 - y0 - .1) / n + .02
@@ -377,7 +387,7 @@ def peninsula():
         qx(X + .001, a + .05, b - .05, 14, 58, shade(CAB, KX * 1.02))
         qx(X, a, b, 66, 84, shade(CAB, KX * .93))
         fl_ellipse(X + .01, (a + b) / 2, .015, .03, (60, 60, 64), 75)
-    qy(y0 + .001, x0, x1 - .04, 6, CH - 5, shade(CAB, KY))
+    qy(y0 + .001, x0, x1, 6, CH - 5, shade(CAB, KY))
     # end panel facing south
     worktop(x0 - .18, x1, y0=y0 - .02, y1=y1)
     # iMac at the garden-wall end, screen facing east (the chairs); keyboard in front of it
