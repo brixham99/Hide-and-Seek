@@ -134,8 +134,8 @@ SOLIDS = {
     ],
     "master": [
         (1.70, 4.18, 4.44, 7.62),   # king bed, head north, projecting south
-        (4.52, 7.10, 5.02, 7.68),   # bedside table, west of the head (by the dressing door)
-        (1.12, 7.10, 1.62, 7.68),   # bedside table, east of the head
+        (4.58, 7.18, 5.04, 7.70),   # bedside table, west of the head (by the dressing door)
+        (1.08, 7.18, 1.54, 7.70),   # bedside table, east of the head
         (5.40, 0.10, 7.15, 0.78),   # pine chest + TV, SW corner between the windows
         (6.02, 2.55, 7.20, 4.15),   # pine desk at the west window
         (5.32, 3.00, 5.86, 3.70),   # white chair

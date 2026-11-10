@@ -115,7 +115,7 @@ def wooden_bed():
     # blue-grey cushion
     box(mid - 0.38, y1 - 1.12, mid + 0.38, y1 - 0.48, 68, 80, CUSHION, top=shade(CUSHION, 1.08))
     # cane headboard at the north
-    box(x0 - 0.04, y1 - 0.12, x1 + 0.04, y1 + 0.06, 28, 112, CANE, top=shade(CANE, 1.08))
+    box(x0, y1 - 0.12, x1, y1 + 0.06, 28, 112, CANE, top=shade(CANE, 1.08))
     for i in range(7):
         xx = x0 + 0.10 + i * (x1 - x0 - 0.20) / 6
         box(xx - 0.02, y1 - 0.10, xx + 0.02, y1 + 0.04, 34, 106, shade(CANE, 0.85), ol=False)
@@ -126,16 +126,26 @@ def wooden_bed():
     box(x0, y0 - 0.04, x1, y0 + 0.08, 20, 52, PINE, top=shade(PINE, 1.06))
 
 
-def bedside_tables():
-    """A pine bedside table and lamp on each side of the head, against
-    the north wall: one by the dressing door, one toward the east."""
-    def one(x0, y0, x1, y1):
-        box(x0, y0, x1, y1, 0, 48, PINE, top=shade(PINE, 1.1))
-        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
-        cyl(cx, cy, 0.05, 48, 74, WHITE_)
-        cyl(cx, cy, 0.14, 72, 90, (232, 228, 220), top=shade((232, 228, 220), 1.08))
-    one(4.52, 7.10, 5.02, 7.68)   # west of the head, next to the dressing door
-    one(1.12, 7.10, 1.62, 7.68)   # east of the head
+# Just outside the bed's width (1.70–4.44), clear of the headboard too.
+# West table stays next to the dressing doorway at (5.10, 6.45).
+EAST_NS = (1.08, 7.18, 1.54, 7.70)
+WEST_NS = (4.58, 7.18, 5.04, 7.70)
+
+
+def bedside_table(x0, y0, x1, y1):
+    """A pine bedside table and lamp against the north wall."""
+    box(x0, y0, x1, y1, 0, 48, PINE, top=shade(PINE, 1.1))
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    cyl(cx, cy, 0.05, 48, 74, WHITE_)
+    cyl(cx, cy, 0.14, 72, 90, (232, 228, 220), top=shade((232, 228, 220), 1.08))
+
+
+def bedside_east():
+    bedside_table(*EAST_NS)
+
+
+def bedside_west():
+    bedside_table(*WEST_NS)
 
 
 def pine_chest():
@@ -241,8 +251,15 @@ def main():
         floral_drapes_south()
         back_opening("W", *LANDING_DOOR, glimpses.landing_from_master)
     wall_trim()
-    wooden_bed()
-    bedside_tables()
+    # Far-to-near: the east nightstand is farther in SE, the west one farther in V.
+    if hc.FLIP:
+        bedside_west()
+        wooden_bed()
+        bedside_east()
+    else:
+        bedside_east()
+        wooden_bed()
+        bedside_west()
     pine_chest()
     pine_desk()
     white_bookcase()
