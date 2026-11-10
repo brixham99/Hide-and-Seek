@@ -379,9 +379,10 @@ def dressing_zone():
 
 
 def ensuite_zone():
-    """A reserved bathroom north of the dressing: patterned tile hint and cream walls."""
-    cream = CREAM
-    tile_a, tile_b = (186, 184, 174), (168, 176, 166)
+    """Cream walls, grey-cream patterned floor, the shower, vanity and loo.
+    South (dressing) doorway wall is left undrawn."""
+    cream = (232, 226, 214)
+    tile_a, tile_b = (226, 220, 210), (148, 154, 158)
     _floor("honey", 0.0, 0.0, 5.3, 4.2, seed=7)
     for i in range(8):
         for j in range(6):
@@ -391,7 +392,9 @@ def ensuite_zone():
     _wall_y(4.2, 0.0, 5.3, cream)
     _wall_x(0.0, 0.0, 4.2, cream)
     _wall_x(5.3, 0.0, 4.2, cream)
-    hc.box(0.22, 2.55, 0.95, 3.35, 0, 42, (248, 248, 246))
+    hc.box(0.08, 2.52, 1.70, 4.18, 0, 8, (236, 234, 230))
+    hc.box(1.80, 3.56, 3.28, 4.16, 0, 78, (142, 174, 196))
+    hc.box(4.78, 0.80, 5.26, 1.52, 0, 44, (244, 242, 236))
 
 
 master_from_landing = _open(LANDING, MASTER, master_zone)
@@ -399,4 +402,5 @@ landing_from_master = _open(MASTER, LANDING, landing_zone)
 dressing_from_master = _open(MASTER, DRESSING, dressing_zone)
 master_from_dressing = _open(DRESSING, MASTER, master_zone)
 ensuite_from_dressing = _open(DRESSING, ENSUITE, ensuite_zone)
+dressing_from_ensuite = _open(ENSUITE, DRESSING, dressing_zone)
 

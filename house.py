@@ -28,12 +28,12 @@ ROOMS = {
     "bathroom": dict(name="The Bathroom", rw=4.6, rd=4.4, origin=(-0.60, -1.85), views=[("bathroom", 0.0, 0, 99)]),
     "holly": dict(name="Holly's Room", rw=6.9, rd=6.4, origin=(-0.60, -8.25), views=[("holly", 0.0, 0, 99)]),
     "master": dict(name="Master Bedroom", rw=7.3, rd=7.8, origin=(9.75, -8.25), views=[("master", 0.0, 0, 99)]),
-    # Dressing sits on the master's north wall; the En-suite (still reserved)
-    # sits on the dressing room's north wall. Corridor west (house X = 15.40)
+    # Dressing sits on the master's north wall; the En-suite sits on the
+    # dressing room's north wall. Corridor west (house X = 15.40)
     # and dressing east (house X = 11.75) do not meet on this metre-grid —
     # known slop, same as the drawing-room stack.
     "dressing": dict(name="Dressing Room", rw=5.3, rd=4.0, origin=(11.75, -0.45), views=[("dressing", 0.0, 0, 99)]),
-    "ensuite": dict(name="En-suite", rw=5.3, rd=4.2, origin=(11.75, 3.55), views=[]),
+    "ensuite": dict(name="En-suite", rw=5.3, rd=4.2, origin=(11.75, 3.55), views=[("ensuite", 0.0, 0, 99)]),
 }
 VIEW_NAMES = {"kitchen": "Kitchen", "dining": "Dining Room"}
 KD_SPLIT = 8.2
@@ -55,6 +55,7 @@ PORTALS = [
     (("landing", "E", 0.45, 1.70), ("holly", "W", 0.45, 1.70)),
     (("landing", "W", 0.50, 1.75), ("master", "E", 0.50, 1.75)),
     (("master", "N", 5.10, 6.45), ("dressing", "S", 3.10, 4.45)),
+    (("dressing", "N", 3.75, 5.10), ("ensuite", "S", 3.75, 5.10)),
 ]
 
 
@@ -149,7 +150,12 @@ SOLIDS = {
         (0.88, 3.12, 3.62, 4.00),   # north-wall wardrobes, east of the ensuite door
         (3.78, 2.88, 4.20, 3.28),   # wicker basket by the ensuite door
     ],
-    "ensuite": [],
+    "ensuite": [
+        (0.08, 2.52, 1.70, 4.18),   # shower tray / cubicle, north-east
+        (1.80, 3.56, 3.28, 4.16),   # dusty-blue vanity, north wall
+        (4.78, 0.80, 5.26, 1.52),   # close-coupled loo, south-west
+        (0.02, 1.32, 0.16, 2.38),   # towel rail, east wall south of shower
+    ],
 }
 
 R = 0.22                     # Archie's footprint radius (tiles)

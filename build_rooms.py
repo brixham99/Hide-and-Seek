@@ -29,7 +29,7 @@ VIEWS = {"hall": "mock_hall", "sitting": "mock_sitting_room", "drawing": "mock_d
          "kitchen": "mock_kitchen", "dining": "mock_dining", "boot": "mock_boot_room",
          "utility": "mock_utility", "office": "mock_office", "wc": "mock_wc",
          "landing": "mock_landing", "corridor": "mock_corridor", "archie": "mock_archie",
-         "bathroom": "mock_bathroom", "holly": "mock_holly", "upoffice": "mock_upoffice", "master": "mock_master", "dressing": "mock_dressing"}
+         "bathroom": "mock_bathroom", "holly": "mock_holly", "upoffice": "mock_upoffice", "master": "mock_master", "dressing": "mock_dressing", "ensuite": "mock_ensuite"}
 
 if MOCK not in sys.path:
     sys.path.insert(0, MOCK)
@@ -187,7 +187,7 @@ def build_all(quiet=False):
 
 
 # Bump when saved room images must be rebuilt (opposite view added).
-CACHE_REV = "29"
+CACHE_REV = "30"
 
 
 def cache_ok():
