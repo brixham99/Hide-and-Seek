@@ -4,12 +4,13 @@
 The 12'11 x 11'5 (3.9 m E-W x 3.5 m N-S) south-east bedroom, east of
 the landing and south of the bathroom. Pale pink walls, light oak
 laminate, white skirting. East and south walls (the outside corner):
-tall white sashes with cream curtains. North wall: chimney breast
-(pink-and-white striped alcove, white fireplace, black cast-iron
-insert) and an open doorway to the bathroom. West wall: open doorway
-to the landing at the south end, a tall white wardrobe beside it.
-A single white metal-framed bed runs along the west side, head by
-the chimney alcove. Ceiling lampshade left out. No internal door leaf.
+tall white sashes with cream curtains. North wall (shared with the bathroom): a striped alcove, the
+chimney breast with a fireplace, a second striped alcove, and the
+bathroom doorway at the east end next to the window wall. West wall:
+open doorway to the landing at the south end, a tall white wardrobe
+beside it. A single white metal-framed bed has its head against the
+west wall and runs east, parallel to the chimney wall, in front of
+the fireplace. Ceiling lampshade left out. No internal door leaf.
 """
 import math
 import random
@@ -32,11 +33,11 @@ LILAC = (176, 158, 198)
 IRON = (232, 232, 228)          # white-painted metal
 TEDDY = (176, 124, 78)
 
-BATH_DOOR = (2.90, 4.30)        # north wall -> bathroom
+BATH_DOOR = (0.22, 1.62)        # north wall, east end -> bathroom
 LANDING_DOOR = (0.45, 1.70)     # west wall -> landing (south end)
 WIN_E = (2.15, 3.85)            # east wall
 WIN_S = (2.85, 4.65)            # south wall
-BREAST = (0.55, 2.50, 0.72)     # chimney on north wall: x0, x1, depth
+BREAST = (2.15, 4.05, 0.72)     # chimney on north wall: x0, x1, depth
 
 
 def east_garden(side, rnd):
@@ -60,15 +61,22 @@ def oak_floor():
     paint.stamp(paint.timber(RW, RD, 13, OAK1, OAK2, along="x", plank=0.24), 0, 0, RW, RD, 0)
 
 
-def striped_alcove(x0, x1):
+def striped_alcove(x0, x1, shelves=False):
     """Pink-and-white vertical stripes on a north-wall alcove, plus a picture rail."""
+    if x1 - x0 < 0.10:
+        return
     y = RD - 0.03
-    n = 7
+    n = max(4, int((x1 - x0) / 0.16))
     w = (x1 - x0) / n
     for i in range(n):
         col = WHITE_ if i % 2 == 0 else shade(WALL, 0.92)
         qy(y, x0 + i * w, x0 + (i + 1) * w, 14, WALL_H - 8, shade(col, KY))
     qy(y - 0.01, x0, x1, 168, 174, shade(WHITE_, KY))   # picture rail
+    if shelves:
+        for z in (72, 122):
+            qy(y - 0.015, x0 + 0.06, x1 - 0.06, z, z + 7, shade(WHITE_, KY))
+            box(x0 + 0.10, RD - 0.28, x0 + 0.38, RD - 0.08, z + 7, z + 22,
+                (220, 92, 96) if z < 100 else (80, 140, 170), ol=False)
 
 
 def hearth():
@@ -109,36 +117,54 @@ def fireplace_front():
     # small framed picture above
     qy(y - 0.02, x0 + 0.55, x1 - 0.55, 130, 178, shade((120, 88, 48), KY))
     qy(y - 0.025, x0 + 0.62, x1 - 0.62, 136, 172, shade((196, 186, 160), KY))
-    striped_alcove(x1 + 0.04, BATH_DOOR[0] - 0.04)
-    striped_alcove(0.08, x0 - 0.04)
+    # right alcove (east of the breast): leftover west of the east-end doorway
+    striped_alcove(BATH_DOOR[1] + 0.04, x0 - 0.04)
+    # left alcove (west of the breast), with two white shelf rails
+    striped_alcove(x1 + 0.04, RW - 0.12, shelves=True)
 
 
 def white_bed():
-    """Single white metal-framed bed along the west wall, head toward the north alcove."""
-    x0, x1 = RW - 1.72, RW - 0.12
-    y0, y1 = 2.55, 5.95
-    # mattress and pale pink/white bedding
-    box(x0 + 0.06, y0 + 0.08, x1 - 0.06, y1 - 0.08, 28, 46, (244, 236, 232), top=shade((244, 236, 232), 1.04))
-    box(x0 + 0.08, y1 - 1.35, x1 - 0.08, y1 - 0.12, 46, 54, (236, 214, 216), top=shade((236, 214, 216), 1.05))
-    # pillow
-    box(x0 + 0.18, y1 - 0.55, x1 - 0.16, y1 - 0.14, 54, 66, (248, 246, 242), top=shade((248, 246, 242), 1.06))
-    # white metal foot (south) and head (north) rails
-    for y, h1 in ((y0, 78), (y1, 96)):
-        box(x0, y - 0.04, x0 + 0.07, y + 0.04, 0, h1, IRON)
-        box(x1 - 0.07, y - 0.04, x1, y + 0.04, 0, h1, IRON)
-        box(x0, y - 0.05, x1, y + 0.05, h1 - 6, h1, IRON, top=shade(IRON, 1.08))
+    """Single white metal bed, head against the west wall, running east
+    parallel to the chimney wall, a little out from the fireplace."""
+    x0, x1 = 3.38, 6.78          # foot (east) ... head (west)
+    y0, y1 = 3.58, 5.14
+    box(x0 + 0.08, y0 + 0.06, x1 - 0.08, y1 - 0.06, 28, 46, (244, 236, 232), top=shade((244, 236, 232), 1.04))
+    box(x0 + 1.15, y0 + 0.08, x1 - 0.10, y1 - 0.08, 46, 54, (236, 214, 216), top=shade((236, 214, 216), 1.05))
+    # check blanket at the foot
+    for i in range(5):
+        for j in range(4):
+            xa = x0 + 0.12 + i * 0.20
+            ya = y0 + 0.10 + j * ((y1 - y0 - 0.20) / 4)
+            xb, yb = xa + 0.20, ya + (y1 - y0 - 0.20) / 4
+            col = (214, 96, 118) if (i + j) % 2 == 0 else (244, 232, 226)
+            box(xa, ya, min(xb, x0 + 1.14), min(yb, y1 - 0.10), 46, 54, col, ol=False)
+    # pillow at the head
+    box(x1 - 0.72, y0 + 0.16, x1 - 0.18, y1 - 0.16, 54, 66, (248, 246, 242), top=shade((248, 246, 242), 1.06))
+    # white metal foot (east) and head (west) rails, spanning the bed's width
+    for x, h1 in ((x0, 78), (x1, 96)):
+        box(x - 0.04, y0, x + 0.04, y0 + 0.07, 0, h1, IRON)
+        box(x - 0.04, y1 - 0.07, x + 0.04, y1, 0, h1, IRON)
+        box(x - 0.05, y0, x + 0.05, y1, h1 - 6, h1, IRON, top=shade(IRON, 1.08))
         for i in range(7):
-            xx = x0 + 0.14 + i * (x1 - x0 - 0.28) / 6
-            box(xx - 0.02, y - 0.03, xx + 0.02, y + 0.03, 12, h1 - 6, shade(IRON, 0.92), ol=False)
+            yy = y0 + 0.14 + i * (y1 - y0 - 0.28) / 6
+            box(x - 0.03, yy - 0.02, x + 0.03, yy + 0.02, 12, h1 - 6, shade(IRON, 0.92), ol=False)
+    # little pink stool by the head
+    box(x1 - 0.58, y0 - 0.46, x1 - 0.14, y0 - 0.10, 0, 28, (226, 142, 168), top=shade((226, 142, 168), 1.08))
+    box(x1 - 0.54, y0 - 0.42, x1 - 0.18, y0 - 0.14, 28, 34, (236, 168, 186), top=shade((236, 168, 186), 1.06))
 
 
 def oak_chest():
-    """Tall oak chest of drawers on the east wall, left (north) of the window."""
-    x0, x1, y0, y1 = 0.08, 0.72, 4.05, 5.55
+    """Tall oak chest in the north-east corner, on the window wall by the bathroom door."""
+    x0, x1, y0, y1 = 0.08, 0.62, 4.50, 6.12
     box(x0, y0, x1, y1, 0, 132, OAK, top=shade(OAK, 1.1))
     for z in (36, 68, 100):
         box(x0 + 0.06, y0 + 0.08, x1 - 0.06, y1 - 0.08, z, z + 5, shade(OAK, 1.14), ol=False)
-        box(x0 + 0.28, (y0 + y1) / 2 - 0.04, x0 + 0.42, (y0 + y1) / 2 + 0.04, z + 5, z + 9, shade((196, 176, 120), 1.0), ol=False)
+        box(x0 + 0.24, (y0 + y1) / 2 - 0.04, x0 + 0.38, (y0 + y1) / 2 + 0.04, z + 5, z + 9, shade((196, 176, 120), 1.0), ol=False)
+    # unicorn head on the wall above the chest (east wall is far in SE)
+    if not hc.FLIP:
+        qx(0.035, 4.85, 5.35, 142, 182, shade((120, 88, 48), KX))
+        qx(0.04, 4.90, 5.30, 147, 177, shade((248, 246, 240), KX))
+        qx(0.042, 5.04, 5.16, 170, 192, shade((255, 250, 236), KX))
 
 
 def pine_desk():
@@ -234,13 +260,17 @@ def cream_drapes(side, u0, u1, z1=198):
 
 
 def wall_pictures():
-    """A few small pictures on the far walls."""
+    """Rainbow picture on the west side wall (far in V); a couple of small prints."""
     if not hc.FLIP:
-        qx(0.04, 5.70, 6.10, 128, 158, shade((120, 88, 48), KX))
-        qx(0.045, 5.74, 6.06, 132, 154, shade((186, 170, 140), KX))
         qy(0.04, 5.30, 5.72, 122, 154, shade((120, 88, 48), KY))
         qy(0.045, 5.34, 5.68, 126, 150, shade((160, 176, 150), KY))
     else:
+        # rainbow picture near the north-west corner, on the west wall
+        qx(RW - 0.04, 5.15, 5.85, 118, 176, shade((120, 88, 48), KX))
+        qx(RW - 0.045, 5.20, 5.80, 123, 171, shade((248, 246, 240), KX))
+        for i, col in enumerate(((220, 80, 80), (230, 160, 60), (230, 210, 80),
+                                 (80, 180, 100), (70, 130, 210), (140, 100, 190))):
+            qx(RW - 0.05, 5.24, 5.76, 128 + i * 6, 133 + i * 6, shade(col, KX))
         qx(RW - 0.04, 3.15, 3.55, 124, 156, shade((120, 88, 48), KX))
         qx(RW - 0.045, 3.19, 3.51, 128, 152, shade((190, 176, 150), KX))
 

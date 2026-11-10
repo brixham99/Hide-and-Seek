@@ -36,8 +36,8 @@ CREAM = (222, 208, 184)
 DOOR = (0.65, 2.15)
 # east wall (x = 0): tall sash
 WINDOW = (0.95, 2.75)
-# south wall (y = 0) -> Holly's Room, west end near the basin
-HOLLY_DOOR = (2.90, 4.30)
+# south wall (y = 0) -> Holly's Room, east end next to the window/loo wall
+HOLLY_DOOR = (0.22, 1.62)
 
 
 def garden_east(side, rnd):

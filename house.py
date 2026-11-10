@@ -42,7 +42,7 @@ PORTALS = [
     (("boot", "W", .9, 2.3), ("wc", "E", .9, 2.3)),
     (("corridor", "N", 2.65, 4.07), ("archie", "S", 1.09, 2.51)),
     (("corridor", "E", 0.65, 2.15), ("bathroom", "W", 0.65, 2.15)),
-    (("bathroom", "S", 2.90, 4.30), ("holly", "N", 2.90, 4.30)),
+    (("bathroom", "S", 0.22, 1.62), ("holly", "N", 0.22, 1.62)),
     (("landing", "E", 0.45, 1.70), ("holly", "W", 0.45, 1.70)),
 ]
 
@@ -99,8 +99,9 @@ SOLIDS = {
         (3.00, 3.08, 3.95, 3.30),   # glass shower screen
     ],
     "holly": [
-        (5.18, 2.55, 6.78, 5.95),   # white metal bed along the west wall
-        (0.08, 4.05, 0.72, 5.55),   # oak chest, east wall
+        (3.38, 3.58, 6.78, 5.14),   # white metal bed, head west, parallel to chimney
+        (6.20, 3.12, 6.64, 3.48),   # pink stool by the bed head
+        (0.08, 4.50, 0.62, 6.12),   # oak chest, NE corner by the bathroom door
         (0.12, 2.30, 1.28, 3.70),   # pine desk
         (1.35, 2.70, 1.95, 3.30),   # desk chair
         (0.10, 0.08, 1.18, 1.15),   # oak double wardrobe, SE corner
@@ -109,8 +110,8 @@ SOLIDS = {
         (3.50, 0.40, 4.26, 1.16),   # beanbag
         (4.15, 0.10, 5.55, 0.58),   # lilac cabinet
         (6.32, 1.78, 6.82, 2.48),   # white wardrobe by the landing door
-        (0.55, 5.68, 2.50, 6.40),   # chimney breast
-        (0.43, 5.26, 2.62, 5.68),   # hearth
+        (2.15, 5.68, 4.05, 6.40),   # chimney breast
+        (2.03, 5.26, 4.17, 5.68),   # hearth
     ],
 }
 
