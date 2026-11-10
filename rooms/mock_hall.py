@@ -60,9 +60,10 @@ RISE = WALL_H / NSTEP
 # ------------------------------------------------------------- beyond
 def front_garden(side, rnd):
     ext_lawn(side, -6, 10, 0, 12, rnd)
-    ext_hedge(side, -6, 10, 4.4, 5.0, h=84, rnd=rnd)
-    ext_paving(side, -1.5, 1.5, 0, 6, rnd, col=(170, 160, 144), slab=0.5)
-    ext_paving(side, -6, 10, 0, .6, rnd, col=(160, 152, 138))
+    ext_hedge(side, -6, 10, 4.6, 5.3, h=92, rnd=rnd)
+    ext_picket_fence(side, -6, 10, 3.6)
+    ext_paving(side, -1.5, 1.5, 0.2, 6, rnd, col=(170, 160, 144), slab=0.5)
+    ext_paving(side, -6, 10, 0.15, 1.15, rnd, col=(160, 152, 138))
     ext_house_shadow(side, -6, 10)
 
 
@@ -275,10 +276,7 @@ def main():
     paint.chandelier(1.55, 2.05, 248)
     place_sprite("archie", 2.05, 4.9)
     west_wall_hung()
-    import glimpses
-    ghost_near_walls(WALL, doors_S=[KITCHEN_DOOR], doors_E=[DRAWING_DOOR], extra_polys=drawing_door_polys(),
-                     openings=[("S", *KITCHEN_DOOR, glimpses.kitchen_from_hall, (232, 228, 216)),
-                               ("E", *DRAWING_DOOR, glimpses.drawing_from_hall, (46, 82, 72))])
+    ghost_near_walls(WALL, doors_S=[KITCHEN_DOOR], doors_E=[DRAWING_DOOR], extra_polys=drawing_door_polys())
     img = finish("Hide and Seek - Hall (mock-up)", OUT)
     if not ARGS:      # close-up of the front door and the Sitting Room doorway
         pts = [P(0, SITTING_DOOR[1] + .35, 0), P(0, SITTING_DOOR[1] + .35, WALL_H + 8), P(FRONT_DOOR[1] + .5, 0, WALL_H + 8),

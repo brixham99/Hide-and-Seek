@@ -84,8 +84,13 @@ def hall_zone(east_wall=True):
     if east_wall:
         _wall_x(0, 0, 8.05, LILAC)
     _wall_y(0, 0, 3.2, LILAC)
-    # front door, shut, at the far end
-    hc.qx(0.01, 1.0, 2.2, 0, 154, hc.shade((244, 242, 236), hc.KX))
+    # front door, shut, on the south wall (the end you see from the snug)
+    cream = (244, 242, 236)
+    hc.qy(0.04, 0.95, 2.25, 0, 168, hc.shade(cream, hc.KY))
+    for za, zb in ((8, 52), (60, 108), (116, 150)):
+        for xa, xb in ((1.08, 1.52), (1.68, 2.12)):
+            hc.qy(0.06, xa, xb, za, zb, hc.shade(cream, hc.KY * 0.9))
+    hc.qy(0.07, 1.2, 2.0, 156, 184, (150, 188, 140))          # fanlight, garden beyond the glass
     # carpeted stair against the east wall
     hc.box(0.0, 3.0, 1.62, 8.0, 0, 120, (198, 188, 172))
     hc.box(1.5, 3.0, 1.7, 8.0, 0, 160, (240, 238, 232))

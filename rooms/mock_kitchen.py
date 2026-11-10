@@ -133,10 +133,8 @@ def main():
         F.kitchen_run_hung()
     hung.set_alpha(96)
     screen.blit(hung, (0, 0))
-    import glimpses
     ghost_near_walls(OFF_WHITE, doors_E=[BOOT_DOOR], windows_S=[WIN2, WIN1], window_z=(112, 208), window_cols=2,
-                     cornice=False, curtains=None, open_W=True, extra_polys=near_wall_extras(),
-                     openings=[("E", *BOOT_DOOR, glimpses.boot_from_kitchen, (150, 142, 128))])
+                     cornice=False, curtains=None, open_W=True, extra_polys=near_wall_extras())
     finish("Hide and Seek - Kitchen (mock-up)", OUT, subtitle="Ground Floor - kitchen half of the Kitchen + Dining Room", copies=COPIES)
 
 

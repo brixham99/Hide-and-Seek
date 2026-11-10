@@ -237,12 +237,8 @@ def main():
     # near walls: Study door + pantry doorway (y = RD), WC/garage plank door (x = RW)
     WE = lambda u, z: P(RW + .08, u, z)
     wc = plank_door_face(WE, *WC_DOOR, DOOR_H, SAGE_DOOR, KX, hinge="right")
-    import glimpses
     ghost_near_walls(SAGE_WALL, doors_S=[PANTRY, STUDY], doors_E=[WC_DOOR], cornice=False,
-                     extra_polys=list(wc) + beam_ends(),
-                     openings=[("S", *PANTRY, glimpses.utility_from_boot, (244, 244, 242)),
-                               ("S", *STUDY, glimpses.office_from_boot, (220, 218, 214)),
-                               ("E", *WC_DOOR, glimpses.wc_from_boot, (22, 88, 98))])
+                     extra_polys=list(wc) + beam_ends())
     img = finish("Hide and Seek - Boot Room (mock-up)", OUT)
     # close-up of the window and the external door
     a = P(WINDOW[0] - .3, 0, WINDOW[3] + 20)
