@@ -815,6 +815,17 @@ class z_layer:
 _NO_OCC = False
 
 
+def paste_glimpse(layer, zbuf=None):
+    """Paste a finished glimpse layer (z_layer + fade_x) onto the room. It goes
+    over whatever the room has so far, whatever its depth, so call it at the
+    point in the drawing order where the other half belongs: before the
+    room's furniture when it lies beyond it, after when it is nearer. The
+    solid audit is told, so a layer pasted over nearer furniture is flagged."""
+    screen.blit(layer, (0, 0))
+    if _AUDIT is not None and screen is _room_screen:
+        _AUDIT.pasted(layer, zbuf)
+
+
 class drawing_on:
     """with drawing_on(surface): ... -> all the helpers draw there instead."""
     def __init__(self, surf):

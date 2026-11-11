@@ -143,9 +143,9 @@ def main():
     with zb:
         dining_back()
     if hc.FLIP:
-        screen.blit(_clip_past_east(fade_x(back, -1.2, -4.6, zbuf=zb.zbuf)), (0, 0))
+        paste_glimpse(_clip_past_east(fade_x(back, -1.2, -4.6, zbuf=zb.zbuf)), zb.zbuf)
     else:
-        screen.blit(fade_x(back, -2.0, -8.6, zbuf=zb.zbuf), (0, 0))
+        paste_glimpse(fade_x(back, -2.0, -8.6, zbuf=zb.zbuf), zb.zbuf)
     wall_shell(OFF_WHITE, open_W=True)
     hall = exterior_layer({"N": hall_beyond}, haze=(226, 222, 212))
     drawing = exterior_layer({"N": drawing_room_beyond}, haze=shade(GREEN, KY))
@@ -157,9 +157,9 @@ def main():
     with zf:
         dining_front()
     if hc.FLIP:
-        screen.blit(_clip_past_east(fade_x(front, -1.2, -4.6, z_ref=70, zbuf=zf.zbuf)), (0, 0))
+        paste_glimpse(_clip_past_east(fade_x(front, -1.2, -4.6, z_ref=70, zbuf=zf.zbuf)), zf.zbuf)
     else:
-        screen.blit(fade_x(front, -2.0, -8.6, z_ref=70, zbuf=zf.zbuf), (0, 0))
+        paste_glimpse(fade_x(front, -2.0, -8.6, z_ref=70, zbuf=zf.zbuf), zf.zbuf)
     with world(X0):
         F.kitchen_south_wall()
         F.kitchen_island_and_stools()

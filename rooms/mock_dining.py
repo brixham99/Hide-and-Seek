@@ -137,6 +137,17 @@ def french_door_polys():
     return out
 
 
+def kitchen_beyond_front():
+    """The kitchen's furniture past the open side, on its own depth-tested,
+    faded layer, pasted onto the room."""
+    front = glimpse_layer()
+    zf = z_layer(front)
+    with zf, world(X0):
+        kitchen_front()
+    ff = (RW + 1.2, RW + 7.6) if hc.FLIP else (RW + .3, RW + 3.6)
+    paste_glimpse(fade_x(front, *ff, z_ref=70, zbuf=zf.zbuf), zf.zbuf)
+
+
 def main():
     background()
     floor_slate(0, 0, RW, RD, seed=21)
@@ -148,7 +159,12 @@ def main():
     # usual view: the kitchen comes nearer (near-left), faded quickly;
     # opposite view: it is the far side, so more of it shows
     fb = (RW + 1.2, RW + 7.6) if hc.FLIP else (RW + .4, RW + 3.4)
-    screen.blit(fade_x(back, *fb, zbuf=zb.zbuf), (0, 0))
+    paste_glimpse(fade_x(back, *fb, zbuf=zb.zbuf), zb.zbuf)
+    if hc.FLIP:
+        # Opposite view: the kitchen is the FAR side, so its units go down
+        # before the dining room's furniture. Blitted last they were pasted
+        # over the peninsula (the bins showed through its worktop and doors).
+        kitchen_beyond_front()
     wall_shell(OFF_WHITE)
     wall_trim(cornice=False, col=WHITE, open_E=True)
     ext = exterior_layer({"W": side_garden}, haze=(150, 172, 190))
@@ -160,12 +176,8 @@ def main():
         F.peninsula_chairs()
         F.peninsula()
     place_sprite("archie", 5.3, 3.0)
-    front = glimpse_layer()
-    zf = z_layer(front)
-    with zf, world(X0):
-        kitchen_front()
-    ff = (RW + 1.2, RW + 7.6) if hc.FLIP else (RW + .3, RW + 3.6)
-    screen.blit(fade_x(front, *ff, z_ref=70, zbuf=zf.zbuf), (0, 0))
+    if not hc.FLIP:
+        kitchen_beyond_front()      # usual view: the kitchen is the nearer side, over the room
     if hc.FLIP:
         ghost_near_walls(OFF_WHITE, doors_S=(), cornice=False, open_E=True,
                          extra_polys=beam_polys())

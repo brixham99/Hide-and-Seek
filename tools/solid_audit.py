@@ -155,6 +155,26 @@ class Audit:
         self.vid[x0:x1, y0:y1][m] = self.sid()
         self.unk[x0:x1, y0:y1][m] = False
 
+    def pasted(self, layer, zbuf):
+        """A glimpse layer pasted over the room (hc.paste_glimpse): where it is
+        opaque, what you see is the layer, at the layer's own depth, whatever
+        the room had there."""
+        a = pygame.surfarray.array_alpha(layer) > 128
+        if zbuf is None or zbuf.shape != a.shape:
+            self.unk |= a
+            return
+        known = a & (zbuf > -1e8)
+        if not hasattr(self, "_paste_sid"):
+            self._site_ix.setdefault("(glimpse layer)", len(self.sites))
+            if self._site_ix["(glimpse layer)"] == len(self.sites):
+                self.sites.append("(glimpse layer)")
+        sid = self._site_ix["(glimpse layer)"]
+        self.vis[known] = zbuf[known]
+        self.vid[known] = sid
+        self.unk[known] = False
+        self.bd[known] = False
+        self.unk |= a & ~known
+
     def raw(self, surf, rect):
         if surf is not hc._room_screen or rect is None:
             return
