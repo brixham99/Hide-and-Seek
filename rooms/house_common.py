@@ -289,6 +289,13 @@ def _near_plane(pts):
     on_y = max(ys) - min(ys) < 0.25 and max(abs(v) for v in ys) < 0.58
     if not (on_x or on_y):
         return False
+    # A narrow face lying in the plane of a FAR wall (x = RW or y = RD) next
+    # to the corner, e.g. the wall or door architrave beside a doorway there,
+    # is not on a near wall even though it sits close to it.
+    if on_y and max(xs) - min(xs) < 0.02 and min(xs) > RW - 0.3:
+        return False
+    if on_x and max(ys) - min(ys) < 0.02 and min(ys) > RD - 0.3:
+        return False
     zspan = max(zs) - min(zs)
     if zspan <= 6:
         return False
@@ -1268,6 +1275,24 @@ def glazed_doors_on_S(a, b, ext, h=None, curtains=(226, 218, 196)):
         quad(a - 0.65, b + 0.65, 214, 219, (120, 110, 96), n=0.045)
 
 
+def door_architrave_polys(W, a, b, col, k, n=0.0, w=0.16, top=DOOR_H + 32):
+    """White painted architrave round a doorway (u in [a, b]) on a wall plane:
+    jambs, head, a soft inner shadow line and a highlight on the outer edge."""
+    base = shade(col, k)
+    edge = shade(col, k * 0.84)
+    hi = shade(col, min(1.0, k * 1.06) if k < 1 else k)
+    q = lambda u0, u1, z0, z1, c: (c, [W(u0, z0, n), W(u1, z0, n), W(u1, z1, n), W(u0, z1, n)])
+    out = [q(a - w, a, 0, top, base), q(b, b + w, 0, top, base), q(a - w, b + w, DOOR_H, top, base)]
+    # inner quirk (shadow against the opening) and outer highlight
+    out += [q(a - 0.025, a, 0, DOOR_H, edge), q(b, b + 0.025, 0, DOOR_H, edge),
+            q(a - 0.025, b + 0.025, DOOR_H, DOOR_H + 4, edge)]
+    out += [q(a - w, a - w + 0.02, 0, top, hi), q(b + w - 0.02, b + w, 0, top, hi),
+            q(a - w, b + w, top - 4, top, hi)]
+    # plinth blocks
+    out += [q(a - w - 0.01, a, 0, 22, shade(col, k * 0.92)), q(b, b + w + 0.01, 0, 22, shade(col, k * 0.92))]
+    return out
+
+
 def ghost_near_walls(wall_col=GREEN, trim_col=WHITE, doors_S=(), doors_E=(), windows_E=(), windows_S=(),
                      frame_col=WHITE, cornice=True, extra_polys=(), curtains=PINK, open_E=False,
                      open_W=False, window_z=(52, 206), window_cols=3, openings=()):
@@ -1314,6 +1339,12 @@ def ghost_near_walls(wall_col=GREEN, trim_col=WHITE, doors_S=(), doors_E=(), win
             u = b
         if cornice:
             trim.append((shade(trim_col, k), [W(0, WALL_H - 22, t), W(n_len, WALL_H - 22, t), W(n_len, WALL_H, t), W(0, WALL_H, t)]))
+        if FLIP:
+            # This wall is the far one now: fill the frame cut round each
+            # doorway with white painted architrave instead of leaving the
+            # dark backdrop showing as a black frame.
+            for a, b in doors:
+                trim += door_architrave_polys(W, a, b, trim_col, k, t)
         # windows
         wc = shade(WHITE, k)
         zm = (z0 + z1) / 2
