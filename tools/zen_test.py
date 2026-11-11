@@ -108,6 +108,35 @@ def main():
     g.trans = None
     run(app, 3)
     pygame.image.save(app.surf, os.path.join(SHOTS, "zen_hs_game_drawing.png"))
+    # Under the launcher SDL_VIDEODRIVER is unset; importing the game must not
+    # set it to dummy (that opened an invisible window and the launcher hung).
+    import subprocess
+    env = {k: v for k, v in os.environ.items() if k not in ("SDL_VIDEODRIVER", "ZENSTATION")}
+    out = subprocess.run([sys.executable, "-c",
+                          "import os, game, zen, zenbuild; zenbuild.needed(); "
+                          "print('DRIVER', os.environ.get('SDL_VIDEODRIVER'))"],
+                         cwd=HERE, env=env, capture_output=True, text=True).stdout
+    check("DRIVER None" in out, "importing game/zen/zenbuild leaves SDL_VIDEODRIVER unset")
+
+    # zen.log: written under ZENSTATION=1 with versions, the modes tried and frames
+    log = os.path.join(HERE, "zen.log")
+    if os.path.exists(log):
+        os.remove(log)
+    env = dict(os.environ, ZENSTATION="1", SDL_VIDEODRIVER="dummy")
+    p = subprocess.Popen([sys.executable, "game.py"], cwd=HERE, env=env,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    import time
+    t0 = time.time()
+    while time.time() - t0 < 20:
+        if os.path.exists(log) and "running:" in open(log).read():
+            break
+        time.sleep(0.2)
+    p.terminate()
+    p.wait(timeout=10)
+    text = open(log).read() if os.path.exists(log) else ""
+    check("Hide and Seek started" in text and "SDL 2" in text and "set_mode" in text
+          and "running:" in text, "ZENSTATION=1 writes zen.log (versions, set_mode, frames)")
+
     print("RESULT:", "all OK" if not FAIL else f"FAILURES: {FAIL}")
     return 1 if FAIL else 0
 

@@ -17,9 +17,16 @@ needs, kept out of game.py so the room work there merges cleanly:
     python3 zen.py --scene title --screenshot shots/title.png [--pad xbox]
 """
 import argparse
+import faulthandler
 import os
+import platform
 import sys
 import time
+
+# What the launcher gave us, before any module can change it. Nothing imported
+# here may leave SDL_VIDEODRIVER=dummy behind: under Zen Station that opens an
+# invisible window and the launcher waits on "Starting..." for ever.
+_LAUNCH_VIDEO = os.environ.get("SDL_VIDEODRIVER")
 
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import pygame  # noqa: E402
@@ -30,6 +37,67 @@ import title as titlemod  # noqa: E402
 import zenbuild  # noqa: E402
 
 WIN_W, WIN_H = 1280, 720
+HERE = os.path.dirname(os.path.abspath(__file__))
+LOG = os.path.join(HERE, "zen.log")
+HANG_S = 15                    # no frame for this long: the stack goes into zen.log
+_log_file = None
+
+
+def _restore_video_driver():
+    if os.environ.get("SDL_VIDEODRIVER") != _LAUNCH_VIDEO:
+        print(f"Hide and Seek: SDL_VIDEODRIVER was changed to {os.environ.get('SDL_VIDEODRIVER')!r} "
+              f"after launch; putting back {_LAUNCH_VIDEO!r}", flush=True)
+        if _LAUNCH_VIDEO is None:
+            os.environ.pop("SDL_VIDEODRIVER", None)
+        else:
+            os.environ["SDL_VIDEODRIVER"] = _LAUNCH_VIDEO
+
+
+def start_log(path=LOG):
+    """Under Zen Station, send everything the game prints to zen.log.
+
+    Overwritten each launch. SDL's own messages go there too (file descriptors
+    1 and 2 are pointed at it), uncaught errors are written out, and if the
+    game stops drawing for HANG_S seconds every thread's stack is dumped, so
+    a freeze can be read afterwards with `cat ~/games/Hide-and-Seek/zen.log`."""
+    global _log_file
+    try:
+        f = open(path, "w", buffering=1, encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    try:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.dup2(f.fileno(), 1)
+        os.dup2(f.fileno(), 2)
+    except OSError:
+        pass
+    sys.stdout = sys.stderr = f
+    _log_file = f
+    print(f"=== Hide and Seek started {time.strftime('%Y-%m-%d %H:%M:%S %Z')} pid {os.getpid()} ===")
+    print(f"Python {platform.python_version()} ({sys.executable}) on {platform.platform()}")
+    print(f"pygame {pygame.version.ver}, SDL {'.'.join(map(str, pygame.get_sdl_version()))}")
+    for k in ("ZENSTATION", "ZENSTATION_KIOSK", "SDL_VIDEODRIVER", "SDL_AUDIODRIVER",
+              "WAYLAND_DISPLAY", "DISPLAY", "XDG_RUNTIME_DIR", "XDG_SESSION_TYPE"):
+        print(f"  {k}={os.environ.get(k)!r}")
+    print(f"  SDL_VIDEODRIVER as launched={_LAUNCH_VIDEO!r}")
+
+    def hook(kind, value, tb):
+        import traceback
+        print("Hide and Seek: uncaught error", file=f)
+        traceback.print_exception(kind, value, tb, file=f)
+        f.flush()
+    sys.excepthook = hook
+    faulthandler.enable(file=f, all_threads=True)
+    faulthandler.dump_traceback_later(HANG_S, repeat=True, file=f)
+    return f
+
+
+def _log(msg):
+    """A timestamped line in zen.log (only under Zen Station)."""
+    if _log_file is None:
+        return
+    print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
 def make_game_class(Game):
@@ -222,19 +290,42 @@ def parse_args(argv):
 def main(Game, argv=None):
     args = parse_args(sys.argv[1:] if argv is None else argv)
     args.headless = args.scene is not None
+    _restore_video_driver()
+    logging = os.environ.get("ZENSTATION", "").strip() == "1" and not args.headless
+    if logging:
+        start_log()
+    if logging and os.environ.get("SDL_VIDEODRIVER") == "dummy":
+        _log("Warning: SDL_VIDEODRIVER=dummy, so the window will not be visible")
+    _log("pygame.init")
     pygame.init()
+    _log(f"video driver {pygame.display.get_driver()!r}, desktop {screenfit.desktop_size()}")
     pygame.display.set_caption("Hide and Seek")
     fullscreen = (not args.headless and not args.windowed
                   and screenfit.fullscreen_requested(args.fullscreen)
                   and os.environ.get("SDL_VIDEODRIVER") != "dummy")
-    view = screenfit.open_display((WIN_W, WIN_H), fullscreen=fullscreen, headless=args.headless)
+    view = screenfit.open_display((WIN_W, WIN_H), fullscreen=fullscreen, headless=args.headless,
+                                  log=_log if logging else None)
+    if logging:
+        _log(f"window {pygame.display.get_surface()}, fullscreen {fullscreen}")
     app = App(Game, args, view)
     if args.headless:
         return _scene(app, args)
     clock = pygame.time.Clock()
-    while app.running:
-        dt = min(clock.tick(60) / 1000.0, 0.05)
-        app.frame(dt, pygame.event.get())
+    frames = 0
+    try:
+        while app.running:
+            dt = min(clock.tick(60) / 1000.0, 0.05)
+            app.frame(dt, pygame.event.get())
+            frames += 1
+            if logging and frames == 120:
+                # Drawing smoothly: stop the repeating hang dump (it would also
+                # fire during a long in-game pause) but keep the crash handler.
+                faulthandler.cancel_dump_traceback_later()
+                _log(f"running: {frames} frames, {clock.get_fps():.0f} fps; mode {app.mode}")
+    finally:
+        if logging:
+            faulthandler.cancel_dump_traceback_later()
+            _log(f"quitting after {frames} frames")
     pygame.quit()
     return 0
 

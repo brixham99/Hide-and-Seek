@@ -104,31 +104,48 @@ class _Letterboxed(_View):
         pygame.display.flip()
 
 
-def _letterbox_window(logical, display_size):
+def _noop(msg):
+    pass
+
+
+def _try_mode(size, flags, name, log):
+    """set_mode, logging what was asked for and what came back; None on failure."""
+    log(f"set_mode {size[0]}x{size[1]} {name}")
+    try:
+        surf = pygame.display.set_mode(size, flags)
+    except pygame.error as e:
+        log(f"  failed: {e}")
+        return None
+    log(f"  got {surf.get_size()[0]}x{surf.get_size()[1]}")
+    return surf
+
+
+def _letterbox_window(logical, display_size, log=_noop):
     """A borderless window at display_size. The game is drawn at `logical` and fitted in."""
     display_size = (int(display_size[0]), int(display_size[1]))
-    try:
-        window = pygame.display.set_mode(display_size, pygame.FULLSCREEN | pygame.NOFRAME)
-    except pygame.error:
-        window = pygame.display.set_mode(display_size, pygame.NOFRAME)
+    window = (_try_mode(display_size, pygame.FULLSCREEN | pygame.NOFRAME, "FULLSCREEN|NOFRAME", log)
+              or _try_mode(display_size, pygame.NOFRAME, "NOFRAME", log)
+              or _try_mode(display_size, 0, "plain window", log))
+    if window is None:
+        raise pygame.error("no display mode could be opened")
     draw = pygame.Surface(logical).convert()
     pygame.mouse.set_visible(False)
     return _Letterboxed(draw, window)
 
 
-def open_display(logical, *, fullscreen: bool, headless: bool, display_size=None):
+def open_display(logical, *, fullscreen: bool, headless: bool, display_size=None, log=None):
     """Open the window. The returned surface is always `logical` (1280x800).
 
     display_size forces a borderless window of that exact size and a software
     letterbox. The headless TV checks pass 1920x1080 and 3840x2160. Playing
     on a set does not: full screen uses SDL SCALED at the display's own mode.
     """
+    log = log or _noop
     logical = (int(logical[0]), int(logical[1]))
     if headless or not fullscreen:
         flags = 0 if headless else (pygame.SCALED | pygame.RESIZABLE)
-        try:
-            surf = pygame.display.set_mode(logical, flags)
-        except pygame.error:
+        surf = _try_mode(logical, flags, "window" if headless else "SCALED|RESIZABLE window", log)
+        if surf is None:
             surf = pygame.display.set_mode(logical)
         if not headless:
             pygame.mouse.set_visible(True)
@@ -136,16 +153,18 @@ def open_display(logical, *, fullscreen: bool, headless: bool, display_size=None
 
     pygame.mouse.set_visible(False)
     if display_size:
-        return _letterbox_window(logical, (int(display_size[0]), int(display_size[1])))
+        return _letterbox_window(logical, (int(display_size[0]), int(display_size[1])), log)
 
     # Linear filtering on the way to the TV. Set before the renderer exists,
     # and only for full screen, so a resizable window scales as it does now.
     os.environ.setdefault("SDL_RENDER_SCALE_QUALITY", "1")
-    try:
-        surf = pygame.display.set_mode(logical, pygame.FULLSCREEN | pygame.SCALED | pygame.NOFRAME)
-    except pygame.error:
-        surf = None
+    # SCALED needs an SDL renderer; without a fast one (no GL on the Pi's
+    # driver) it is software scaled, still correct. If it cannot be had at all,
+    # the software letterbox at the display's own size is used instead.
+    surf = _try_mode(logical, pygame.FULLSCREEN | pygame.SCALED | pygame.NOFRAME,
+                     "FULLSCREEN|SCALED|NOFRAME", log)
     if surf is not None and surf.get_size() == logical:
         return _View(surf, True)
     native = desktop_size() or logical
-    return _letterbox_window(logical, native)
+    log(f"falling back to a software letterbox at {native[0]}x{native[1]}")
+    return _letterbox_window(logical, native, log)

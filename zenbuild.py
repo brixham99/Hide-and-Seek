@@ -21,10 +21,19 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "cache")
 LOCK = os.path.join(CACHE, ".build.lock")
 PROGRESS = os.path.join(CACHE, ".progress")
+STALE_S = 600                 # a build whose progress has not moved for 10 minutes is stuck
 
-os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
-os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 sys.path.insert(0, HERE)
+
+
+def _headless_env():
+    """No window for a build run on its own or for a worker.
+
+    Only when this file is the program: zen.py imports it inside the game, and
+    setting SDL_VIDEODRIVER=dummy there made the game open an invisible window,
+    so the Zen Station launcher sat on "Starting Hide and Seek..." for ever."""
+    os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+    os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 
 def _br():
@@ -145,8 +154,16 @@ class Build:
                 p = read_progress()          # someone else is building: follow theirs
                 if p:
                     self.done, self.total = p
+                self._check_holder()
                 return self.done, self.total, False
             self.owner = True
+            try:
+                self.lock.seek(0)
+                self.lock.truncate()
+                self.lock.write(f"{os.getpid()}\n")
+                self.lock.flush()
+            except OSError:
+                pass
             self._start()
             if self.finished:
                 self._release()
@@ -166,6 +183,42 @@ class Build:
             self.finished = True
             self._release()
         return self.done, self.total, self.finished
+
+    def holder(self):
+        """PID written by the process holding the lock, or None."""
+        try:
+            with open(LOCK) as f:
+                return int(f.read().split()[0])
+        except Exception:
+            return None
+
+    def _check_holder(self):
+        """Log (once) who holds the build, and say if it looks stuck.
+
+        flock is dropped by the kernel when its holder exits, so a crashed
+        build can never leave the lock held; a held lock means a live process,
+        usually the launcher's background pre-build. If its progress has not
+        moved for STALE_S, that process is stopped so this build can take over.
+        The game keeps drawing its title / progress screen meanwhile."""
+        if not getattr(self, "_told", False):
+            print(f"Hide and Seek: another room build is running (pid {self.holder()}), following it",
+                  flush=True)
+            self._told = True
+        try:
+            age = time.time() - os.path.getmtime(PROGRESS)
+        except OSError:
+            age = time.time() - self.t0
+        if age < STALE_S:
+            return
+        pid = self.holder()
+        print(f"Hide and Seek: room build pid {pid} has not moved for {age:.0f} s; stopping it",
+              flush=True)
+        if pid and pid != os.getpid():
+            try:
+                os.kill(pid, 15)
+            except OSError:
+                pass
+        self.t0 = time.time()
 
     def cancel(self):
         for p in self.procs:
@@ -196,6 +249,7 @@ def _worker(views):
 
 
 def main(argv):
+    _headless_env()
     if argv[:1] == ["--worker"]:
         _worker(argv[1:])
         return 0
