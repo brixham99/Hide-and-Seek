@@ -27,12 +27,16 @@ and depth sorting stay untouched.
   south, the corridor's near walls are ghosts (no solid pillar).
 
 ## Myrtle (the black Labrador)
-- Sprites: `tools/make_myrtle.py` builds them procedurally (a small 3D model
-  of ellipsoids and capsules, splatted through the 2:1 projection with the
-  rooms' light) into `assets/myrtle/`: standing, an 8-frame walk, sitting and
-  lying, in Archie's four facings (se, sw, nw, ne). Black coat with a
-  blue-grey sheen and a soft cool rim so she reads on dark boards; brown eyes;
-  red collar. `tools/myrtle_sheet.py` makes a contact sheet.
+- Sprites: `tools/make_myrtle.py` paints them from one signed-distance model
+  of a Labrador (round cones and ellipsoids with smooth unions: deep chest,
+  tucked waist, rounded skull, drop ears, otter tail, shaped legs and paws),
+  ray-marched through the house's 2:1 camera at 3x with the rooms' light, a
+  blue-grey sheen and rim, a warm floor bounce and streaky fur, then
+  downsampled with a soft dark edge. Output in `assets/myrtle/`: standing,
+  an 8-frame walk, sitting and lying (curled a little to fit her bed), in
+  Archie's four facings (se, sw, nw, ne). Glossy black coat, brown eyes,
+  narrow red collar with a small brass tag. `tools/myrtle_sheet.py` makes a
+  contact sheet. A full build takes about 2.5 minutes.
 - Bed: the existing teal dog bed in the Drawing Room (room-local 1.35-2.55 x
   4.55-5.65, on the rug by the TV); she lies on its top (z = 16).
 - Behaviour (`dog.py`, basic for now): lies on her bed; when the player walks
