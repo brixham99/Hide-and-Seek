@@ -22,16 +22,15 @@ ROOMS = {
     "office":  dict(name="Downstairs Office", rw=3.6, rd=6.0, origin=(20.85, 2.65), views=[("office", 0.0, 0, 99)]),
     "wc":      dict(name="Dragon Toilet", rw=1.65, rd=3.1, origin=(23.2, -0.65), views=[("wc", 0.0, 0, 99)]),
     "landing": dict(name="Landing", rw=3.2, rd=8.05, origin=(6.55, -8.25), views=[("landing", 0.0, 0, 99)]),
-    "corridor": dict(name="Upstairs Corridor", rw=11.4, rd=3.85, origin=(4.00, -1.85), views=[("corridor", 0.0, 0, 99)]),
+    "corridor": dict(name="Upstairs Corridor", rw=7.75, rd=3.85, origin=(4.00, -1.85), views=[("corridor", 0.0, 0, 99)]),
     "archie":  dict(name="Archie's Room", rw=6.4, rd=6.4, origin=(5.56, 2.00), views=[("archie", 0.0, 0, 99)]),
     "upoffice": dict(name="Upstairs Office", rw=6.2, rd=6.4, origin=(-0.60, 2.00), views=[("upoffice", 0.0, 0, 99)]),
     "bathroom": dict(name="The Bathroom", rw=4.6, rd=4.4, origin=(-0.60, -1.85), views=[("bathroom", 0.0, 0, 99)]),
     "holly": dict(name="Holly's Room", rw=6.9, rd=6.4, origin=(-0.60, -8.25), views=[("holly", 0.0, 0, 99)]),
     "master": dict(name="Master Bedroom", rw=7.3, rd=7.8, origin=(9.75, -8.25), views=[("master", 0.0, 0, 99)]),
     # Dressing sits on the master's north wall; the En-suite sits on the
-    # dressing room's north wall. Corridor west (house X = 15.40)
-    # and dressing east (house X = 11.75) do not meet on this metre-grid —
-    # known slop, same as the drawing-room stack.
+    # dressing room's north wall. The corridor's west dead end (house X =
+    # 11.75) stops at the dressing room's east wall, as on the plate.
     "dressing": dict(name="Dressing Room", rw=5.3, rd=4.0, origin=(11.75, -0.45), views=[("dressing", 0.0, 0, 99)]),
     "ensuite": dict(name="En-suite", rw=5.3, rd=4.2, origin=(11.75, 3.55), views=[("ensuite", 0.0, 0, 99)]),
 }
@@ -86,10 +85,10 @@ SOLIDS = {
     "landing": [(0.02, 3.18, 1.58, 7.15), (1.50, 3.10, 1.74, 7.22),
                 (0.05, 2.95, 1.74, 3.20)],
     "corridor": [
-        (9.95, 2.35, 10.55, 3.20),    # clothes basket at the west dead end
+        (6.30, 2.35, 6.90, 3.20),     # clothes basket at the west dead end
         (1.72, 3.58, 2.52, 3.85),     # radiator between the bedroom doors
         (2.55, 0.00, 2.90, 1.65),     # landing void, east of the arch
-        (5.40, 0.00, 11.40, 1.65),    # landing void, west of the arch
+        (5.40, 0.00, 7.75, 1.65),     # landing void, west of the arch
         (2.90, 0.00, 5.40, 1.48),     # landing void, south of the arch strip
     ],
     "archie": [

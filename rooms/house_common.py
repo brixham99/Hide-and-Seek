@@ -37,6 +37,9 @@ import numpy as np  # noqa: E402
 from hm_engine import TILE_W, TILE_H, WALL_H, DOOR_H  # noqa: E402
 import hm_engine as art  # noqa: E402  (Haunted Mansion colour helpers)
 import hm_engine as HMG  # noqa: E402  (Haunted Mansion: ghost door frame pieces)
+# The real engine pieces, kept before build_rooms patches HMG for a view.
+_HM_frame_polys = HMG.door_frame_polys
+_HM_polys_layer = HMG.polys_layer
 
 WIN_W, WIN_H = 1280, 720
 S = 2                                  # supersampling
@@ -871,7 +874,7 @@ def _present_opening(view, x0, y0, pts, allow_near=False):
         del fa
 
 
-def opening_into(side, a, b, draw, h=None, fill=(226, 220, 208)):
+def opening_into(side, a, b, draw, h=None, fill=(226, 220, 208), arch=False):
     """Neighbour room through a doorway on the old near wall (y = RD or x = RW).
     Used by the opposite view, where that wall is the far one.
     `fill` is the colour shown if the neighbour drawing leaves a gap."""
@@ -880,7 +883,10 @@ def opening_into(side, a, b, draw, h=None, fill=(226, 220, 208)):
     layer.fill(fill)
     with drawing_on(layer):
         draw()
-    if side == "S":
+    if arch:
+        W = (lambda u, z, n: P(u, RD, z)) if side == "S" else (lambda u, z, n: P(RW, u, z))
+        pts = arch_opening_pts(W, a, b)
+    elif side == "S":
         pts = [P(a, RD, 0), P(b, RD, 0), P(b, RD, h), P(a, RD, h)]
     else:
         pts = [P(RW, a, 0), P(RW, b, 0), P(RW, b, h), P(RW, a, h)]
@@ -1275,6 +1281,84 @@ def glazed_doors_on_S(a, b, ext, h=None, curtains=(226, 218, 196)):
         quad(a - 0.65, b + 0.65, 214, 219, (120, 110, 96), n=0.045)
 
 
+# ------------------------------------------------------------ arches
+# A slim segmental arch (landing <-> upstairs corridor): springs a little
+# below door height and rises to its crown inside the usual frame cut.
+ARCH_SPRING = DOOR_H - 26
+ARCH_CROWN = DOOR_H + 14
+ARCH_BAND = 12          # depth of the white arch moulding (z units)
+ARCH_JAMB = 0.12        # jamb width (tiles)
+
+
+def arch_z(u, a, b, zs=ARCH_SPRING, zc=ARCH_CROWN):
+    """Height of the arch soffit at u (elliptical segment from a to b)."""
+    c = (b - a) / 2
+    f = max(0.0, 1.0 - ((u - (a + b) / 2) / c) ** 2)
+    return zs + (zc - zs) * math.sqrt(f)
+
+
+def _arch_us(a, b, steps=18):
+    return [a + (b - a) * i / steps for i in range(steps + 1)]
+
+
+def arch_opening_pts(W, a, b, n=0.0, steps=18):
+    """Convex outline of the arched opening (floor to soffit) on a wall plane."""
+    us = _arch_us(a, b, steps)
+    return [W(a, 0, n), W(b, 0, n)] + [W(u, arch_z(u, a, b), n) for u in reversed(us)]
+
+
+def arch_frame_polys(W, a, b, col, k, n=0.0, wall=None, top=None, steps=18):
+    """White painted arch: two slim jambs and a curved moulding following the
+    soffit, with a soft inner shadow line and an outer highlight. With `wall`
+    and `top`, the spandrels between the moulding and z = top are filled with
+    wall colour (closing a rectangular frame cut round the arch)."""
+    base, edge, hi = shade(col, k), shade(col, k * 0.84), shade(col, min(1.0, k * 1.08))
+    q = lambda u0, u1, z0, z1, c: (c, [W(u0, z0, n), W(u1, z0, n), W(u1, z1, n), W(u0, z1, n)])
+    j, bd = ARCH_JAMB, ARCH_BAND
+    zs = ARCH_SPRING
+    out = [q(a - j, a, 0, zs + bd, base), q(b, b + j, 0, zs + bd, base),
+           q(a - 0.022, a, 0, zs, edge), q(b, b + 0.022, 0, zs, edge),
+           q(a - j, a - j + 0.02, 0, zs + bd, hi), q(b + j - 0.02, b + j, 0, zs + bd, hi),
+           q(a - j - 0.01, a, 0, 22, shade(col, k * 0.92)), q(b, b + j + 0.01, 0, 22, shade(col, k * 0.92))]
+    us = _arch_us(a, b, steps)
+    for u0, u1 in zip(us, us[1:]):
+        z0a, z0b = arch_z(u0, a, b), arch_z(u1, a, b)
+        out.append((base, [W(u0, z0a, n), W(u1, z0b, n), W(u1, z0b + bd, n), W(u0, z0a + bd, n)]))
+        out.append((edge, [W(u0, z0a, n), W(u1, z0b, n), W(u1, z0b + 3, n), W(u0, z0a + 3, n)]))
+        out.append((hi, [W(u0, z0a + bd - 3, n), W(u1, z0b + bd - 3, n), W(u1, z0b + bd, n), W(u0, z0a + bd, n)]))
+    if wall is not None and top is not None:
+        # spandrels: above the jambs and above the moulding, up to the cut top
+        out.insert(0, q(a - 0.16, a - j, 0, top, wall))
+        out.insert(0, q(b + j, b + 0.16, 0, top, wall))
+        out.insert(0, q(a - j, a, zs + bd, top, wall))
+        out.insert(0, q(b, b + j, zs + bd, top, wall))
+        for u0, u1 in zip(us, us[1:]):
+            z0a, z0b = arch_z(u0, a, b) + bd, arch_z(u1, a, b) + bd
+            out.insert(0, (wall, [W(u0, z0a, n), W(u1, z0b, n), W(u1, top, n), W(u0, top, n)]))
+    return out
+
+
+def ghost_frame_col(side_k=1.0, col=WHITE):
+    """The Haunted Mansion ghost-frame colour: the frame paint, a little cold."""
+    return shade(art.lerp(col, (150, 170, 200), 0.12), side_k)
+
+
+def ghost_door_frame(W, a, b, col, target=None, alpha=None, arch=False):
+    """Haunted Mansion's translucent door frame on a near (ghost) wall.
+    W(u, z, n) with n towards the camera. Drawn onto `target` (default the
+    current screen) at GHOST_FRAME_ALPHA + 30, like the engine's front edges."""
+    target = screen if target is None else target
+    alpha = HMG.GHOST_FRAME_ALPHA + 30 if alpha is None else alpha
+    if arch:
+        polys = arch_frame_polys(W, a, b, col, 1.0, 0.05)
+        polys = [(c, pts) for c, pts in polys]
+    else:
+        polys = _HM_frame_polys(W, a, b, col, -0.05, 0.05)
+    layer, at = _HM_polys_layer(polys)
+    layer.set_alpha(alpha)
+    target.blit(layer, at)
+
+
 def door_architrave_polys(W, a, b, col, k, n=0.0, w=0.16, top=DOOR_H + 32):
     """White painted architrave round a doorway (u in [a, b]) on a wall plane:
     jambs, head, a soft inner shadow line and a highlight on the outer edge."""
@@ -1295,7 +1379,7 @@ def door_architrave_polys(W, a, b, col, k, n=0.0, w=0.16, top=DOOR_H + 32):
 
 def ghost_near_walls(wall_col=GREEN, trim_col=WHITE, doors_S=(), doors_E=(), windows_E=(), windows_S=(),
                      frame_col=WHITE, cornice=True, extra_polys=(), curtains=PINK, open_E=False,
-                     open_W=False, window_z=(52, 206), window_cols=3, openings=()):
+                     open_W=False, window_z=(52, 206), window_cols=3, openings=(), arches=()):
     """Haunted Mansion's see-through front edge for any room.
     openings: (side, a, b, draw) neighbour views, painted into the doorway holes
     before the wall so the wall and its frame clip them. side "S" is y = RD,
@@ -1344,7 +1428,16 @@ def ghost_near_walls(wall_col=GREEN, trim_col=WHITE, doors_S=(), doors_E=(), win
             # doorway with white painted architrave instead of leaving the
             # dark backdrop showing as a black frame.
             for a, b in doors:
-                trim += door_architrave_polys(W, a, b, trim_col, k, t)
+                if (a, b) in arches:
+                    trim += arch_frame_polys(W, a, b, trim_col, k, t, wall=gc, top=DOOR_H + 32)
+                else:
+                    trim += door_architrave_polys(W, a, b, trim_col, k, t)
+        else:
+            # ghost wall over a near-wall arch: close the frame cut above the curve
+            for a, b in doors:
+                if (a, b) in arches:
+                    faces += [pp for pp in arch_frame_polys(W, a, b, trim_col, k, t, wall=gc, top=DOOR_H + 32)
+                              if pp[0] == gc]
         # windows
         wc = shade(WHITE, k)
         zm = (z0 + z1) / 2
@@ -1381,6 +1474,10 @@ def ghost_near_walls(wall_col=GREEN, trim_col=WHITE, doors_S=(), doors_E=(), win
     for side, doors in (("S", doors_S), ("E", doors_E)):
         W = WS if side == "S" else WE
         for a, b in doors:
+            if (a, b) in arches:
+                if not FLIP:
+                    ghost_door_frame(W, a, b, shade(col, 1.0 if side == "S" else .8), arch=True)
+                continue
             layer, at = HMG.polys_layer(HMG.door_frame_polys(W, a, b, shade(col, 1.0 if side == "S" else .8), t - 0.05, t + 0.05))
             layer.set_alpha(HMG.GHOST_FRAME_ALPHA + 30)
             screen.blit(layer, at)

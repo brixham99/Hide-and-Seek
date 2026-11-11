@@ -5,21 +5,24 @@ Not a long uniform box: a narrow east-west passage under Archie's Room
 and the NE bedroom, widening at the east end into a deeper lobby that
 bulges south beside the stairwell, in front of the bathroom door.
 
-Bounding rectangle 11.4 x 3.85 tiles, origin (4.00, -1.85) so the
+Bounding rectangle 7.75 x 3.85 tiles, origin (4.00, -1.85) so the
 passage south edge (y = PASS_Y0) still meets the landing's north wall
-and the arch stays lined up. The south-west of the rectangle is the
-landing/stairwell, not corridor (no floor there).
+and the arch stays lined up. The west dead end (house X = 11.75) stops at
+the Dressing Room's east wall, as on the first-floor plate: only a short
+blank run (~1.3 m) west of the arch. The south-west of the rectangle is
+the landing/stairwell, not corridor (no floor there).
 
-South of the passage: arched opening to the landing. East of the lobby:
-bathroom doorway. West dead end: clothes basket. North wall: Archie's
-door, a gap with a radiator, then the Upstairs Office door. Loft hatch left out.
+South of the passage: a slim curved arch to the landing. East of the lobby:
+bathroom doorway. West dead end: clothes basket, plain wall (no niche or
+door). North wall: Archie's door, a gap with a radiator, then the Upstairs
+Office door. Loft hatch left out.
 """
 import math
 import random
 import sys
 
 import house_common as hc
-hc.init_room(11.4, 3.85)
+hc.init_room(7.75, 3.85)
 from house_common import *  # noqa: E402,F401,F403
 import iso_paint  # noqa: E402
 
@@ -57,15 +60,61 @@ def oak_floor():
                 LOBBY_X1, PASS_Y0, RW, RD, 0)
 
 
+def _WP(u, z, n=0.0):
+    """A point on the passage's south wall plane (y = PASS_Y0), n towards +y."""
+    return P(u, PASS_Y0 + n, z)
+
+
+def wall_over_arch(col, n=0.0):
+    """The wall above the arch: strips from the curved soffit up to the wall top."""
+    a, b = ARCH
+    us = [a + (b - a) * i / 18 for i in range(19)]
+    out = [(col, [_WP(a - ARCH_JAMB, ARCH_SPRING, n), _WP(a, ARCH_SPRING, n), _WP(a, WALL_H, n), _WP(a - ARCH_JAMB, WALL_H, n)]),
+           (col, [_WP(b, ARCH_SPRING, n), _WP(b + ARCH_JAMB, ARCH_SPRING, n), _WP(b + ARCH_JAMB, WALL_H, n), _WP(b, WALL_H, n)])]
+    for u0, u1 in zip(us, us[1:]):
+        out.append((col, [_WP(u0, arch_z(u0, a, b), n), _WP(u1, arch_z(u1, a, b), n), _WP(u1, WALL_H, n), _WP(u0, WALL_H, n)]))
+    return out
+
+
+def _ghost(pts, col, alpha=36):
+    """Opposite view: a near wall face on the ghost layer (see-through)."""
+    if hc._fg_surf is not None:
+        hc._fill_poly(hc._fg_surf, pts, col, alpha, zwrite=False)
+
+
+def ghost_walls_flip():
+    """Opposite view: the lobby's south and east walls, the passage's south
+    wall with the arch, and the step between them are the near walls now,
+    so they are see-through ghosts like every other near wall (no solid
+    pillar in front of the player), with Haunted Mansion ghost frames on the
+    arch and the bathroom doorway. Nothing beyond shows through them."""
+    gy, gx = shade(WALL, KY), shade(WALL, KX)
+    a, b = ARCH
+    _ghost([P(0, 0, 0), P(LOBBY_X1, 0, 0), P(LOBBY_X1, 0, WALL_H), P(0, 0, WALL_H)], gy)
+    _ghost([P(LOBBY_X1, 0, 0), P(LOBBY_X1, PASS_Y0, 0), P(LOBBY_X1, PASS_Y0, WALL_H), P(LOBBY_X1, 0, WALL_H)], gx)
+    for u0, u1 in ((LOBBY_X1, a - ARCH_JAMB), (b + ARCH_JAMB, RW)):
+        _ghost([_WP(u0, 0), _WP(u1, 0), _WP(u1, WALL_H), _WP(u0, WALL_H)], gy)
+    for c, pts in wall_over_arch(gy):
+        _ghost(pts, c)
+    d0, d1 = BATH_DOOR
+    for v0, v1, z0, z1 in ((0, d0 - .16, 0, WALL_H), (d1 + .16, RD, 0, WALL_H), (d0 - .16, d1 + .16, DOOR_H + 32, WALL_H)):
+        _ghost([P(0, v0, z0), P(0, v1, z0), P(0, v1, z1), P(0, v0, z1)], gx)
+    if hc._fg_surf is not None:
+        # arch frame on the passage wall, towards the camera (-y)
+        ghost_door_frame(lambda u, z, n: _WP(u, z, -n), a, b, ghost_frame_col(1.0), target=hc._fg_surf, arch=True)
+
+
 def l_walls():
     """Opaque far walls of the L. Toward-camera faces are left for the ghosts."""
-    # the inner corner (lobby's west face) reads the step in both views
-    qx(LOBBY_X1, 0.0, PASS_Y0, 0, WALL_H, shade(WALL, KX))
     if not hc.FLIP:
+        # the inner corner (lobby's west face) reads the step
+        qx(LOBBY_X1, 0.0, PASS_Y0, 0, WALL_H, shade(WALL, KX))
         # south and east are far: lobby south, passage south (broken for the arch), east
         qy(0.0, 0.0, LOBBY_X1, 0, WALL_H, shade(WALL, KY))
-        qy(PASS_Y0, LOBBY_X1, ARCH[0], 0, WALL_H, shade(WALL, KY))
-        qy(PASS_Y0, ARCH[1], RW, 0, WALL_H, shade(WALL, KY))
+        qy(PASS_Y0, LOBBY_X1, ARCH[0] - ARCH_JAMB, 0, WALL_H, shade(WALL, KY))
+        qy(PASS_Y0, ARCH[1] + ARCH_JAMB, RW, 0, WALL_H, shade(WALL, KY))
+        for c, pts in wall_over_arch(shade(WALL, KY)):
+            poly(pts, c)
         qx(0.0, 0.0, RD, 0, WALL_H, shade(WALL, KX))
     else:
         # west is far: cap the passage dead end
@@ -87,39 +136,23 @@ def l_skirting():
     if not hc.FLIP:
         skirt_y(0.0, 0.0, LOBBY_X1)
         skirt_x(LOBBY_X1, 0.0, PASS_Y0)
-        skirt_y(PASS_Y0, LOBBY_X1, ARCH[0])
-        skirt_y(PASS_Y0, ARCH[1], RW)
+        skirt_y(PASS_Y0, LOBBY_X1, ARCH[0] - ARCH_JAMB)
+        skirt_y(PASS_Y0, ARCH[1] + ARCH_JAMB, RW)
         skirt_x(0.0, 0.0, BATH_DOOR[0])
         skirt_x(0.0, BATH_DOOR[1], RD)
 
 
-def opening_at_y(y, a, b, draw, h=None):
-    """Neighbour through a doorway in a south-facing wall at this y (not y = 0)."""
-    h = DOOR_H + 16 if h is None else h
+def opening_at_y(y, a, b, draw):
+    """Neighbour through the arch in the south-facing passage wall at this y,
+    then the slim white arch frame over it."""
     layer = pygame.Surface(screen.get_size(), depth=24)
     layer.fill((226, 220, 208))
     with drawing_on(layer):
         draw()
-    pts = [P(a, y, 0), P(b, y, 0), P(b, y, h), P(a, y, h)]
-    show_through(layer, pts, tint_a=0)
-    qy(y + 0.02, a - 0.08, a, 0, h + 8, shade(WHITE_, KY))
-    qy(y + 0.02, b, b + 0.08, 0, h + 8, shade(WHITE_, KY))
-    qy(y + 0.02, a - 0.08, b + 0.08, h, h + 10, shade(WHITE_, KY))
-
-
-def niche(u0, u1):
-    """Recessed arch niche in the passage's south wall, west of the landing arch."""
-    if hc.FLIP:
-        return
-    z0, z1 = 28, 150
-    y = PASS_Y0 + 0.10
-    qy(y, u0, u1, z0, z1, shade(WALL, KY * 0.78))
-    mid = (u0 + u1) / 2
-    qy(y + 0.01, u0 + 0.08, u1 - 0.08, z1 - 22, z1, shade(WALL, KY * 0.7))
-    qy(y + 0.02, mid - 0.16, mid + 0.16, z1 - 8, z1 + 6, shade(WALL, KY * 0.66))
-    qy(PASS_Y0 + 0.02, u0 - 0.05, u0, 20, z1 + 4, shade(WHITE_, KY))
-    qy(PASS_Y0 + 0.02, u1, u1 + 0.05, 20, z1 + 4, shade(WHITE_, KY))
-    qy(PASS_Y0 + 0.02, u0 - 0.05, u1 + 0.05, z1, z1 + 8, shade(WHITE_, KY))
+    W = lambda u, z, n=0.0: P(u, y + n, z)
+    show_through(layer, arch_opening_pts(W, a, b), tint_a=0)
+    for c, pts in arch_frame_polys(W, a, b, WHITE_, KY, 0.02):
+        poly(pts, c)
 
 
 def radiator_north(x0, x1):
@@ -161,11 +194,7 @@ def main():
     import glimpses
     if not hc.FLIP:
         opening_at_y(PASS_Y0, *ARCH, glimpses.landing_from_corridor)
-        mid = (ARCH[0] + ARCH[1]) / 2
-        qy(PASS_Y0 + 0.03, ARCH[0] + 0.15, ARCH[1] - 0.15, DOOR_H + 4, DOOR_H + 22, shade(WALL, KY))
-        qy(PASS_Y0 + 0.035, mid - 0.35, mid + 0.35, DOOR_H + 16, DOOR_H + 28, shade(WALL, KY * 0.92))
         back_opening("W", *BATH_DOOR, glimpses.bathroom_from_corridor)
-        niche(7.15, 8.05)
     l_skirting()
     radiator_north(*RAD)
     place_sprite("archie", 6.2, 2.7)
@@ -174,6 +203,8 @@ def main():
                      doors_E=[],
                      open_E=True)
     ghost_west_passage()
+    if hc.FLIP:
+        ghost_walls_flip()
     clothes_basket(RW - 1.15, (PASS_Y0 + RD) * 0.5)
     finish("Hide and Seek - Upstairs Corridor (mock-up)", OUT,
            subtitle="First Floor", copies=() if ARGS else ("shots/hs_corridor_mock.png",))

@@ -286,14 +286,14 @@ def corridor_zone(north_wall=True):
     """L-shaped floor: east lobby plus the narrow passage to the west."""
     grey = (188, 190, 192)
     _floor("honey", 0, 0, 2.55, 3.85, seed=9)
-    _floor("honey", 2.55, 1.65, 11.4, 3.85, seed=9)
+    _floor("honey", 2.55, 1.65, 7.75, 3.85, seed=9)
     if north_wall:
-        _wall_y(3.85, 0, 11.4, grey)
+        _wall_y(3.85, 0, 7.75, grey)
     else:
         _wall_y(0, 0, 2.55, grey)
         _wall_x(0, 0, 3.85, grey)
-    _wall_x(11.4, 1.65, 3.85, grey)
-    hc.box(10.9, 2.4, 11.35, 3.2, 36, 74, (158, 160, 164))
+    _wall_x(7.75, 1.65, 3.85, grey)
+    hc.box(6.30, 2.51, 6.90, 2.99, 36, 74, (158, 160, 164))
 
 
 landing_from_corridor = _open(CORRIDOR, LANDING, landing_zone)

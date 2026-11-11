@@ -181,7 +181,7 @@ def main():
     balustrade()
     parliament_canvas()
     place_sprite("archie", 2.15, 4.6)
-    ghost_near_walls(WALL, doors_S=[ARCH], doors_E=[MASTER_DOOR],
+    ghost_near_walls(WALL, doors_S=[ARCH], doors_E=[MASTER_DOOR], arches=[ARCH],
                      windows_S=() if not hc.FLIP else [WINDOW],
                      window_z=(52, 206), curtains=GREY_CURTAIN)
     photo_gallery()

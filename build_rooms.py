@@ -4,8 +4,8 @@ cache/<view>_bg.png (floor, walls, furniture) and cache/<view>_fg.png (the ghost
 near walls, drawn over Archie), plus cache/<view>.json (screen origin) and
 cache/<view>_depth.npy (occluder depth, view-local x+y, 0 = empty).
 
-Internal doors are removed on the fly (door leaves dropped, ghost door frames
-dropped, closed internal doors on back walls replaced by open doorways); the room
+Internal doors are removed on the fly (door leaves dropped, near-wall doorways
+kept as Haunted Mansion ghost frames, closed internal doors on back walls replaced by open doorways); the room
 scripts themselves still render the original mock-ups if run on their own.
 
 Rooms are built in this process. Each room module binds its own size at import,
@@ -62,7 +62,31 @@ def _door_glimpses(view, kwargs):
             a = span[0]
             for a0, fn in want.get(side, ()):
                 if abs(a - a0) < 0.08:
-                    hc.opening_into(side, span[0], span[1], fn)
+                    arch = tuple(span) in [tuple(s) for s in kwargs.get("arches", ()) or ()]
+                    hc.opening_into(side, span[0], span[1], fn, arch=arch)
+
+
+def _near_ghost_frames(view, target):
+    """Opposite view: the old back walls (engine N, y = 0 and W, x = 0) are the
+    near ones now. Stand Haunted Mansion's translucent ghost door frame in
+    each doorway there, so the exits read; nothing of the next room shows."""
+    import house_common as hc
+    import house
+    room = "kd" if view in ("kitchen", "dining") else view
+    x0 = hc.KD_VIEWS[view] if room == "kd" else 0.0
+    for wall, a, b, _ in house.portals_of(room):
+        if wall not in ("S", "E"):          # house S -> engine N (y = 0), house E -> engine W (x = 0)
+            continue
+        if room == "kd" and not (x0 - 0.01 <= a and b <= x0 + hc.RW + 0.01) and wall == "S":
+            continue
+        with hc.world(x0):
+            if wall == "S":
+                W = lambda u, z, n: hc.P(u, -n, z)
+                col = hc.ghost_frame_col(1.0)
+            else:
+                W = lambda u, z, n: hc.P(-n, u, z)
+                col = hc.ghost_frame_col(0.8)
+            hc.ghost_door_frame(W, a, b, col, target=target)
 
 
 def build(view, flip=False):
@@ -112,6 +136,7 @@ def build(view, flip=False):
         for layer in fg:
             top.blit(pygame.transform.smoothscale(layer, (hc.WIN_W, hc.WIN_H)), (0, 0))
         if fg_extra is not None:
+            _near_ghost_frames(view, fg_extra)
             top.blit(pygame.transform.smoothscale(fg_extra, (hc.WIN_W, hc.WIN_H)), (0, 0))
         pygame.image.save(top, os.path.join(CACHE, f"{name}_fg.png"))
         depth = hc.raster_depth()
@@ -134,7 +159,8 @@ def build(view, flip=False):
         patch(mod, "finish", finish)
         mod.CLOSE = os.path.join(CACHE, "_unused_closeup.png")   # never touch the mocks' own outputs
         if view != "dining":                       # the dining room's only near-wall door is the (external) French doors
-            patch(hc.HMG, "door_frame_polys", lambda *a, **k: [])
+            if flip:      # far walls now: white architrave instead (ghost_near_walls)
+                patch(hc.HMG, "door_frame_polys", lambda *a, **k: [])
             orig_pl = hc.HMG.polys_layer
 
             def polys_layer(polys):
@@ -187,7 +213,7 @@ def build_all(quiet=False):
 
 
 # Bump when saved room images must be rebuilt (opposite view added).
-CACHE_REV = "37"
+CACHE_REV = "38"
 
 
 def cache_ok():
