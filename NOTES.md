@@ -31,21 +31,30 @@ and depth sorting stay untouched.
   of a Labrador (round cones and ellipsoids with smooth unions: deep chest,
   tucked waist, rounded skull, drop ears, otter tail, shaped legs and paws),
   ray-marched through the house's 2:1 camera at 3x with the rooms' light, a
-  blue-grey sheen and rim, a warm floor bounce and streaky fur, then
-  downsampled with a soft dark edge. Output in `assets/myrtle/`: standing,
+  satin strand highlight (Kajiya-Kay) along a fur-direction field (back along
+  the body, down the legs and chest) broken by brush-stroke noise, warm
+  brown-grey lifts on chest, shoulders and head, a warm floor bounce, then
+  downsampled with a soft painted outline. The sit pose follows the
+  reference photo (upright, straight forelegs, big paws, mouth open, tongue
+  out); the photo itself stays out of the repo. Output in `assets/myrtle/`: standing,
   an 8-frame walk, sitting and lying (curled a little to fit her bed), in
   Archie's four facings (se, sw, nw, ne). Glossy black coat, brown eyes,
   narrow red collar with a small brass tag. `tools/myrtle_sheet.py` makes a
   contact sheet. A full build takes about 2.5 minutes.
 - Bed: the existing teal dog bed in the Drawing Room (room-local 1.35-2.55 x
   4.55-5.65, on the rug by the TV); she lies on its top (z = 16).
-- Behaviour (`dog.py`, basic for now): lies on her bed; when the player walks
-  about downstairs she gets up and trails ~1.35 tiles behind and to one side,
+- Behaviour (`dog.py`): asleep on her bed, taking no notice of anything,
+  until someone comes into the room she is in. Then a coin toss (FOLLOW_P,
+  0.5): she gets up and follows, or stays lying on her bed. While she follows
+  she tosses again every 20-40 s (REROLL_S); on a "no" she walks back to her
+  bed, lies down and waits for someone to come in again. Following: she
+  trails ~1.35 tiles behind and to one side,
   room to room through the doorways (8-way grid path on the room's own
   collision, never upstairs, no collision with the player). She sits when they
   stop (not in a doorway), and goes back to bed after 25 s idle or when nobody
   is downstairs. In the Kitchen / Dining Room she keeps closer (0.9 tiles),
   trots, and hangs about for 50 s, sitting and looking up hopefully.
+  `Dog(seed=...)` or `Dog(rng=...)` makes the tosses repeatable for tests.
   Simulated off-screen; drawn only in the room on screen, depth-sorted with
   Archie, under the ghost walls, both cameras. `dog_test.py` checks the states.
 

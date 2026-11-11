@@ -33,8 +33,9 @@ def shot(name):
 # 1 lying on bed
 g.dog=dog.Dog(); place("drawing",4.6,3.9,"S"); g.moving=False; shot("bed")
 print("bed", g.dog.state)
-# 2 following in the hall: walk drawing -> hall
-g.dog=dog.Dog()
+# 2 following in the hall: come into the Drawing Room (she tosses "follow"), then out to the hall
+g.dog=dog.Dog(follow_p=1.0)
+walk("hall",[(1.3,1.0)],0.2)
 walk("drawing",[(4.5,4.5),(5.6,5.4)],2)
 walk("hall",[(1.6,0.9),(2.4,2.0),(2.4,1.0),(1.4,1.6)],9)
 walk("hall",[(1.4,1.6),(2.3,2.6)],0.4)

@@ -42,16 +42,18 @@ PX_CM = math.hypot(56, 28) / 60 / math.cos(math.radians(45)) * math.cos(math.rad
 SCALE = 1.32 * 0.94                      # px per cm on screen; 0.94 keeps her at her old size
 EL = math.radians(30)
 
-COAT = np.array([19, 19, 23], np.float32)
-SHEEN = np.array([128, 142, 166], np.float32)
-RIM = np.array([92, 108, 136], np.float32)
+COAT = np.array([22, 20, 21], np.float32)
+SHEEN = np.array([150, 132, 116], np.float32)      # satin, warm brown-grey (the photo's chest and head)
+RIM = np.array([84, 86, 96], np.float32)
 WARM = np.array([78, 54, 34], np.float32)
+LINE = (14, 11, 10)                                # painted outline
 COLLAR = np.array([196, 34, 40], np.float32)
 TAG = np.array([214, 178, 88], np.float32)
 EYE = np.array([112, 64, 26], np.float32)
 NOSE = np.array([30, 28, 31], np.float32)
 TONGUE = np.array([212, 108, 120], np.float32)
-MATS = {"coat": 0, "collar": 1, "tag": 2, "eye": 3, "nose": 4, "tongue": 5}
+MATS = {"coat": 0, "collar": 1, "tag": 2, "eye": 3, "nose": 4, "tongue": 5, "mouth": 6}
+MOUTH = np.array([46, 22, 24], np.float32)
 
 
 # ------------------------------------------------------------------ SDF pieces
@@ -182,7 +184,7 @@ def ik(root, target, l1, l2, bend):
     return (rf + l1 * math.cos(ang), root[1], ru + l1 * math.sin(ang))
 
 
-def head_parts(c, look_up=0.0, yaw=0.0, tongue=False):
+def head_parts(c, look_up=0.0, yaw=0.0, tongue=False, open_mouth=False):
     """Rounded skull, stop, muzzle and jaw, nose, eyes, drop ears.
     c = skull centre; look_up tilts the muzzle (radians); yaw turns the head."""
     cf, cs, cu = c
@@ -194,18 +196,34 @@ def head_parts(c, look_up=0.0, yaw=0.0, tongue=False):
         uu = f * math.sin(look_up) + u * math.cos(look_up)
         return (cf + fu * cy - s * sy, cs + fu * sy + s * cy, cu + uu)
 
-    out = [EL_(at(0, 0, 0), (9.6, 7.8, 8.2), k=3.0, yaw=yaw, pitch=look_up),
-           EL_(at(-4, 0, -2), (7, 7.2, 7), k=4.0, yaw=yaw),                          # back of skull into neck
-           RC(at(5.5, 0, -1.5), at(15.5, 0, -3.2), 5.9, 4.4, k=3.0),               # muzzle
-           EL_(at(11, 0, -6.2), (6.0, 4.0, 2.6), k=2.5, yaw=yaw, pitch=look_up),    # jaw / chin
-           EL_(at(5, 0, 3.8), (3.6, 4.6, 2.2), k=2.0, yaw=yaw),                     # brow
-           EL_(at(17.6, 0, -2.4), (2.2, 2.6, 1.9), mat="nose", yaw=yaw, pitch=look_up),
-           EL_(at(6.8, 4.4, 2.2), (1.25, 1.25, 1.25), mat="eye"),
-           EL_(at(6.8, -4.4, 2.2), (1.25, 1.25, 1.25), mat="eye"),
-           EL_(at(-1.2, 7.6, -3.2), (4.8, 1.5, 7.4), k=1.2, yaw=yaw, roll=0.32),     # drop ears
-           EL_(at(-1.2, -7.6, -3.2), (4.8, 1.5, 7.4), k=1.2, yaw=yaw, roll=-0.32)]
-    if tongue:
-        out.append(EL_(at(12.5, 0, -7.6), (3.0, 2.3, 0.9), mat="tongue", yaw=yaw, pitch=look_up))
+    jaw_drop = 0.38 if open_mouth else 0.0
+    out = [EL_(at(-0.5, 0, 0.4), (9.4, 8.0, 7.8), k=2.5, yaw=yaw, pitch=look_up),    # broad skull
+           EL_(at(-4.5, 0, -2.5), (7, 7.4, 7), k=4.0, yaw=yaw),                       # back of skull into neck
+           EL_(at(4.8, 0, 3.0), (3.2, 5.6, 2.6), k=1.6, yaw=yaw, pitch=look_up),       # brow ridge over a clear stop
+           RC(at(6.5, 0, -1.2), at(16.2, 0, -1.9), 5.2, 4.5, k=2.2),                 # muzzle, square and deep
+           EL_(at(12.6, 3.0, -3.6), (5.0, 2.4, 2.6), k=1.6, yaw=yaw, pitch=look_up),   # flews (upper lips)
+           EL_(at(12.6, -3.0, -3.6), (5.0, 2.4, 2.6), k=1.6, yaw=yaw, pitch=look_up),
+           EL_(at(17.4, 0, -1.1), (2.3, 2.7, 1.9), mat="nose", yaw=yaw, pitch=look_up),
+           EL_(at(6.4, 4.3, 1.8), (1.3, 1.3, 1.3), mat="eye"),
+           EL_(at(6.4, -4.3, 1.8), (1.3, 1.3, 1.3), mat="eye"),
+           EL_(at(-0.8, 7.9, -3.6), (5.2, 1.3, 8.0), k=0.9, yaw=yaw, roll=0.22),      # drop ears, flat
+           EL_(at(-0.8, -7.9, -3.6), (5.2, 1.3, 8.0), k=0.9, yaw=yaw, roll=-0.22)]
+    if open_mouth:
+        # lower jaw hinged open, a dark mouth, the tongue lolling out over it
+        jl = look_up - jaw_drop
+        def atj(f, s, u):
+            fu = f * math.cos(jl) - u * math.sin(jl)
+            uu = f * math.sin(jl) + u * math.cos(jl)
+            return (cf + (fu + 5.0) * cy - s * sy, cs + (fu + 5.0) * sy + s * cy, cu - 4.0 + uu)
+        out += [EL_(atj(6.5, 0, -1.6), (6.4, 3.6, 1.9), k=1.6, yaw=yaw, pitch=jl),           # lower jaw
+                EL_(at(12.0, 0, -5.2), (4.6, 2.8, 1.6), mat="mouth", yaw=yaw, pitch=look_up - jaw_drop * 0.5)]
+        if tongue:
+            out += [EL_(atj(8.0, 0, 0.2), (4.6, 2.5, 0.9), mat="tongue", yaw=yaw, pitch=jl),
+                    EL_(atj(11.6, 0, -1.6), (2.6, 2.3, 2.6), mat="tongue", yaw=yaw, pitch=jl - 0.9)]   # tip hanging over the chin
+    else:
+        out.append(EL_(at(11, 0, -5.6), (5.8, 3.8, 2.4), k=2.0, yaw=yaw, pitch=look_up))  # closed jaw / chin
+        if tongue:
+            out.append(EL_(at(12.5, 0, -7.6), (3.0, 2.3, 0.9), mat="tongue", yaw=yaw, pitch=look_up))
     return out
 
 
@@ -219,8 +237,8 @@ def collar(a, b, ra, rb, t=0.42):
     down = np.array([0, 0, -1.0]) - axn * axn[2] * -1
     down = np.array([0, 0, -1.0]) + axn * axn[2]
     down /= np.linalg.norm(down)
-    tag = c + down * (r + 1.6) + np.array([1.2, 0, -0.6])
-    return [TOR(c, ax, r - 0.15, 0.95), EL_(tuple(tag), (0.9, 1.5, 1.5), mat="tag")]
+    tag = c + down * (r + 1.1) + np.array([1.2, 0, -0.6])
+    return [TOR(c, ax, r - 0.1, 0.62), EL_(tuple(tag), (0.7, 1.2, 1.2), mat="tag")]
 
 
 def body_stand(bob=0.0):
@@ -287,19 +305,27 @@ def pose_walk(i=None):
 
 
 def pose_sit():
-    parts = [EL_((-10, 0, 16), (15, 13.6, 14.5), k=6),                  # haunches
-             EL_((1, 0, 31), (23, 12.6, 13.2), k=6, pitch=0.95),          # back, tilted up
-             EL_((11, 0, 44), (12.5, 12.4, 15.5), k=5),                   # chest
-             EL_((-7, 9.8, 13), (12, 4.8, 9.5), k=4), EL_((-7, -9.8, 13), (12, 4.8, 9.5), k=4)]   # thighs
-    na, nb = (14, 0, 55), (20, 0, 70)
-    parts += [RC(na, nb, 9.2, 7.2, k=5)]
-    parts += head_parts((26, 0, 76), look_up=0.32, tongue=True)
-    for side in (6.4, -6.4):
-        parts += [RC((15, side, 40), (16, side, 22), 6.0, 4.2, k=4), RC((16, side, 22), (17, side, 5), 4.2, 3.2, k=2.5),
-                  EL_((19.5, side, 2.5), (4.4, 3.5, 2.5), k=1.5),
-                  EL_((3, side * 1.6, 2.7), (6.2, 3.4, 2.7), k=2)]           # hind paws forward
-    parts += tail([(-23, 0, 7), (-31, 6, 4), (-38, 12, 3.2), (-42, 18, 3.0)], 5.0, 2.2)
-    parts += collar(na, nb, 9.2, 7.2, t=0.45)
+    """Sitting up tall like the photo: chest high and broad, front legs
+    straight and a little apart, big paws, haunches folded at her sides with
+    the hind paws forward, head up, mouth open and tongue out."""
+    parts = [EL_((-9, 0, 15), (14.5, 13.8, 14), k=6),                    # haunches
+             EL_((0, 0, 32), (22, 12.2, 12.6), k=6, pitch=1.12),          # back, nearly upright
+             EL_((9, 0, 46), (12.5, 12.8, 16), k=5),                      # deep chest
+             EL_((14.5, 0, 45), (5.5, 9.5, 11), k=4),                     # breastbone / forechest
+             EL_((-7, 10.2, 13), (12.5, 4.6, 10), k=4), EL_((-7, -10.2, 13), (12.5, 4.6, 10), k=4)]   # thighs
+    na, nb = (12, 0, 56), (17, 0, 72)
+    parts += [RC(na, nb, 9.4, 7.4, k=5)]
+    parts += head_parts((22, 0, 79), look_up=0.34, tongue=True, open_mouth=True)
+    for side in (6.2, -6.2):
+        parts += [EL_((10, side * 1.08, 44), (6, 4.6, 8), k=4),                             # shoulder
+                  RC((12, side, 41), (12.5, side * 1.02, 26), 6.0, 4.4, k=4),               # upper arm to elbow
+                  EL_((10.5, side * 1.05, 27), (3.2, 3.6, 3.2), k=2.0),                     # elbow point
+                  RC((12.5, side, 26), (14, side, 6.0), 4.0, 3.2, k=2.0),                   # straight foreleg
+                  EL_((16.8, side * 1.02, 2.6), (5.0, 3.9, 2.6), k=1.5),                    # big front paw
+                  EL_((-11, side * 1.55, 6.5), (3.6, 3.0, 4.6), k=2),                       # hock
+                  EL_((2, side * 1.62, 2.7), (6.6, 3.6, 2.7), k=2)]                         # hind paws forward
+    parts += tail([(-22, 0, 6), (-30, 5, 3.6), (-37, 10, 3.0), (-42, 15, 2.8)], 5.2, 2.2)
+    parts += collar(na, nb, 9.4, 7.4, t=0.42)
     return Model(parts)
 
 
@@ -401,19 +427,39 @@ def render(model, facing):
     nv = np.clip(n @ V, 0, 1)
     ao = np.clip(0.55 + 0.45 * (model.d(p + n * 2.5) / 2.5 + model.d(p + n * 6.0) / 6.0) * 0.5, 0.35, 1.0)
     upz = n[:, 2]
-    # fur: streaks that run back along the body, finer across it
-    fur = vnoise(p * np.array([0.16, 0.9, 0.9], np.float32)) * 0.6 + vnoise(p * np.array([0.5, 2.2, 2.2], np.float32)) * 0.4
+    # fur direction: back along the body and down the legs and chest, laid
+    # flat on the surface. Brush strokes run along it, fine across it.
+    down = np.clip((34 - p[:, 2]) / 18, 0, 1) + 0.6 * np.clip(p[:, 0] / 12, 0, 1)
+    flow = np.stack([-np.ones(len(p), np.float32), np.zeros(len(p), np.float32), -0.45 - 1.6 * down], 1)
+    T = flow - n * np.einsum("ij,ij->i", flow, n)[:, None]
+    T /= np.linalg.norm(T, axis=1, keepdims=True) + 1e-6
+    B = np.cross(n, T)
+    a_ = np.einsum("ij,ij->i", p, T)
+    b_ = np.einsum("ij,ij->i", p, B)
+    c_ = np.einsum("ij,ij->i", p, n)
+    q = np.stack([a_, b_, c_], 1)
+    strokes = (vnoise(q * np.array([0.22, 1.5, 1.5], np.float32)) * 0.55
+               + vnoise(q * np.array([0.45, 3.4, 3.4], np.float32) + 17.0) * 0.30
+               + vnoise(q * np.array([0.10, 0.6, 0.6], np.float32) + 41.0) * 0.15)
+    fur = strokes
     col = np.zeros((len(idx), 3), np.float32)
     m = mat == 0
-    key = COAT[None] * (0.55 + 1.45 * wrap[:, None]) * ao[:, None]
-    sheen = SHEEN[None] * ((0.55 * nh ** 18 + 0.16 * nh ** 5) * (0.55 + 0.9 * fur))[:, None]
-    rim = RIM[None] * (0.8 * (1 - nv) ** 2.4 * np.clip(upz + 0.6, 0, 1.2))[:, None]
-    warm = WARM[None] * (0.32 * np.clip(-upz, 0, 1))[:, None]
-    coat = key * (0.86 + 0.28 * fur[:, None]) + sheen + rim + warm
+    key = COAT[None] * (0.6 + 1.3 * wrap[:, None]) * ao[:, None]
+    # satin strand highlight (Kajiya-Kay): soft bands across the hair, broken by the strokes
+    th = np.einsum("ij,j->i", T, H)
+    sinth = np.sqrt(np.clip(1 - th * th, 0, 1))
+    lit_side = np.clip(nl + 0.2, 0, 1)
+    sheen = SHEEN[None] * ((0.30 * sinth ** 30 + 0.09 * sinth ** 8) * lit_side * (0.35 + 1.2 * fur) * ao)[:, None]
+    # a warm lift where the light catches chest, shoulders and head
+    warm_hi = np.clip(upz * 0.5 + nl * 0.7, 0, 1) ** 2
+    rim = RIM[None] * (0.45 * (1 - nv) ** 3.0 * np.clip(upz + 0.6, 0, 1.2))[:, None]
+    warm = WARM[None] * (0.30 * np.clip(-upz, 0, 1) + 0.26 * warm_hi * fur)[:, None]
+    coat = key * (0.82 + 0.36 * fur[:, None]) + sheen + rim + warm
     col[m] = coat[m]
     lit = (0.45 + 0.8 * wrap)[:, None]
     spec = (nh ** 30)[:, None]
-    for name, base, gloss in (("collar", COLLAR, 90), ("tag", TAG, 200), ("eye", EYE, 230), ("nose", NOSE, 120), ("tongue", TONGUE, 60)):
+    for name, base, gloss in (("collar", COLLAR, 60), ("tag", TAG, 200), ("eye", EYE, 230), ("nose", NOSE, 90),
+                              ("tongue", TONGUE, 50), ("mouth", MOUTH, 10)):
         mm = mat == MATS[name]
         col[mm] = (base[None] * lit * ao[:, None] + gloss * spec)[mm]
     ix = gx[idx].astype(int)
@@ -441,9 +487,9 @@ def to_surface(img, mask):
     edge = np.clip(grow - alpha, 0, 1)
     out = pygame.Surface((FW, FH), pygame.SRCALPHA)
     line = pygame.Surface((FW, FH), pygame.SRCALPHA)
-    line.fill((10, 10, 13, 0))
+    line.fill((*LINE, 0))
     la = pygame.surfarray.pixels_alpha(line)
-    la[:] = (edge * 170).astype(np.uint8)
+    la[:] = (edge * 200).astype(np.uint8)
     del la
     out.blit(line, (0, 0))
     out.blit(small, (0, 0))

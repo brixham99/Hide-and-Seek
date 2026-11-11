@@ -1,11 +1,15 @@
 """Myrtle, the family's black Labrador.
 
-She lies on her teal bed in the Drawing Room. When someone walks about
-downstairs she gets up and follows a little way behind, finding her way
-room to room through the open doorways (she never goes upstairs). In the
-Kitchen / Dining Room she keeps closer and hangs about longer, sitting and
-looking up hopefully. When everyone stops she sits; after a while idle, or
-when nobody is left downstairs, she trots back to her bed and lies down.
+She lies asleep on her teal bed in the Drawing Room and takes no notice of
+anything until someone comes into the room she is in. Then it is a coin
+toss (FOLLOW_P): either she gets up and follows a little way behind, finding
+her way room to room through the open doorways (she never goes upstairs),
+or she stays put on her bed. While she follows she tosses again every
+20-40 s (REROLL_S); on a "no" she walks back to her bed and lies down, and
+then waits for someone to come in again. So she follows about half the time.
+In the Kitchen / Dining Room she keeps closer and hangs about longer,
+sitting and looking up hopefully. When everyone stops she sits; after a
+while idle, or when nobody is left downstairs, she goes back to bed.
 
 She is simulated in every room all the time (no drawing) so she can appear
 through a doorway; the game only draws her in the room on screen. She has
@@ -14,6 +18,7 @@ no collision with the player, so she can never trap or block anyone.
 Positions are room-local tiles, like the player's (house.py).
 """
 import math
+import random
 from collections import deque
 
 import house
@@ -36,6 +41,8 @@ IDLE_S_KITCHEN = 50.0                     # she hangs about in the kitchen, hope
 WAKE_S = 0.6                              # getting up off the bed
 DOOR_CLEAR = 0.9                          # she won't sit this close to a doorway centre
 REPATH_S = 0.35
+FOLLOW_P = 0.5                            # chance she gets up / keeps following on each toss
+REROLL_S = (20.0, 40.0)                   # seconds between tosses while she follows
 
 
 def _portal_point(room, wall, a, b, depth=0.35):
@@ -153,7 +160,13 @@ def _room_graph():
 
 
 class Dog:
-    def __init__(self):
+    def __init__(self, seed=None, rng=None, follow_p=FOLLOW_P):
+        """`seed` (or an `rng` with random() and uniform()) makes her coin
+        tosses repeatable, for the tests."""
+        self.rng = rng or random.Random(seed)
+        self.follow_p = follow_p
+        self.p_prev_room = None            # the player's room last tick, to see them come in
+        self.reroll = 0.0                  # seconds to the next toss while following
         self.room = BED_ROOM
         self.x, self.y = BED_XY
         self.facing = BED_FACING           # engine direction: E (+x), S (+y), W (-x), N (-y)
@@ -171,7 +184,7 @@ class Dog:
         self.p_head = (0.0, 1.0)
         self._grids = {}
         self._graph = _room_graph()
-        self.log = []                      # state changes, for the tests
+        self.log = []                      # state changes and tosses ("stay", "keep"), for the tests
 
     # ---------------------------------------------------------------- helpers
     def grid(self, room):
@@ -264,9 +277,17 @@ class Dog:
                 return True
         return False
 
+    def _toss(self):
+        return self.rng.random() < self.follow_p
+
+    def _next_toss(self):
+        self.reroll = self.rng.uniform(*REROLL_S)
+
     # ---------------------------------------------------------------- update
     def update(self, dt, p_room, px, py, p_moving):
         """One tick. p_* is the player (whoever is walking about)."""
+        entered = self.p_prev_room is not None and self.p_prev_room != p_room and p_room == self.room
+        self.p_prev_room = p_room
         self.t_state += dt
         self.moving = False
         down = p_room in DOWNSTAIRS
@@ -291,18 +312,28 @@ class Dog:
         if not down or (self.state in ("sit", "wait", "follow") and self.idle > idle_s):
             if self.state not in ("lie", "return"):
                 self._set("return")
+        if self.state in ("follow", "wait", "sit"):
+            self.reroll -= dt
+            if self.reroll <= 0:
+                if self._toss():
+                    self.log.append("keep")
+                    self._next_toss()
+                else:
+                    self._set("return")          # had enough: back to bed
         if self.state == "lie":
-            if down and p_moving:
-                self._set("wake")
+            # asleep until someone comes into her room; then a coin toss
+            if entered:
+                if self._toss():
+                    self._next_toss()
+                    self._set("wake")
+                else:
+                    self.log.append("stay")
             return
         if self.state == "wake":
             if self.t_state >= WAKE_S:
                 self._set("follow")
             return
         if self.state == "return":
-            if down and p_moving and self.t_state > 0.5:
-                self._set("follow")
-                return
             gx, gy, here = self._goal(BED_ROOM, *BED_XY)
             self._walk_to(gx, gy, WALK, dt, ("bed", self.room))
             if self.room == BED_ROOM and math.hypot(self.x - BED_XY[0], self.y - BED_XY[1]) < 0.12:
