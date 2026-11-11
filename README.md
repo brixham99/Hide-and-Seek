@@ -59,8 +59,11 @@ Files for this: `zen.py` (title, pads, full screen), `title.py` and
 - A headless test walk that goes through every doorway both ways:
   `SDL_VIDEODRIVER=dummy python3 walk_test.py` (screenshots in `shots/`).
 
-Archie is blocked by the walls and the furniture, and he is drawn behind
-anything closer to the camera than he is. Still to come: hiding and seeking,
+On the title screen, Left / Right (keys, D-pad or stick) chooses who you
+play, Archie or Holly; the choice is kept until you quit. The other child
+wanders the whole house on their own (`npc.py`, `npc_test.py`). The player is
+blocked by the walls and the furniture, and drawn behind anything closer to
+the camera. Still to come: hiding and seeking,
 the stairs and upstairs, and the garage.
 
 ## Files
@@ -70,6 +73,8 @@ the stairs and upstairs, and the garage.
 - `build_rooms.py` - renders each room view from the drawing code in `rooms/`
 - `rooms/` - the room drawing code (one script per room, shared kit in
   `house_common.py`, Haunted Mansion engine pieces in `hm_engine.py`)
-- `assets/characters/` - Archie's sprites (from Haunted Mansion)
+- `assets/characters/` - Archie's and Holly's sprites (copied unchanged from
+  Haunted Mansion's `assets/characters/`)
+- `npc.py` - the child you are not playing, wandering the house
 
 © 2026 - Made in England

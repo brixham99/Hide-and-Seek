@@ -89,6 +89,23 @@ and depth sorting stay untouched.
   be). `Cat(seed=..., spot=...)` for tests; `cat_test.py` checks it all;
   `tools/bunty_shots.py` makes the screenshots.
 
+## Holly, and choosing who you play
+- Sprites: Holly's from Haunted Mansion, copied byte for byte as Archie's were
+  (`assets/characters/holly_*.png`, `holly_walk.json`: four facings, an 8-frame
+  walk, drawn 1:1 like Archie with his anchors-per-facing scheme and shadow).
+- Title: Archie and Holly stand on the lawn with Myrtle; Left / Right (arrows,
+  A / D, D-pad or left stick, one step per push) moves a gold ring and name tag
+  between them; A / Start / Enter / Space plays that child. The choice lives on
+  `zen.App` for the session; going back to the title and picking the other one
+  swaps places (you carry on from where the other child was).
+- The other child (`npc.py`): Bunty's whole-house pathing (`cat.Cat`) on the
+  player's footprint (house.R), walking at 2 tiles/s, standing about 4-14 s in
+  a random reachable spot of each room. Starts: Archie in his room, Holly in
+  hers. Drawn like the player, depth-sorted with everyone, both cameras.
+- Myrtle (`Dog.update_multi`) tosses for either child coming into her room and
+  then attends to that one. Bunty's island hop is for whichever child is in
+  the Kitchen.
+
 ## Closed solids (closed-solids, CACHE_REV 39)
 
 - Both cameras are now depth-tested. The default view used to rely on draw order

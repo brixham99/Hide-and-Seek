@@ -50,14 +50,16 @@ ISLAND = dict(room="kd", at=(12.7, 4.7, 96), approach=(12.7, 5.7), box=(10.1, 3.
 
 
 class Grid(dogmod.Grid):
-    """Myrtle's path grid with Bunty's smaller footprint."""
-    def __init__(self, room):
+    """Myrtle's path grid with Bunty's smaller footprint (or `r`, for the
+    children)."""
+    def __init__(self, room, r=R):
         rm = house.ROOMS[room]
         self.room = room
+        self.r = r
         self.x0, self.y0 = -0.6, -0.6
         self.nx = int((rm["rw"] + 1.2) / dogmod.GRID) + 1
         self.ny = int((rm["rd"] + 1.2) / dogmod.GRID) + 1
-        self.ok = [[house.free(room, self.x0 + i * dogmod.GRID, self.y0 + j * dogmod.GRID, R) for j in range(self.ny)]
+        self.ok = [[house.free(room, self.x0 + i * dogmod.GRID, self.y0 + j * dogmod.GRID, r) for j in range(self.ny)]
                    for i in range(self.nx)]
 
     def path(self, sx, sy, tx, ty):
@@ -78,17 +80,17 @@ class Grid(dogmod.Grid):
         n = max(1, int(d / 0.05))
         for i in range(n + 1):
             t = i / n
-            if not house.free(self.room, a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, R * 0.9):
+            if not house.free(self.room, a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, self.r * 0.9):
                 return False
         return True
 
 
-def _link_centre(link):
-    """A point inside a stair / arch zone that she can stand on."""
+def _link_centre(link, r=R):
+    """A point inside a stair / arch zone that she (footprint r) can stand on."""
     x = (link["x0"] + link["x1"]) / 2
     room = link["room"]
     for y in [link["y0"] + (link["y1"] - link["y0"]) * t for t in (0.5, 0.3, 0.7, 0.15, 0.85)]:
-        if house.free(room, x, y, R):
+        if house.free(room, x, y, r):
             return x, y
     return x, (link["y0"] + link["y1"]) / 2
 
@@ -109,6 +111,7 @@ def _facing(dx, dy):
 
 
 class Cat:
+    r = R                                  # footprint for paths (the children use theirs)
     def __init__(self, seed=None, rng=None, spot=None):
         """`seed` / `rng` make her choices repeatable (tests); `spot` picks
         where she starts asleep (default: a random one of SPOTS)."""
@@ -139,7 +142,7 @@ class Cat:
     # ---------------------------------------------------------------- helpers
     def grid(self, room):
         if room not in self._grids:
-            self._grids[room] = Grid(room)
+            self._grids[room] = Grid(room, self.r)
         return self._grids[room]
 
     def _set(self, st):
@@ -191,7 +194,7 @@ class Cat:
             self._walk_to(gx, gy, speed, dt, ("door", self.room, edge[1:]))
             return False
         link = edge[1]
-        cx, cy = _link_centre(link)
+        cx, cy = _link_centre(link, self.r)
         self._walk_to(cx, cy, speed, dt, ("link", self.room, link["dest"]))
         if math.hypot(self.x - cx, self.y - cy) < 0.2:
             dest = house.stair_crossing(self.room, cx, cy)
@@ -255,7 +258,7 @@ class Cat:
         if room not in self._reach:
             g = self.grid(room)
             seeds = [dogmod._portal_point(room, w, a, b, -0.4) for w, a, b, _ in house.portals_of(room)]
-            seeds += [_link_centre(lk) for lk in list(house.STAIR_LINKS) + list(house.ARCH_LINKS) if lk["room"] == room]
+            seeds += [_link_centre(lk, self.r) for lk in list(house.STAIR_LINKS) + list(house.ARCH_LINKS) if lk["room"] == room]
             seen = set()
             q = deque()
             for sx, sy in seeds:

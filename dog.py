@@ -381,6 +381,29 @@ class Dog:
             if p_moving and (not same or dist > near_d + 0.45):
                 self._set("follow")
 
+    def update_multi(self, dt, people):
+        """One tick with several people about: [(room, x, y, moving)], the
+        player first. Anyone coming into her room gets the coin toss; if she
+        gets up she attends to that one (follows them, sits by them) until she
+        goes back to bed. With just the player this is update()."""
+        prev = getattr(self, "_prev_rooms", None) or [None] * len(people)
+        if self.state == "lie":
+            for i, (r, _x, _y, _m) in enumerate(people):
+                if i < len(prev) and prev[i] is not None and prev[i] != r and r == self.room:
+                    if self._toss():
+                        self.lead = i
+                        self._next_toss()
+                        self._set("wake")
+                        break
+                    self.log.append("stay")
+        self._prev_rooms = [p[0] for p in people]
+        lead = getattr(self, "lead", 0)
+        lead = people[lead if lead < len(people) else 0]
+        self.p_prev_room = lead[0]            # comings-in were handled above
+        self.update(dt, *lead)
+        if self.state == "lie":
+            self.lead = 0
+
     # ---------------------------------------------------------------- drawing
     def pose(self):
         """'lie', 'sit', 'walk' or 'stand' for the sprite."""

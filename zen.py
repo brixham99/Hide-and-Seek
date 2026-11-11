@@ -9,7 +9,8 @@ needs, kept out of game.py so the room work there merges cleanly:
   D-pad for the tank controls, right trigger walks forwards, Y / Triangle (or X /
   Square) looks from the other side like V, B / Circle goes back to the title,
   and holding Back / Share for a second quits back to the launcher;
-* the title screen (title.py);
+* the title screen (title.py): Left / Right (keys, D-pad or stick) choose
+  Archie or Holly, remembered for the session; the other child wanders;
 * the room images built in parallel with a progress screen (zenbuild.py),
   started straight away so they are often ready by the time you press start.
 
@@ -117,13 +118,13 @@ def make_game_class(Game):
 
         def _make_hint(self):
             if not (self.pads and self.pads.connected):
-                way = "south" if self.flipped else "north"
-                text = f"Left / Right turn    Up / Down walk    V looking {way}    Esc title"
+                way = "South" if self.flipped else "North"
+                text = f"Left / Right Turn    Up / Down Walk    V Looking {way}    Esc Title"
             else:
-                way = "south" if self.flipped else "north"
+                way = "South" if self.flipped else "North"
                 y, back = self.pads.label("Y"), self.pads.label("BACK")
                 b = self.pads.label("B")
-                text = f"Stick turn / walk    {y} looking {way}    {b} title    hold {back} to quit"
+                text = f"Stick Turn / Walk    {y} Looking {way}    {b} Title    Hold {back} to Quit"
             txt = self.small.render(text, True, (214, 204, 178))
             sh = self.small.render(text, True, (12, 10, 12))
             box = pygame.Surface((txt.get_width() + 4, txt.get_height() + 2), pygame.SRCALPHA)
@@ -156,6 +157,8 @@ class App:
         self.title = titlemod.TitleScreen((WIN_W, WIN_H))
         self.buildscr = titlemod.BuildScreen(self.title)
         self.mode = "title"
+        self.choice = titlemod.CHOICES[0]     # who you play; kept for the session
+        self._menu_x = 0                       # pad left / right last frame (to step once per push)
         self.t = 0.0
         self.game = None
         self.build = None
@@ -189,12 +192,19 @@ class App:
             return
         self.enter_play()
 
+    def choose(self, step):
+        """Left (-1) / right (+1) on the title: Archie or Holly."""
+        i = titlemod.CHOICES.index(self.choice)
+        self.choice = titlemod.CHOICES[max(0, min(len(titlemod.CHOICES) - 1, i + step))]
+
     def enter_play(self):
         if self.game is None:
-            self.game = self.Game(self.surf)
+            self.game = self.Game(self.surf, player=self.choice)
             self.game.pads = self.pads
             self.game.present = self.view.present
             self.game._hint = self.game._make_hint()
+        elif self.game.player != self.choice:
+            self.game.set_player(self.choice)       # swap places with the other child
         self.mode = "play"
 
     def to_title(self):
@@ -211,6 +221,10 @@ class App:
         if self.mode == "title":
             if key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
                 self.start()
+            elif key in (pygame.K_LEFT, pygame.K_a):
+                self.choose(-1)
+            elif key in (pygame.K_RIGHT, pygame.K_d):
+                self.choose(1)
             elif key == pygame.K_ESCAPE:
                 self.quit()
         elif self.mode == "build":
@@ -256,9 +270,14 @@ class App:
         if p0 is not None:
             for b in sorted(p0.pressed):
                 self.on_pad(b)
+            # D-pad or stick left / right on the title: one step per push
+            mx = p0.menu_vector()[0]
+            if self.mode == "title" and mx and mx != self._menu_x:
+                self.choose(mx)
+            self._menu_x = mx
         a_label, back_label = self.labels()
         if self.mode == "title":
-            self.title.draw(self.surf, self.t, a_label, back_label, self.build_progress())
+            self.title.draw(self.surf, self.t, a_label, back_label, self.build_progress(), self.choice)
             self.view.present()
         elif self.mode == "build":
             prog = self.build_progress()
@@ -283,6 +302,7 @@ def parse_args(argv):
                    help="treat this controller as connected (hints, screenshots, tests)")
     p.add_argument("--scene", choices=("title", "build", "play"), default=None, help="headless: draw a scene")
     p.add_argument("--screenshot", default=None, help="headless: save the scene here and exit")
+    p.add_argument("--player", choices=titlemod.CHOICES, default=None, help="headless: who is chosen / played")
     p.add_argument("--sim", type=float, default=0.5, help="headless: seconds to run before the shot")
     return p.parse_args(argv)
 
@@ -308,6 +328,8 @@ def main(Game, argv=None):
     if logging:
         _log(f"window {pygame.display.get_surface()}, fullscreen {fullscreen}")
     app = App(Game, args, view)
+    if args.player:
+        app.choice = args.player
     if args.headless:
         return _scene(app, args)
     clock = pygame.time.Clock()
@@ -336,7 +358,7 @@ def _scene(app, args):
         app.buildscr.draw(app.surf, 1.3, 14, 36, 23, back)
     elif args.scene == "title":
         a, back = app.labels()
-        app.title.draw(app.surf, 0.5, a, back, None)
+        app.title.draw(app.surf, 0.5, a, back, None, app.choice)
     else:
         if zenbuild.needed():
             zenbuild.main([])

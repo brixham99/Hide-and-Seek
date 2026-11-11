@@ -24,6 +24,7 @@ import pygame  # noqa: E402
 import cat as catmod  # noqa: E402
 import dog as dogmod  # noqa: E402
 import house  # noqa: E402
+import npc as npcmod  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "cache")
@@ -71,16 +72,25 @@ def load_views():
     return views
 
 
-def load_archie():
-    with open(os.path.join(HM_CHARS, "archie_walk.json")) as f:
+CHILDREN = ("archie", "holly")
+NAMES = {"archie": "Archie", "holly": "Holly"}
+
+
+def load_child(name="archie"):
+    """A child's Haunted Mansion sprites (assets/characters/<name>_*): stand, walk, meta."""
+    with open(os.path.join(HM_CHARS, f"{name}_walk.json")) as f:
         meta = json.load(f)
     fw, fh = meta["size"]
     stand, walk = {}, {}
     for k in ("se", "sw", "nw", "ne"):
-        stand[k] = pygame.image.load(os.path.join(HM_CHARS, f"archie_{k}.png")).convert_alpha()
-        sheet = pygame.image.load(os.path.join(HM_CHARS, f"archie_{k}_walk.png")).convert_alpha()
+        stand[k] = pygame.image.load(os.path.join(HM_CHARS, f"{name}_{k}.png")).convert_alpha()
+        sheet = pygame.image.load(os.path.join(HM_CHARS, f"{name}_{k}_walk.png")).convert_alpha()
         walk[k] = [sheet.subsurface((i * fw, 0, fw, fh)).copy() for i in range(meta["frames"])]
     return stand, walk, meta
+
+
+def load_archie():
+    return load_child("archie")
 
 
 def load_myrtle():
@@ -128,10 +138,12 @@ def _fg_crop(fg):
 
 
 class Game:
-    def __init__(self, screen):
+    def __init__(self, screen, player="archie"):
         self.screen = screen
         self.views = load_views()
-        self.stand, self.walk, self.meta = load_archie()
+        self.kids = {n: load_child(n) for n in CHILDREN}
+        self.player = player                      # who you are: "archie" or "holly"
+        self.stand, self.walk, self.meta = self.kids[player]
         self.font = _font(26, bold=True)
         self.small = _font(15)
         self.shadow = pygame.Surface((60, 24), pygame.SRCALPHA)
@@ -144,6 +156,7 @@ class Game:
         self.cat_shadow = pygame.Surface((40, 14), pygame.SRCALPHA)
         pygame.draw.ellipse(self.cat_shadow, (0, 0, 0, 64), self.cat_shadow.get_rect())
         self.cat = catmod.Cat()
+        self.npc = npcmod.Child(self.other())     # the other child, wandering the house
         self.room, self.x, self.y, self.facing = "hall", 1.6, 1.2, "N"
         self.flipped = False          # True: camera on the opposite side of every room
         self.view = house.view_for(self.room, self.x)
@@ -210,8 +223,14 @@ class Game:
                 cr = house.stair_crossing(self.room, self.x, self.y)
                 if cr:
                     self.change_room(*cr)
-        self.dog.update(dt, self.room, self.x, self.y, self.moving)
-        self.cat.update(dt, self.room, self.x, self.y, self.moving)
+        n = self.npc
+        n.update(dt)
+        # Myrtle notices either child coming in; Bunty goes up on the island
+        # for whichever of them is in the Kitchen
+        self.dog.update_multi(dt, [(self.room, self.x, self.y, self.moving), (n.room, n.x, n.y, n.moving)])
+        who = (n.room, n.x, n.y, n.moving) if (self.room != "kd" and n.room == "kd") else \
+            (self.room, self.x, self.y, self.moving)
+        self.cat.update(dt, *who)
         v = house.view_for(self.room, self.x, self.view)
         if v != self.view:                                   # kitchen <-> dining at the beam
             snap = pygame.Surface((WIN_W, WIN_H), 0, 24)
@@ -347,6 +366,8 @@ class Game:
             actors = [(sign * (self.x - view[1] + self.y), self.draw_archie)]
             if self.dog_visible(view):
                 actors.append((sign * (self.dog.x - view[1] + self.dog.y), self.draw_dog))
+            if self.npc_visible(view):
+                actors.append((sign * (self.npc.x - view[1] + self.npc.y), self.draw_npc))
             if self.cat_visible(view):
                 actors.append((sign * (self.cat.x - view[1] + self.cat.y), self.draw_cat))
             for _, fn in sorted(actors, key=lambda a: a[0]):
@@ -383,6 +404,52 @@ class Game:
             sh = (round(gx - self.dog_shadow.get_width() / 2), round(gy - self.dog_shadow.get_height() / 2))
             surf.blit(self._occlude(self.dog_shadow, sh, view, (d.x, d.y)), sh)
         surf.blit(self._occlude(img, body, view, (d.x, d.y), thr), body)
+
+    def other(self):
+        return CHILDREN[1 - CHILDREN.index(self.player)]
+
+    def set_player(self, name):
+        """Play as `name`. If that's the other child, swap: you carry on from
+        where they were, and they wander off from where you were."""
+        if name == self.player:
+            return
+        n = self.npc
+        p_at = (self.room, self.x, self.y, self.facing)
+        if self.flipped:          # the player's facing is screen-relative; the NPC's is the room's
+            p_at = (*p_at[:3], {"E": "W", "W": "E", "S": "N", "N": "S"}[p_at[3]])
+        room, x, y, f = n.room, n.x, n.y, n.facing
+        if self.flipped:
+            f = {"E": "W", "W": "E", "S": "N", "N": "S"}[f]
+        self.player = name
+        self.stand, self.walk, self.meta = self.kids[name]
+        self.npc = npcmod.Child(self.other(), rng=n.rng, start=p_at)
+        self.room, self.x, self.y, self.facing = room, x, y, f
+        self.view = house.view_for(room, x)
+        self.trans = None
+        self.dist = 0.0
+
+    def npc_visible(self, view):
+        n = self.npc
+        return n.room == self.room and house.view_for(n.room, n.x, view)[0] == view[0]
+
+    def draw_npc(self, surf, view):
+        n = self.npc
+        stand, walk, meta = self.kids[n.name]
+        gx, gy = self.to_screen(view, n.x, n.y)
+        f = n.facing
+        if self.views[self.vid(view)].get("flip"):
+            f = {"E": "W", "W": "E", "S": "N", "N": "S"}[f]      # same way in the room, seen from the other side
+        k = SPRITE[f]
+        ax, ay = meta["facings"][k]["anchor"]
+        if n.moving:
+            fr = meta["frames"]
+            img = walk[k][int(n.dist / meta["cycle_tiles"] * fr) % fr]
+        else:
+            img = stand[k]
+        body = (round(gx - ax), round(gy - ay))
+        shade_at = (round(gx - 30), round(gy - 12))
+        surf.blit(self._occlude(self.shadow, shade_at, view, (n.x, n.y)), shade_at)
+        surf.blit(self._occlude(img, body, view, (n.x, n.y)), body)
 
     def cat_visible(self, view):
         c = self.cat
@@ -447,8 +514,8 @@ class Game:
         return box
 
     def _make_hint(self):
-        way = "south" if self.flipped else "north"
-        text = f"Left / Right turn    Up / Down walk    V looking {way}    Esc quits"
+        way = "South" if self.flipped else "North"
+        text = f"Left / Right Turn    Up / Down Walk    V Looking {way}    Esc Quits"
         txt = self.small.render(text, True, (214, 204, 178))
         sh = self.small.render(text, True, (12, 10, 12))
         box = pygame.Surface((txt.get_width() + 4, txt.get_height() + 2), pygame.SRCALPHA)
