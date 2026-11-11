@@ -137,15 +137,11 @@ def clawfoot_bath():
         cyl(fx, fy, 0.065, 0, 14, iron)
         cyl(fx, fy, 0.12, 10, 24, shade(iron, 0.8))
         cyl(fx, fy, 0.07, 22, 30, WHITE_)
-    # tub body with rounded ends
-    iso_paint.paint_box(x0 + 0.10, y0 + 0.08, x1 - 0.10, y1 - 0.08, 22, 50, "bathroom_bath", front="S", col=WHITE_)
-    cyl(x0 + 0.44, (y0 + y1) / 2, 0.46, 22, 50, WHITE_, top=shade(WHITE_, 1.04))
-    cyl(x1 - 0.44, (y0 + y1) / 2, 0.46, 22, 50, WHITE_, top=shade(WHITE_, 1.04))
-    # roll-top rim (fat white border) with the basin showing through
-    iso_paint.paint_box(x0, y0, x1, y1, 48, 58, "wc_ceramic", front="S", col=WHITE_)
-    cyl(x0 + 0.40, (y0 + y1) / 2, 0.52, 48, 58, WHITE_, top=shade(WHITE_, 1.12))
-    cyl(x1 - 0.40, (y0 + y1) / 2, 0.52, 48, 58, WHITE_, top=shade(WHITE_, 1.12))
-    qz(58.4, x0 + 0.16, y0 + 0.16, x1 - 0.16, y1 - 0.16, (168, 192, 206))
+    # tub body with rounded ends, then the roll-top rim and the water: one
+    # closed round-ended solid, so neither camera sees in under the rim
+    prism(stadium(x0 + 0.10, y0 + 0.08, x1 - 0.10, y1 - 0.08, n=12), 22, 49, WHITE_, top=shade(WHITE_, 1.04), ol=False)
+    prism(stadium(x0, y0, x1, y1, n=12), 48, 58, WHITE_, top=shade(WHITE_, 1.12))
+    poly([P(x, y, 58.4) for x, y in stadium(x0 + 0.14, y0 + 0.14, x1 - 0.14, y1 - 0.14, n=12)], (168, 192, 206))
     # chrome taps at the east (window) end
     box(x1 - 0.42, (y0 + y1) / 2 - 0.08, x1 - 0.22, (y0 + y1) / 2 + 0.08, 58, 74, CHROME)
     cyl(x1 - 0.32, (y0 + y1) / 2, 0.045, 72, 84, CHROME)
@@ -173,8 +169,11 @@ def ladder_shelf():
     """Small wooden ladder shelf at the east end of the bath: plants, bottles, a basket."""
     x0, x1 = 0.16, 0.52
     y0, y1 = RD - 1.15, RD - 0.32
+    # two ladder sides, each a pair of uprights, so the rungs and what is on
+    # them show between them (a solid side panel would hide them)
     for xx in (x0, x1 - 0.045):
-        iso_paint.paint_box(xx, y0 + 0.04, xx + 0.045, y1 - 0.04, 0, 138, "up_oak", front="S", col=WOOD)
+        for ya in (y0 + 0.04, y1 - 0.10):
+            iso_paint.paint_box(xx, ya, xx + 0.045, ya + 0.06, 0, 138, "up_oak", front="S", col=WOOD)
     for z in (38, 76, 114):
         iso_paint.paint_box(x0, y0 + 0.05, x1, y1 - 0.05, z, z + 5, "up_oak", front="S", col=shade(WOOD, 1.08))
     # bottles on the middle rung

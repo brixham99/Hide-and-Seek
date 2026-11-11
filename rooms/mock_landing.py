@@ -69,10 +69,18 @@ def well_stairs():
     (rise north, so they go down toward the south). Treads stay inside the well
     so they do not project out of the cut-away."""
     SHAFT = shade(WALL, 0.42)
-    qx(WELL_X0 + 0.02, WELL_Y0, WELL_Y1, -22, 2, SHAFT)
-    qy(WELL_Y0 + 0.02, WELL_X0, WELL_X1, -22, 2, shade(WALL, 0.38))
-    qz(-6, WELL_X0 + 0.06, WELL_Y0 + 0.06, WELL_X1 - 0.06, WELL_Y1 - 0.04, shade(CARPET, 0.5))
     n, run, rise = 6, 0.30, 9
+    # The shaft is closed: its east side steps down under each tread, and the
+    # floor of the well lies below the lowest one, so the treads are real
+    # steps going down (the floor round the well hides the deep end).
+    deep = -3 - n * rise - 4
+    low = WELL_Y1 - 0.04 - n * run             # south end of the lowest tread
+    qx(WELL_X0 + 0.02, WELL_Y0, low, deep, 2, SHAFT)
+    for i in range(n):
+        ya = WELL_Y1 - 0.04 - (i + 1) * run
+        qx(WELL_X0 + 0.02, ya, ya + run + (0.04 if i == 0 else 0), -3 - i * rise - rise, 2, SHAFT)
+    qy(WELL_Y0 + 0.02, WELL_X0, WELL_X1, deep, 2, shade(WALL, 0.38))
+    qz(deep, WELL_X0 + 0.06, WELL_Y0 + 0.06, WELL_X1 - 0.06, low, shade(CARPET, 0.5))
     for i in range(n):
         y1 = WELL_Y1 - 0.04 - i * run
         y0 = y1 - run

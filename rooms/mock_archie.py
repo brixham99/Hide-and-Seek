@@ -103,6 +103,7 @@ def bookcase():
     """Tall dark-wood bookcase on the east wall, by the window."""
     x0, x1, y0, y1 = 0.06, 0.72, 4.05, 6.28
     iso_paint.paint_box(x0, y0, x1, y1, 0, 168, "up_bookcase", front="W", col=(92, 58, 34))
+    qz(168.3, x0, y0, x1, y1, shade((92, 58, 34), 1.1))          # plain wood top, not the front sheet
     rnd = random.Random(21)
     for s, z in enumerate((18, 48, 80, 112, 144)):
         box(x0 + 0.04, y0 + 0.04, x1 - 0.04, y1 - 0.04, z - 4, z, shade((92, 58, 34), 1.12), ol=False)
@@ -112,7 +113,7 @@ def bookcase():
                 w = rnd.uniform(0.055, 0.10)
                 col = rnd.choice([(48, 72, 140), (160, 48, 48), (48, 96, 64), (200, 170, 70),
                                   (40, 40, 44), (180, 96, 48), (88, 56, 120), (200, 80, 80)])
-                box(x0 + 0.08, u, x1 - 0.10, u + w, z, z + rnd.uniform(20, 30), col, ol=False)
+                box(x0 + 0.08, u, x1 - 0.10, u + w, z, min(z + rnd.uniform(20, 30), 164), col, ol=False)
                 u += w + 0.008
             else:
                 w = rnd.uniform(0.14, 0.22)

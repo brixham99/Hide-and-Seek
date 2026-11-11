@@ -48,3 +48,24 @@ and depth sorting stay untouched.
   trots, and hangs about for 50 s, sitting and looking up hopefully.
   Simulated off-screen; drawn only in the room on screen, depth-sorted with
   Archie, under the ghost walls, both cameras. `dog_test.py` checks the states.
+
+## Closed solids (closed-solids, CACHE_REV 39)
+
+- Both cameras are now depth-tested. The default view used to rely on draw order
+  alone, so sub-parts of furniture poked through or were drawn over nearer items.
+  `init_room` now gives every view a z-buffer; only faces lying on a far wall
+  (`_on_far_wall`: walls, doors, reveals, pictures) are still painted as a backdrop,
+  and doorway glimpses (`show_through`) stay plain blits in the default view.
+- `cyl` bodies use `_z_drum` (true per-column drum depth); painted face sheets use
+  `iso_paint._blit_z`; `line()` is depth-tested.
+- Stairs: `closed_flight` adds risers, a solid east side profile and a north end
+  panel so the flight's planes cannot be seen from underneath; the handrail is one
+  straight sloped length (`sloped_rail`) again instead of the stepped boxes that
+  replaced the old `pygame.draw.line` (that line skipped the opposite view's z-buffer).
+- New helpers: `prism`/`stadium` (rounded solids, e.g. the bath), `solid_near`
+  (faces that stay solid in a near-wall plane), `sloped_rail`.
+- `tools/solid_audit.py` rasterises every box/occluder and flags pixels where you
+  can see more than 0.08 tiles behind a solid's front (and details buried just
+  inside a face). It writes `shots/audit/<view>.png` with flagged pixels in magenta.
+  `tools/compose_view.py` and `tools/diff_views.py` compose cache layers and diff
+  two sets of views.

@@ -369,7 +369,7 @@ def stamp(tex, x0, y0, x1, y1, z=0.0, mask="rect"):
     else:
         wx = (xpy + xmy) / 2 + X_OFF
         wy = (xpy - xmy) / 2 + Y_OFF
-        close = None
+        close = np.broadcast_to(xpy, (sw, sh))
     m = (wx >= x0) & (wx <= x1) & (wy >= y0) & (wy <= y1)
     if mask == "ellipse":
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2

@@ -308,8 +308,9 @@ def north_wall_hung():
     south face and stay unseen."""
     x0, x1, d = BREAST
     with hung_layer(alpha=115):
-        box(x0, RD - d, x1, RD, 0, WALL_H, shade(WALL, .95), faces="x")
-        box(x0 - .1, RD - d - .14, x1 + .1, RD - d, 112, 120, (30, 30, 32), faces="xz")    # mantel shelf
+        # the opposite view draws these solid on the room: close them there
+        box(x0, RD - d, x1, RD, 0, WALL_H, shade(WALL, .95), faces="xz" if hc.FLIP else "x")
+        box(x0 - .1, RD - d - .14, x1 + .1, RD - d, 112, 120, (30, 30, 32), faces="xyz" if hc.FLIP else "xz")    # mantel shelf
         rnd = random.Random(19)
         for (a, b), col, levels in (((.1, x0 - .05), WHITE, (120, 160, 200)), ((x1 + .05, RW - .1), DARK_WOOD, (140, 180))):
             for zz in levels:

@@ -184,6 +184,7 @@ def stairs():
         side += [P(SW, y, (y - Y0) / RUN * RISE + RISE + 6)]
     side += [P(SW, RD - .01, WALL_H + 6), P(SW, RD - .01, 0)]
     poly(side, shade(white, KX))
+    closed_flight(white)
     # side face below the flight: tongue-and-groove at the high end, cupboard door, hatch
     y = 5.0
     while y < RD - .05:
@@ -206,6 +207,35 @@ def stairs():
         occlude(0, y, SW, min(RD - .01, y + RUN), 0, tread_z(i))
 
 
+def closed_flight(white):
+    """Close the flight so neither camera can see in under the treads.
+
+    The usual view looks at the open west side and the treads; the far end
+    of the flight, cut by the north (near) wall, gets an end panel. The
+    opposite view looks from the south-east: it sees the risers and the
+    east side, which stands against the (ghost) east wall, so that side is
+    a solid painted panel with a closed string, not part of the wall.
+    """
+    if not hc.FLIP:
+        prof = [P(0, RD - .01, 0), P(SW, RD - .01, 0), P(SW, RD - .01, WALL_H + 6), P(0, RD - .01, WALL_H + 6)]
+        poly(prof, shade(white, KY * .9))
+        return
+    for i in range(NSTEP):                     # risers, carpeted like the treads
+        y = Y0 + i * RUN
+        qy(y, 0, SW, tread_z(i - 1) if i else 0, tread_z(i), shade(CARPET, KY * .9))
+    with solid_near():
+        east = [P(0, Y0, 0), P(0, Y0, tread_z(0))]
+        for i in range(1, NSTEP):
+            y = Y0 + i * RUN
+            east += [P(0, y, (y - Y0) / RUN * RISE + RISE + 6)]
+        east += [P(0, RD - .01, WALL_H + 6), P(0, RD - .01, 0)]
+        poly(east, shade(white, KX * .96))
+        st = lambda y, dz: P(0, y, (y - Y0) / RUN * RISE + RISE + dz)
+        poly([st(Y0 + RUN, 6), st(RD, 6), st(RD, -14), st(Y0 + RUN, -14)], shade(white, KX * 1.04))
+        poly([st(Y0 + RUN + .2, 2), st(RD - .2, 2), st(RD - .2, -10), st(Y0 + RUN + .2, -10)], shade(white, KX * .9))
+        qx(0, Y0, Y0 + RUN, 0, tread_z(0), shade(white, KX * .96))
+
+
 def balustrade():
     hx = SW - .04
     hz = lambda y: (y - Y0) / RUN * RISE + RISE + 84
@@ -222,16 +252,8 @@ def balustrade():
     cyl(nx, ny, .05, z + 34, z + 86, MAHOGANY)
     cyl(nx, ny, .08, z + 86, z + 96, MAHOGANY, top=shade(MAHOGANY, 1.25))
     cyl(nx, ny, .06, z + 96, z + 108, MAHOGANY, top=shade(MAHOGANY, 1.3))
-    x0, y0, z0 = nx, ny + .05, z + 92
-    x1, y1, z1 = hx + .02, RD, hz(RD)
-    n = 14
-    for i in range(n):
-        t0, t1 = i / n, (i + 1) / n
-        xa, ya, za = x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0, z0 + (z1 - z0) * t0
-        xb, yb, zb = x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1, z0 + (z1 - z0) * t1
-        box(min(xa, xb) - 0.025, min(ya, yb) - 0.025,
-            max(xa, xb) + 0.025, max(ya, yb) + 0.025,
-            min(za, zb), max(za, zb) + 4, MAHOGANY, ol=False)
+    # one straight length of mahogany from the newel up the pitch of the flight
+    sloped_rail(nx, ny + .05, z + 90, hx + .02, RD, hz(RD) - 2, w=.03, h=7, col=MAHOGANY)
 
 
 # ------------------------------------------------------------- near walls

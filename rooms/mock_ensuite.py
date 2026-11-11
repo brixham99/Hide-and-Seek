@@ -162,7 +162,6 @@ def vanity(full):
         box(x0, y0, x1, y1, 0, 16, BLUE, top=shade(BLUE, 1.06))
         return
     iso_paint.paint_box(x0, y0, x1, y1, 0, 70, "ensuite_vanity", front="W", col=BLUE)
-    box(x0 + 0.16, y0 + 0.22, x1 - 0.14, y0 + 0.70, 12, 28, (168, 128, 80), ol=False)
     iso_paint.paint_box(x0, y0 - 0.02, x1 + 0.04, y1 + 0.04, 70, 78, "wc_ceramic", front="W", col=WHITE_)
     box(x0 + 0.10, y0 + 0.28, x1 - 0.10, y1 - 0.22, 74, 80, (210, 218, 222), top=(198, 208, 214))
     box(x0 + 0.04, (y0 + y1) / 2 - 0.06, x0 + 0.16, (y0 + y1) / 2 + 0.06, 78, 90, CHROME)
@@ -197,8 +196,9 @@ def towel_rail(full):
     box(x0, y1 - 0.04, x1, y1, 36, 138, CHROME)
     for z in (48, 72, 96, 120):
         box(x0, y0, x1, y1, z, z + 5, CHROME)
-    iso_paint.paint_box(x0 + 0.12, y0 + 0.02, x0 + 0.55, y1 - 0.02, 40, 118, "towel", front="N", col=(220, 218, 224))
-    iso_paint.paint_box(x1 - 0.50, y0 + 0.02, x1 - 0.12, y1 - 0.02, 40, 100, "towel", front="N", col=(232, 228, 220))
+    # towels hung over the front bars, so they sit outside the rail
+    iso_paint.paint_box(x0 + 0.12, y1, x0 + 0.55, y1 + 0.05, 40, 118, "towel", front="N", col=(220, 218, 224))
+    iso_paint.paint_box(x1 - 0.50, y1, x1 - 0.12, y1 + 0.05, 40, 100, "towel", front="N", col=(232, 228, 220))
 
 
 def wicker_basket():

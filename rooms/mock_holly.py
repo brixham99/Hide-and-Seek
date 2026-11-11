@@ -96,12 +96,12 @@ def chimney_hung():
 
 
 def fireplace_front():
-    """White surround and black insert, painted on the far north wall plane
-    (the inset breast face loses the flipped depth test against that wall)."""
+    """White surround and black insert, painted on the breast's south face
+    (the opposite view sees it); main() closes the breast's sides and top."""
     if not hc.FLIP:
         return
     x0, x1, d = BREAST
-    y = RD - 0.03
+    y = RD - d               # the breast's own south face, so it reads as a solid chimney
     qy(y, x0 - 0.04, x1 + 0.04, 0, WALL_H, shade(WALL, KY * 0.9))
     tex = iso_paint.kind_sheets("holly_fire")["front"]
     A, B = P(x0 - 0.04, y - 0.01, WALL_H), P(x1 + 0.04, y - 0.01, WALL_H)
@@ -294,7 +294,7 @@ def main():
     if hc.FLIP:
         # north wall is far here; paint the breast after the solid ghost fill
         x0, x1, d = BREAST
-        box(x0, RD - d, x1, RD, 0, WALL_H, shade(WALL, 0.96), faces="x")
+        box(x0, RD - d, x1, RD, 0, WALL_H, shade(WALL, 0.96), faces="xz")
         fireplace_front()
     finish("Hide and Seek - Holly's Room (mock-up)", OUT,
            subtitle="First Floor", copies=() if ARGS else ("shots/hs_holly_mock.png",))

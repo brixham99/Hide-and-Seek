@@ -14,7 +14,8 @@ pip install -r requirements.txt
 python3 game.py
 ```
 
-The first run builds the room images into `cache/` (a few seconds). You can also
+`requirements.txt` installs pygame-ce, NumPy and Pillow (the room builder uses
+Pillow to paint the furniture faces). The first run builds the room images into `cache/` (a few seconds). You can also
 build them yourself with `python3 build_rooms.py`.
 
 ## Controls

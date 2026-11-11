@@ -110,13 +110,62 @@ def paint_quad(tex, A, B, C, shade=1.0, pad=3, D=None):
     Dn = B + C - A
     D_pt = D if D is not None else (float(Dn[0]), float(Dn[1]))
     pts = [A_pt, B_pt, D_pt, C_pt]
-    if hc._flip_draw():
+    if hc._flip_draw() and hc.FLIP:
         _paint_quad_z(tex, A, B, C, Dn, pts, shade)
+        if hc._AUDIT is not None:
+            hc._AUDIT.drawn(pts, hc._near_plane(pts) and hc._fg_surf is not None)
         return
     layer = _warp(tex, A, B, C, shade, pad)
     if layer is None:
         return
-    hc.screen.blit(layer[0], layer[1])
+    if hc._flip_draw() and not hc._on_far_wall(pts):
+        _blit_z(layer[0], layer[1], pts)
+    else:
+        hc.screen.blit(layer[0], layer[1])
+    if hc._AUDIT is not None:
+        hc._AUDIT.drawn(pts, False)
+
+
+def _blit_z(surf, at, pts):
+    """Blit a warped face sheet through the usual view's z-buffer: only the
+    pixels in front of what is already drawn land, and they write depth."""
+    import pygame
+    infs = [hc._pinf.get(p) for p in pts]
+    if any(i is None for i in infs):
+        hc.screen.blit(surf, at)
+        return
+    W, H = hc._zbuf.shape
+    x0, y0 = at
+    w, h = surf.get_size()
+    cx0, cy0 = max(0, x0), max(0, y0)
+    cx1, cy1 = min(W, x0 + w), min(H, y0 + h)
+    if cx1 <= cx0 or cy1 <= cy0:
+        return
+    gx = np.arange(cx0, cx1, dtype=np.float32)[:, None] + 0.5
+    gy = np.arange(cy0, cy1, dtype=np.float32)[None, :] + 0.5
+    # depth over the parallelogram from its first three corners (a plane)
+    (ax, ay), (bx, by), (dx, dy) = pts[0], pts[1], pts[3]
+    da, db, dd = infs[0][3], infs[1][3], infs[3][3]
+    det = (bx - ax) * (dy - ay) - (by - ay) * (dx - ax)
+    if abs(det) < 1e-6:
+        hc.screen.blit(surf, at)
+        return
+    u = ((gx - ax) * (dy - ay) - (gy - ay) * (dx - ax)) / det
+    v = ((bx - ax) * (gy - ay) - (by - ay) * (gx - ax)) / det
+    depth = da + u * (db - da) + v * (dd - da)
+    zb = hc._zbuf[cx0:cx1, cy0:cy1]
+    ok = depth >= zb - 1e-4
+    alpha = pygame.surfarray.pixels_alpha(surf)
+    sub_a = alpha[cx0 - x0:cx1 - x0, cy0 - y0:cy1 - y0]
+    keep = sub_a.copy()
+    sub_a[~ok] = 0
+    del sub_a, alpha
+    hc.screen.blit(surf, at)
+    alpha = pygame.surfarray.pixels_alpha(surf)
+    alpha[cx0 - x0:cx1 - x0, cy0 - y0:cy1 - y0] = keep          # the warp is cached: put it back
+    del alpha
+    m = ok & (keep > 128)
+    zb[m] = depth[m]
 
 
 def _warp(tex, A, B, C, shade, pad):

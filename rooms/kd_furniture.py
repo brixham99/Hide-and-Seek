@@ -126,8 +126,10 @@ def island(x0, y0, x1, y1, h=96):
     iso_paint.paint_box(x0 + .05, y0 + .05, x1 - .05, y1 - .05, 8, h - 12, "kitchen_island", front="N", col=PALE_GREY, faces="x")
     Y = y1 - .049
     if hc.FLIP:
-        # tongue-and-groove on the south end, the face this camera sees
-        yy = y0 + 0.06
+        # tongue-and-groove on the south end, the face this camera sees: a
+        # whole panel first, so the gaps between boards are not see-through
+        qy(y0 + 0.05, x0 + .05, x1 - .05, 8, h - 12, shade(PALE_GREY, KY * 0.92))
+        yy = y0 + 0.04      # boards proud of the panel
         u = x0 + 0.2
         while u < x1 - 0.2:
             qy(yy, u, u + 0.05, 16, h - 20, shade(PALE_GREY, KY * 0.82))
@@ -138,6 +140,8 @@ def island(x0, y0, x1, y1, h=96):
         v += .17
     n = 4
     w = (x1 - x0 - .3) / n
+    if not hc.FLIP:       # the north face, closed behind its drawers and shelves
+        qy(y1 - .05, x0 + .05, x1 - .05, 8, h - 12, shade(PALE_GREY, KY * 0.92))
     qy(Y, x0 + .15, x1 - .15, 12, h - 38, shade((96, 98, 96), KY))
     for i in range(n):
         a, b = x0 + .15 + i * w + .02, x0 + .15 + (i + 1) * w - .02
@@ -378,7 +382,7 @@ def peninsula():
     for i in range(n):          # cupboard doors and drawers on the +x (kitchen) face
         a = y0 + .05 + i * (y1 - y0 - .1) / n + .02
         b = y0 + .05 + (i + 1) * (y1 - y0 - .1) / n - .02
-        X = x1 - .039
+        X = x1 + .002                # on the carcass face, not inside it
         qx(X, a, b, 10, 62, shade(CAB, KX * .93))
         qx(X + .001, a + .05, b - .05, 14, 58, shade(CAB, KX * 1.02))
         qx(X, a, b, 66, 84, shade(CAB, KX * .93))

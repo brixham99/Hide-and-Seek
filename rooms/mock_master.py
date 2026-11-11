@@ -86,7 +86,7 @@ def east_fireplace():
     if hc.FLIP:
         return
     y0, y1, d = BREAST
-    box(0, y0, d, y1, 0, WALL_H, shade(WALL, 0.96), faces="y")
+    box(0, y0, d, y1, 0, WALL_H, shade(WALL, 0.96), faces="xyz")   # closed: its west face too
     # white surround and black insert on the breast's west face
     qx(d + 0.01, y0 + 0.18, y1 - 0.18, 8, 96, shade(WHITE_, KX))
     qx(d + 0.02, y0 + 0.40, y1 - 0.40, 16, 82, (32, 30, 30))

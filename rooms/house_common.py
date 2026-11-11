@@ -70,11 +70,12 @@ screen = None
 _inited = False
 _room_screen = None          # the room canvas; glimpse/exterior layers are not this
 _occluders = []              # (x0, y0, x1, y1, z0, z1) in view-local tiles
+_AUDIT = None                # tools/solid_audit.py: records faces and solids (inert when None)
 
 
 def init_room(rw, rd, ox=None, oy=None):
     """Set the room size (tiles) and screen origin, and make the 2x canvas."""
-    global RW, RD, OX, OY, screen, _inited, _room_screen, _occluders
+    global RW, RD, OX, OY, screen, _inited, _room_screen, _occluders, _zbuf, _pinf
     RW, RD = rw, rd
     OX = ox if ox is not None else 640 - (rw - rd) * HW / 2
     if oy is None:     # centre the room (walls + floor) vertically
@@ -91,6 +92,11 @@ def init_room(rw, rd, ox=None, oy=None):
     screen = pygame.Surface((WIN_W * S, WIN_H * S), depth=24)
     _room_screen = screen
     _occluders = []
+    # The usual view is z-buffered too (closeness = view-local x + y), so the
+    # parts of a piece of furniture can be drawn in any order and nothing
+    # behind a solid face ever shows through it.
+    _zbuf = np.full((WIN_W * S, WIN_H * S), -1e9, np.float32)
+    _pinf = {}
     return screen
 
 
@@ -122,6 +128,8 @@ def _note_occluder(x0, y0, x1, y1, z0, z1):
 
 def occlude(x0, y0, x1, y1, z0, z1):
     """Mark a volume the character should render behind (stairs, and so on)."""
+    if _AUDIT is not None:
+        _AUDIT.solid(x0, y0, x1, y1, z0, z1, "xyz", occ=True)
     _note_occluder(x0, y0, x1, y1, z0, z1)
 
 
@@ -216,11 +224,14 @@ def end_flip():
     _zbuf = None
     _fg_surf = None
     _pinf = {}
+    if screen is not None:
+        _zbuf = np.full(screen.get_size(), -1e9, np.float32)
 
 
 def _flip_draw():
-    """Z-sorted drawing only while painting the room itself, not a glimpse layer."""
-    return FLIP and _zbuf is not None and (screen is _room_screen or screen is _fg_surf)
+    """Z-sorted drawing only while painting the room itself, not a glimpse
+    or ghost layer. (Both cameras since CACHE_REV 39; the name is historic.)"""
+    return _zbuf is not None and (screen is _room_screen or (FLIP and screen is _fg_surf))
 
 
 def P(x, y, z=0.0):
@@ -233,8 +244,10 @@ def P(x, y, z=0.0):
         xd, yd = xl, yl
         close = xl + yl
     pt = ((OX + (xd - yd) * HW) * S, (OY + (xd + yd) * HH - z) * S)
-    if FLIP:
+    if _zbuf is not None:
         _pinf[pt] = (xl, yl, z, close)
+    if _AUDIT is not None:
+        _AUDIT.pinf[pt] = close
     return pt
 
 
@@ -273,6 +286,23 @@ class world:
         X_OFF = self.prev
 
 
+_SOLID_NEAR = 0                        # >0: faces on a near wall stay on the room (see solid_near)
+
+
+class solid_near:
+    """with solid_near(): ... -> faces drawn here stay solid on the room even
+    when they lie in a near wall's plane, e.g. the side of the stairs that
+    stands against the east wall: through the ghost wall it is still a
+    closed side, not part of the wall."""
+    def __enter__(self):
+        global _SOLID_NEAR
+        _SOLID_NEAR += 1
+
+    def __exit__(self, *a):
+        global _SOLID_NEAR
+        _SOLID_NEAR -= 1
+
+
 def _near_plane(pts):
     """A vertical face on the east (x ≈ 0) or south (y ≈ 0) wall.
 
@@ -282,6 +312,8 @@ def _near_plane(pts):
     fittings (a chimney breast, a wall-hung TV). Low, wide furniture such as
     a sofa back stays on the room so it can be drawn as a finished back.
     """
+    if _SOLID_NEAR:
+        return False
     infs = [_pinf.get(p) for p in pts]
     if any(i is None for i in infs):
         return False
@@ -306,6 +338,27 @@ def _near_plane(pts):
     if zspan > 140:
         return True
     return uspan < 2.05
+
+
+def _on_far_wall(pts):
+    """Usual view: a vertical face lying in (or just in front of / inside) a
+    far wall, x = 0 or y = 0: the wall itself, its trims, doors, reveals and
+    anything hung flat on it. Furniture faces stand further out."""
+    infs = [_pinf.get(p) for p in pts]
+    if any(i is None for i in infs) or len(pts) < 3:
+        return False
+    xs = [i[0] for i in infs]
+    ys = [i[1] for i in infs]
+    zs = [i[2] for i in infs]
+    if max(zs) - min(zs) <= 0.5:
+        return False                      # horizontal: a floor, a shelf, a top
+    if min(zs) < -2:
+        return False                      # going down a stairwell: a real solid face
+    if max(xs) - min(xs) < 0.02 and max(abs(v) for v in xs) < 0.12:
+        return True
+    if max(ys) - min(ys) < 0.02 and max(abs(v) for v in ys) < 0.12:
+        return True
+    return False
 
 
 def _tri_fill(target, a, b, c, da, db, dc, col, alpha, zwrite=True):
@@ -357,21 +410,65 @@ def _fill_poly(target, pts, col, alpha, zwrite=True):
 
 
 def poly(pts, col, outline=None, w=1):
+    if _flip_draw() and not FLIP and _on_far_wall(pts):
+        # usual view: x = 0 / y = 0 are the far walls. They and whatever is
+        # hung on them (doors, reveals, pictures, glimpses) stay painter's
+        # backdrop, drawn over each other in order, under all the furniture.
+        pygame.draw.polygon(screen, col, pts)
+        if outline:
+            pygame.draw.polygon(screen, outline, pts, max(1, int(w * S)))
+        if _AUDIT is not None:
+            _AUDIT.drawn(pts, False)
+        return
     if _flip_draw():
-        near = _near_plane(pts) and _fg_surf is not None
+        near = FLIP and _near_plane(pts) and _fg_surf is not None
         # Near walls are the ghost layer: a light tint, and they must not
         # block the furniture drawn on the room behind them.
         if near:
             _fill_poly(_fg_surf, pts, col, 36, zwrite=False)
         else:
             _fill_poly(screen, pts, col, 255, zwrite=True)
+            if outline and not FLIP:
+                _z_outline(pts, outline, max(1, int(w * S)))
+        if _AUDIT is not None:
+            _AUDIT.drawn(pts, near)
         return
     pygame.draw.polygon(screen, col, pts)
     if outline:
         pygame.draw.polygon(screen, outline, pts, max(1, int(w * S)))
+    if _AUDIT is not None:
+        _AUDIT.drawn(pts, False)
+
+
+def _z_segment(pa, pb, col, width, bias=0.03):
+    """A depth-tested stroke between two P() points (edges, seams, nosings)."""
+    ia, ib = _pinf.get(pa), _pinf.get(pb)
+    if ia is None or ib is None:
+        pygame.draw.line(screen, col, pa, pb, width)
+        return
+    dx, dy = pb[0] - pa[0], pb[1] - pa[1]
+    L = math.hypot(dx, dy)
+    if L < 1e-6:
+        return
+    h = max(0.5, width / 2.0)
+    nx, ny = -dy / L * h, dx / L * h
+    a0, a1 = (pa[0] + nx, pa[1] + ny), (pa[0] - nx, pa[1] - ny)
+    b0, b1 = (pb[0] + nx, pb[1] + ny), (pb[0] - nx, pb[1] - ny)
+    da, db = ia[3] + bias, ib[3] + bias
+    col = tuple(int(c) for c in col[:3])
+    _tri_fill(screen, a0, b0, b1, da, db, db, col, 255, zwrite=False)
+    _tri_fill(screen, a0, b1, a1, da, db, da, col, 255, zwrite=False)
+
+
+def _z_outline(pts, col, width):
+    for i in range(len(pts)):
+        _z_segment(pts[i], pts[(i + 1) % len(pts)], col, width)
 
 
 def line(a, b, col, w=1):
+    if _flip_draw():
+        _z_segment(P(*a), P(*b), col, max(1, int(w * S)))
+        return
     pygame.draw.line(screen, col, P(*a), P(*b), max(1, int(w * S)))
 
 
@@ -393,6 +490,8 @@ KY, KX, KT = 0.90, 0.72, 1.04          # light: +y faces brighter than +x faces
 
 def box(x0, y0, x1, y1, z0, z1, col, top=None, ol=True, faces="xyz"):
     o = (lambda c: shade(c, 0.55)) if ol else (lambda c: None)
+    if _AUDIT is not None:
+        _AUDIT.solid(x0, y0, x1, y1, z0, z1, faces)
     # The opposite view looks at the faces the usual camera never sees.
     y_face, x_face = (y0, x0) if FLIP else (y1, x1)
     if "y" in faces:
@@ -403,6 +502,31 @@ def box(x0, y0, x1, y1, z0, z1, col, top=None, ol=True, faces="xyz"):
         c = top or shade(col, KT); qz(z1, x0, y0, x1, y1, c, o(c))
     if "x" in faces or "y" in faces or "z" in faces:
         _note_occluder(x0, y0, x1, y1, z0, z1)
+
+
+def sloped_rail(xa, ya, za, xb, yb, zb, w=0.05, h=8, col=(112, 48, 32)):
+    """One straight piece of wood from (xa, ya, za) to (xb, yb, zb): a
+    handrail following the stair pitch. `w` is its half-width in tiles,
+    `h` its depth in px above the line. Draws the faces each camera sees
+    (side, top and the near end), so it reads as a closed solid."""
+    dx, dy = xb - xa, yb - ya
+    L = math.hypot(dx, dy) or 1.0
+    nx, ny = -dy / L * w, dx / L * w            # horizontal normal, half-width long
+    # which side faces the camera: the usual view looks from +x +y
+    s = -1 if FLIP else 1
+    if nx * s + ny * s < 0:
+        nx, ny = -nx, -ny
+    a0, a1 = (xa + nx, ya + ny), (xb + nx, yb + ny)
+    b0, b1 = (xa - nx, ya - ny), (xb - nx, yb - ny)
+    side = shade(col, KX if abs(nx) >= abs(ny) else KY)
+    poly([P(*a0, za), P(*a1, zb), P(*a1, zb + h), P(*a0, za + h)], side)
+    poly([P(*b0, za + h), P(*a0, za + h), P(*a1, zb + h), P(*b1, zb + h)], shade(col, 1.28))
+    # the end facing the camera
+    end_a = (dx * s + dy * s) < 0          # the a end is nearer
+    (ex, ey, ez) = (xa, ya, za) if end_a else (xb, yb, zb)
+    poly([P(ex + nx, ey + ny, ez), P(ex - nx, ey - ny, ez), P(ex - nx, ey - ny, ez + h), P(ex + nx, ey + ny, ez + h)],
+         shade(col, 0.9))
+    poly([P(*a0, za), P(*a1, zb), P(*a1, zb + 1.2), P(*a0, za + 1.2)], shade(col, 0.62))   # lower arris
 
 
 def fl_ellipse(cx, cy, rx, ry, col, z=0.0, n=24, ol=None):
@@ -419,12 +543,95 @@ def cyl(cx, cy, r, z0, z1, col, top=None):
     yb = P(cx, cy, z0)[1]
     yt = P(cx, cy, z1)[1]
     poly(bot, shade(col, 0.75))
-    pygame.draw.rect(screen, shade(col, 0.75), (l, yt, rr - l, yb - yt))
-    pygame.draw.rect(screen, shade(col, 0.9), (l, yt, (rr - l) * 0.45, yb - yt))
+    if _flip_draw():
+        # depth-tested drum: each column takes the depth of the curved front
+        c_axis = _pinf[P(cx, cy, z0)][3]
+        xc = P(cx, cy, z0)[0]
+        _z_drum(l, yt, rr - l, yb - yt, xc, c_axis, r, shade(col, 0.75))
+        _z_drum(l, yt, (rr - l) * 0.45, yb - yt, xc, c_axis, r, shade(col, 0.9))
+        if _AUDIT is not None:
+            _AUDIT.zsync(int(l), int(yt), int(rr - l) + 1, int(yb - yt + math.sqrt(2) * r * HH * S) + 2)
+    else:
+        pygame.draw.rect(screen, shade(col, 0.75), (l, yt, rr - l, yb - yt))
+        pygame.draw.rect(screen, shade(col, 0.9), (l, yt, (rr - l) * 0.45, yb - yt))
     poly(tp, top or shade(col, 1.1), shade(col, 0.5))
     if r >= 0.16 and z1 >= 22:
         rr = r * 0.9
         _note_occluder(cx - rr, cy - rr, cx + rr, cy + rr, min(z0, z1), max(z0, z1))
+
+
+def prism(outline, z0, z1, col, top=None, ol=True):
+    """Upright solid on a convex floor outline [(x, y), ...] (any winding):
+    the sides that face the current camera, shaded by their direction, and
+    the top. A closed solid from both cameras (round-ended baths and so on)."""
+    pts = list(outline)
+    n = len(pts)
+    cx = sum(p[0] for p in pts) / n
+    cy = sum(p[1] for p in pts) / n
+    s = -1 if FLIP else 1
+    o = (lambda c: shade(c, 0.55)) if ol else (lambda c: None)
+    for i in range(n):
+        (ax, ay), (bx, by) = pts[i], pts[(i + 1) % n]
+        nx, ny = by - ay, -(bx - ax)
+        if nx * ((ax + bx) / 2 - cx) + ny * ((ay + by) / 2 - cy) < 0:
+            nx, ny = -nx, -ny                     # outward
+        L = math.hypot(nx, ny) or 1.0
+        nx, ny = nx / L, ny / L
+        if (nx + ny) * s <= 1e-6:
+            continue                              # faces away from this camera
+        wy = max(0.0, ny * s)                     # mix of the +y and +x lights
+        k = (KY * wy + KX * max(0.0, nx * s)) / max(1e-6, wy + max(0.0, nx * s))
+        c = shade(col, k)
+        poly([P(ax, ay, z0), P(bx, by, z0), P(bx, by, z1), P(ax, ay, z1)], c)
+    poly([P(x, y, z1) for x, y in pts], top or shade(col, KT), o(top or shade(col, KT)))
+    _note_occluder(min(p[0] for p in pts), min(p[1] for p in pts),
+                   max(p[0] for p in pts), max(p[1] for p in pts), z0, z1)
+
+
+def stadium(x0, y0, x1, y1, n=10):
+    """Floor outline of a rectangle with round ends along x (a bath)."""
+    r = (y1 - y0) / 2
+    cy = (y0 + y1) / 2
+    out = []
+    for i in range(n + 1):                        # east end, round
+        a = math.pi / 2 + math.pi * i / n
+        out.append((x0 + r + r * math.cos(a), cy + r * math.sin(a)))
+    for i in range(n + 1):                        # west end
+        a = -math.pi / 2 + math.pi * i / n
+        out.append((x1 - r + r * math.cos(a), cy + r * math.sin(a)))
+    return out
+
+
+def _z_drum(x, y, w, h, xc, c_axis, r, col):
+    """Fill an upright drum's side through the z-buffer. Each screen column
+    shows the round front at that column: depth of the front surface, and
+    the column dropped by how far that front stands out from the axis."""
+    if w <= 0 or h <= 0:
+        return
+    W, H = _zbuf.shape
+    x0, x1 = max(0, int(math.floor(x))), min(W, int(math.ceil(x + w)))
+    if x1 <= x0:
+        return
+    gx = np.arange(x0, x1, dtype=np.float32) + 0.5
+    u = (gx - xc) / (math.sqrt(2) * HW * S)               # tiles across the drum
+    tf = np.sqrt(np.clip(r * r - u * u, 0, None))         # how far the front stands out
+    d = c_axis + math.sqrt(2) * tf
+    off = math.sqrt(2) * tf * HH * S
+    ya, yb = y + off, y + h + off                          # column top / bottom
+    y0, y1 = max(0, int(math.floor(ya.min()))), min(H, int(math.ceil(yb.max())) + 1)
+    if y1 <= y0:
+        return
+    gy = np.arange(y0, y1, dtype=np.float32)[None, :] + 0.5
+    m = (gy >= ya[:, None]) & (gy < yb[:, None])
+    dd = np.broadcast_to(d[:, None], m.shape)
+    sub = _zbuf[x0:x1, y0:y1]
+    m &= dd >= sub - 1e-4
+    if not m.any():
+        return
+    sub[m] = dd[m]
+    rgb = pygame.surfarray.pixels3d(screen)
+    rgb[x0:x1, y0:y1][m] = tuple(int(c) for c in col[:3])
+    del rgb
 
 
 def cone(cx, cy, r0, r1, z0, z1, col):
@@ -804,7 +1011,7 @@ def show_through(ext, pts, tint=(214, 230, 236), tint_a=22, glare=True):
             streak.blit(m2, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
             g.blit(streak, (0, 0))
         view.blit(g, (0, 0))
-    if _flip_draw():
+    if _flip_draw() and FLIP:
         # Near windows (glass tint) must not paint the garden over the room.
         # Near doorways have no glass (tint_a == 0) and should show the next room.
         _present_opening(view, x0, y0, pts, allow_near=False)
