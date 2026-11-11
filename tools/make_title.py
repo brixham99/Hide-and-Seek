@@ -176,7 +176,11 @@ def side():
     th = img.size[1]
     d.rectangle([0, zy(th, 0.35), img.size[0], th], fill=(92, 44, 34))
     d.rectangle([0, 0, img.size[0], 0.16 * PPM], fill=(170, 166, 158))
-    window(d, th, 3.5, 3.75, 5.45, w=1.05, light=0.7)
+    # four windows, as the house: two upstairs over two downstairs, evenly
+    # spaced along the side, the front's sashes in the side wall's shade
+    for uc in (HD / 3, HD * 2 / 3):
+        window(d, th, uc, 3.75, 5.45, w=1.05, light=0.7)
+        window(d, th, uc, 0.75, 2.65, w=1.15, light=0.7)
     return img
 
 
