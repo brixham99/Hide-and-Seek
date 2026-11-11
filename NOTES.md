@@ -69,3 +69,11 @@ and depth sorting stay untouched.
   inside a face). It writes `shots/audit/<view>.png` with flagged pixels in magenta.
   `tools/compose_view.py` and `tools/diff_views.py` compose cache layers and diff
   two sets of views.
+- Opposite view, near-wall units (CACHE_REV 40): a box whose back or side
+  ghosts on a near wall now also paints its own inside (far faces and floor)
+  on the room (`_close_behind_ghost`), so a fridge, wardrobe or TV seen
+  through the ghost reads as a closed translucent solid. `solid_audit.py`
+  checks this too (what shows through a ghost face must be the solid's own
+  inside). Face sheets are shrunk with LANCZOS (`iso_paint._fit`) before
+  warping, so fine grain no longer aliases into stripes; the larder
+  fridge/freezer sheet has a softer sheen and plain side/top/back sheets.

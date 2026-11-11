@@ -265,7 +265,8 @@ def main():
         ext_w = exterior_layer({"E": side_garden}, haze=(170, 188, 150))
         sash_on_far("E", *WIN_W, ext_w, z0=70, z1=198, curtains=FLORAL, cols=2)
         y0, y1, d = BREAST
-        box(0, y0, d, y1, 0, WALL_H, shade(WALL, 0.96), faces="y")
+        # its east side is the ghost wall; "x" and "z" close the breast behind it
+        box(0, y0, d, y1, 0, WALL_H, shade(WALL, 0.96), faces="xyz")
         radiators()
     finish("Hide and Seek - Master Bedroom (mock-up)", OUT,
            subtitle="First Floor", copies=() if ARGS else ("shots/hs_master_mock.png",))

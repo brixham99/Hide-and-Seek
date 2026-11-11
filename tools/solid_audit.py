@@ -9,7 +9,10 @@ near-wall layer), records the depth and call site of every face actually
 painted on the room (painter's order in the usual view, z-buffer in the
 opposite one), and flags pixels where what you see lies behind a solid's
 front, i.e. a missing face, an open side, a back face, a seam, a detail
-drawn inside the solid instead of on its face, or a sort-order slip. Raw pygame.draw strokes (outlines, knobs) count as
+drawn inside the solid instead of on its face, or a sort-order slip.
+A deep solid whose back or side is a translucent ghost (on a near wall in
+the opposite view) is checked too: through the ghost you must see its own
+inside faces, not the floor or wall beyond. Raw pygame.draw strokes (outlines, knobs) count as
 covering, as their depth isn't known.
 
     python tools/solid_audit.py              # every view, both cameras
@@ -60,6 +63,10 @@ class Audit:
         self.front = np.full((W, H), -np.inf, np.float32)
         self.fid = np.full((W, H), -1, np.int32)
         self.sites = []
+        self.gexit = np.full((W, H), np.inf, np.float32)   # where a ray through a ghost face leaves its solid
+        self.gsid = np.full((W, H), -1, np.int32)
+        self.fg = None                               # the ghost layer, once a ghost face is seen
+        self.vwall = np.zeros((W, H), bool)          # painted by ghost_near_walls (the near wall itself)
         self.decals = {}          # site -> (px, faces) hidden just behind a nearer face
         self._site_ix = {}
         self.scratch = pygame.Surface(size)
@@ -115,10 +122,15 @@ class Audit:
                 m = m & (d >= vis - 1e-3)
             vis[m] = d[m]
             self.vid[x0:x0 + w, y0:y0 + h][m] = sid
+            self.vwall[x0:x0 + w, y0:y0 + h][m] = self.in_ghost_walls()
             self.unk[x0:x0 + w, y0:y0 + h][m] = False
         if inside >= 40 and behind > 0.5 * inside:
             n, c = self.decals.get(sid, (0, 0))
             self.decals[sid] = (n + behind, c + 1)
+
+    @staticmethod
+    def in_ghost_walls():
+        return any(fr.name == "ghost_near_walls" for fr in traceback.extract_stack()[:-2])
 
     def zsync(self, x, y, w, h):
         """A drum body went straight into the z-buffer: take its depth."""
@@ -155,15 +167,46 @@ class Audit:
                  [P(xf, y0, z0), P(xf, y1, z0), P(xf, y1, z1), P(xf, y0, z1)],
                  [P(x0, y0, z1), P(x1, y0, z1), P(x1, y1, z1), P(x0, y1, z1)]]
         sid = self.sid() if not occ else self.sid()
-        for q in quads:
+        ghost = []
+        for i, q in enumerate(quads):
             if hc.FLIP and not occ and hc._near_plane(q):
-                continue              # this face is the ghost near wall's business
+                if "yxz"[i] in faces:     # translucent on the ghost layer: see ghost_through()
+                    ghost.append(q)
+                continue
             for qx0, qy0, m, d in self._raster(q):
                 w, h = m.shape
                 fr = self.front[qx0:qx0 + w, qy0:qy0 + h]
                 m = m & (d > fr)
                 fr[m] = d[m]
                 self.fid[qx0:qx0 + w, qy0:qy0 + h][m] = sid
+
+        if ghost and z1 - z0 >= 20:
+            self.ghost_through(ghost, x0, y0, x1, y1, z0, z1, sid)
+
+    def ghost_through(self, ghost, x0, y0, x1, y1, z0, z1, sid):
+        """A deep solid backed onto a near wall shows its back or side as a
+        translucent ghost; through it the room layer must show the solid's
+        own inside (its far faces and floor), not the floor or wall beyond.
+        Record, per pixel under the ghost face, the depth where the ray
+        leaves the solid (its far faces), to compare with what is drawn."""
+        P = hc.P
+        W, H = self.vis.shape
+        self.fg = hc._fg_surf
+        under = np.zeros((W, H), bool)
+        for q in ghost:
+            for qx0, qy0, m, d in self._raster(q):
+                w, h = m.shape
+                under[qx0:qx0 + w, qy0:qy0 + h] |= m
+        backs = [[P(x0, y1, z0), P(x1, y1, z0), P(x1, y1, z1), P(x0, y1, z1)],
+                 [P(x1, y0, z0), P(x1, y1, z0), P(x1, y1, z1), P(x1, y0, z1)],
+                 [P(x0, y0, z0), P(x1, y0, z0), P(x1, y1, z0), P(x0, y1, z0)]]
+        for q in backs:
+            for qx0, qy0, m, d in self._raster(q):
+                w, h = m.shape
+                m = m & under[qx0:qx0 + w, qy0:qy0 + h]
+                ge = self.gexit[qx0:qx0 + w, qy0:qy0 + h]
+                ge[m] = d[m]
+                self.gsid[qx0:qx0 + w, qy0:qy0 + h][m] = sid
 
     def _mask(self, r):
         a = pygame.surfarray.pixels_red(self.scratch)
@@ -216,6 +259,16 @@ def audit(view, out_dir):
     AUD = None
     with np.errstate(invalid="ignore"):
         bad = np.isfinite(a.front) & ~a.unk & (a.front - a.vis > EPS)
+        # seen through a ghost face: anything at or beyond the solid's far
+        # side that the solid did not draw itself (floor, far wall) is its
+        # open inside
+        seen_in = np.isfinite(a.gexit) & ~a.unk & (a.vis < a.gexit + EPS) & (a.vid != a.gsid) & ~a.vwall
+        if a.fg is not None and a.fg.get_size() == seen_in.shape:
+            seen_in &= pygame.surfarray.array_alpha(a.fg) < 200   # ghost layer opaque there: nothing shows through
+        bad |= seen_in
+        a.fid[seen_in & (a.fid < 0)] = a.gsid[seen_in & (a.fid < 0)]
+        a.fid[seen_in] = np.where(np.isfinite(a.front[seen_in]) & (a.front[seen_in] - a.vis[seen_in] > EPS),
+                                  a.fid[seen_in], a.gsid[seen_in])
     # report pairs
     pairs = {}
     if bad.any():

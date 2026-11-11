@@ -494,6 +494,8 @@ def box(x0, y0, x1, y1, z0, z1, col, top=None, ol=True, faces="xyz"):
         _AUDIT.solid(x0, y0, x1, y1, z0, z1, faces)
     # The opposite view looks at the faces the usual camera never sees.
     y_face, x_face = (y0, x0) if FLIP else (y1, x1)
+    if FLIP and _flip_draw():
+        _close_behind_ghost(x0, y0, x1, y1, z0, z1, col, faces)
     if "y" in faces:
         c = shade(col, KY); qy(y_face, x0, x1, z0, z1, c, o(c))
     if "x" in faces:
@@ -502,6 +504,26 @@ def box(x0, y0, x1, y1, z0, z1, col, top=None, ol=True, faces="xyz"):
         c = top or shade(col, KT); qz(z1, x0, y0, x1, y1, c, o(c))
     if "x" in faces or "y" in faces or "z" in faces:
         _note_occluder(x0, y0, x1, y1, z0, z1)
+
+
+GHOST_NEAR = 0.58          # how close to a near wall a face must be to go on the ghost layer
+
+
+def _close_behind_ghost(x0, y0, x1, y1, z0, z1, col, faces):
+    """In the opposite view a deep unit backed onto a near wall (a fridge, a
+    wardrobe) shows its back or side as a translucent ghost. Without more,
+    the eye looks through that ghost into the empty box: floor, far wall.
+    Paint the box's inside - its far faces and floor - on the room so the
+    ghost reads as a closed translucent solid."""
+    back = "y" in faces and abs(y0) < GHOST_NEAR and y1 - y0 >= 0.06
+    side = "x" in faces and abs(x0) < GHOST_NEAR and x1 - x0 >= 0.06
+    if not (back or side) or z1 - z0 < 20:
+        return
+    inner = shade(col, 0.82)
+    with solid_near():
+        qz(z0 + 0.6, x0, y0, x1, y1, shade(col, 0.66))
+        qy(y1, x0, x1, z0, z1, shade(inner, KY))
+        qx(x1, y0, y1, z0, z1, shade(inner, KX))
 
 
 def sloped_rail(xa, ya, za, xb, yb, zb, w=0.05, h=8, col=(112, 48, 32)):

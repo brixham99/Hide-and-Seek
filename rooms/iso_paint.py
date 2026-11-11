@@ -101,9 +101,37 @@ def paint_box(x0, y0, x1, y1, z0, z1, kind, front="S", col=(90, 70, 50), shade_k
         paint_quad(z_tex, A, B, C, sk["z"], D=D)
 
 
+_FIT = {}
+
+
+def _fit(tex, A, B, C):
+    """Shrink a large face sheet (LANCZOS) to about twice the size it lands
+    at on screen before it is warped or sampled. Warping a 1000 px sheet
+    straight down to ~100 px point-samples its fine detail, so brushed metal
+    and wood grain alias into coarse stripes."""
+    w, h = tex.size
+    du = math.hypot(B[0] - A[0], B[1] - A[1])
+    dv = math.hypot(C[0] - A[0], C[1] - A[1])
+    tw = max(8, int(math.ceil(du * 2)))
+    th = max(8, int(math.ceil(dv * 2)))
+    if tw >= w and th >= h:
+        return tex
+    tw, th = min(tw, w), min(th, h)
+    # bucket the size so nearby faces share one shrunk copy
+    tw = min(w, 1 << max(3, (tw - 1).bit_length()))
+    th = min(h, 1 << max(3, (th - 1).bit_length()))
+    key = (id(tex), tw, th)
+    hit = _FIT.get(key)
+    if hit is None or hit[0] is not tex:
+        hit = (tex, tex.convert("RGBA").resize((tw, th), Image.LANCZOS))
+        _FIT[key] = hit
+    return hit[1]
+
+
 def paint_quad(tex, A, B, C, shade=1.0, pad=3, D=None):
     """Map `tex` onto the parallelogram A, B, C (image origin, +u, +v)."""
     A_pt, B_pt, C_pt = A, B, C
+    tex = _fit(tex, A, B, C)
     A = np.array(A, dtype=np.float64)
     B = np.array(B, dtype=np.float64)
     C = np.array(C, dtype=np.float64)
