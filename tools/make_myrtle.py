@@ -42,9 +42,9 @@ PX_CM = math.hypot(56, 28) / 60 / math.cos(math.radians(45)) * math.cos(math.rad
 SCALE = 1.32 * 0.94                      # px per cm on screen; 0.94 keeps her at her old size
 EL = math.radians(30)
 
-COAT = np.array([22, 20, 21], np.float32)
-SHEEN = np.array([150, 132, 116], np.float32)      # satin, warm brown-grey (the photo's chest and head)
-RIM = np.array([84, 86, 96], np.float32)
+COAT = np.array([18, 17, 18], np.float32)
+SHEEN = np.array([150, 140, 134], np.float32)      # glossy, a warm grey (the photo's back, shoulders and head)
+RIM = np.array([70, 72, 80], np.float32)
 WARM = np.array([78, 54, 34], np.float32)
 LINE = (14, 11, 10)                                # painted outline
 COLLAR = np.array([196, 34, 40], np.float32)
@@ -284,7 +284,7 @@ def tail(pts, r0=5.4, r1=2.0):
     for i in range(n):
         ra = r0 + (r1 - r0) * i / n
         rb = r0 + (r1 - r0) * (i + 1) / n
-        out.append(RC(pts[i], pts[i + 1], ra, rb, k=3))
+        out.append(RC(pts[i], pts[i + 1], ra, rb, k=6))       # blended smooth: an otter tail, no knuckles
     return out
 
 
@@ -295,7 +295,7 @@ def pose_walk(i=None):
     parts = body_stand(bob)
     na, nb = (22, 0, 51 + bob), (33, 0, 63 + bob)
     parts += [RC(na, nb, 9.6, 7.4, k=5)]
-    parts += head_parts((39.5, 0, 67.5 + bob), look_up=-0.08)
+    parts += head_parts((39.5, 0, 67.5 + bob), look_up=0.12)
     wag = 0.45 * math.sin(ph) if moving else 0.18
     parts += tail([(-30, 0, 46 + bob), (-39, 6 * math.sin(wag), 40 + bob), (-46, 12 * math.sin(wag), 31 + bob),
                    (-49, 16 * math.sin(wag), 21 + bob)], 6.4, 2.2)
@@ -315,7 +315,7 @@ def pose_sit():
              EL_((-7, 10.2, 13), (12.5, 4.6, 10), k=4), EL_((-7, -10.2, 13), (12.5, 4.6, 10), k=4)]   # thighs
     na, nb = (12, 0, 56), (17, 0, 72)
     parts += [RC(na, nb, 9.4, 7.4, k=5)]
-    parts += head_parts((22, 0, 79), look_up=0.34, tongue=True, open_mouth=True)
+    parts += head_parts((22, 0, 79), look_up=0.42, tongue=True, open_mouth=True)
     for side in (6.2, -6.2):
         parts += [EL_((10, side * 1.08, 44), (6, 4.6, 8), k=4),                             # shoulder
                   RC((12, side, 41), (12.5, side * 1.02, 26), 6.0, 4.4, k=4),               # upper arm to elbow
@@ -427,34 +427,31 @@ def render(model, facing):
     nv = np.clip(n @ V, 0, 1)
     ao = np.clip(0.55 + 0.45 * (model.d(p + n * 2.5) / 2.5 + model.d(p + n * 6.0) / 6.0) * 0.5, 0.35, 1.0)
     upz = n[:, 2]
-    # fur direction: back along the body and down the legs and chest, laid
-    # flat on the surface. Brush strokes run along it, fine across it.
+    # A short, sleek Labrador coat: smooth satin shading, glossy soft
+    # highlights on back, shoulders and head, and only a hint of hair where
+    # the surface turns away at the silhouette.
     down = np.clip((34 - p[:, 2]) / 18, 0, 1) + 0.6 * np.clip(p[:, 0] / 12, 0, 1)
     flow = np.stack([-np.ones(len(p), np.float32), np.zeros(len(p), np.float32), -0.45 - 1.6 * down], 1)
     T = flow - n * np.einsum("ij,ij->i", flow, n)[:, None]
     T /= np.linalg.norm(T, axis=1, keepdims=True) + 1e-6
     B = np.cross(n, T)
-    a_ = np.einsum("ij,ij->i", p, T)
-    b_ = np.einsum("ij,ij->i", p, B)
-    c_ = np.einsum("ij,ij->i", p, n)
-    q = np.stack([a_, b_, c_], 1)
-    strokes = (vnoise(q * np.array([0.22, 1.5, 1.5], np.float32)) * 0.55
-               + vnoise(q * np.array([0.45, 3.4, 3.4], np.float32) + 17.0) * 0.30
-               + vnoise(q * np.array([0.10, 0.6, 0.6], np.float32) + 41.0) * 0.15)
-    fur = strokes
+    q = np.stack([np.einsum("ij,ij->i", p, T), np.einsum("ij,ij->i", p, B), np.einsum("ij,ij->i", p, n)], 1)
+    hair = vnoise(q * np.array([0.35, 2.6, 2.6], np.float32))          # fine, along the lie of the coat
+    edge = np.clip((1 - nv) * 1.6 - 0.55, 0, 1) ** 1.5                   # only near the silhouette
+    fur = 0.5 + (hair - 0.5) * (0.12 + 0.7 * edge)
     col = np.zeros((len(idx), 3), np.float32)
     m = mat == 0
-    key = COAT[None] * (0.6 + 1.3 * wrap[:, None]) * ao[:, None]
-    # satin strand highlight (Kajiya-Kay): soft bands across the hair, broken by the strokes
+    key = COAT[None] * (0.62 + 1.2 * wrap[:, None]) * ao[:, None]
+    # glossy: a broad soft lobe plus a tighter one, stretched a touch along the hair
     th = np.einsum("ij,j->i", T, H)
     sinth = np.sqrt(np.clip(1 - th * th, 0, 1))
-    lit_side = np.clip(nl + 0.2, 0, 1)
-    sheen = SHEEN[None] * ((0.30 * sinth ** 30 + 0.09 * sinth ** 8) * lit_side * (0.35 + 1.2 * fur) * ao)[:, None]
-    # a warm lift where the light catches chest, shoulders and head
-    warm_hi = np.clip(upz * 0.5 + nl * 0.7, 0, 1) ** 2
-    rim = RIM[None] * (0.45 * (1 - nv) ** 3.0 * np.clip(upz + 0.6, 0, 1.2))[:, None]
-    warm = WARM[None] * (0.30 * np.clip(-upz, 0, 1) + 0.26 * warm_hi * fur)[:, None]
-    coat = key * (0.82 + 0.36 * fur[:, None]) + sheen + rim + warm
+    gloss = 0.5 * nh ** 22 + 0.5 * (sinth ** 60) * nh ** 4
+    soft = nh ** 5
+    top = np.clip(upz * 0.6 + 0.5, 0, 1)                                # back, shoulders and head catch it most
+    sheen = SHEEN[None] * ((0.62 * gloss + 0.14 * soft) * (0.55 + 0.45 * top) * ao * (0.9 + 0.2 * fur))[:, None]
+    rim = RIM[None] * (0.22 * (1 - nv) ** 3.0 * np.clip(upz + 0.6, 0, 1.2))[:, None]
+    warm = WARM[None] * (0.26 * np.clip(-upz, 0, 1))[:, None]
+    coat = key * (0.92 + 0.16 * fur[:, None]) + sheen + rim + warm
     col[m] = coat[m]
     lit = (0.45 + 0.8 * wrap)[:, None]
     spec = (nh ** 30)[:, None]

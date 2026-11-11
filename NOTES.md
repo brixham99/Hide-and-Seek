@@ -31,10 +31,10 @@ and depth sorting stay untouched.
   of a Labrador (round cones and ellipsoids with smooth unions: deep chest,
   tucked waist, rounded skull, drop ears, otter tail, shaped legs and paws),
   ray-marched through the house's 2:1 camera at 3x with the rooms' light, a
-  satin strand highlight (Kajiya-Kay) along a fur-direction field (back along
-  the body, down the legs and chest) broken by brush-stroke noise, warm
-  brown-grey lifts on chest, shoulders and head, a warm floor bounce, then
-  downsampled with a soft painted outline. The sit pose follows the
+  short, sleek, glossy coat (she is a short-haired Labrador): smooth shading,
+  soft warm-grey highlights strongest on back, shoulders and head, and only a
+  hint of hair texture near the silhouette; a smooth otter tail; a warm floor
+  bounce, then downsampled with a soft painted outline. The sit pose follows the
   reference photo (upright, straight forelegs, big paws, mouth open, tongue
   out); the photo itself stays out of the repo. Output in `assets/myrtle/`: standing,
   an 8-frame walk, sitting and lying (curled a little to fit her bed), in
