@@ -21,11 +21,13 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import numpy as np  # noqa: E402
 import pygame  # noqa: E402
 
+import dog as dogmod  # noqa: E402
 import house  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "cache")
 HM_CHARS = os.path.join(HERE, "assets", "characters")
+MYRTLE = os.path.join(HERE, "assets", "myrtle")
 WIN_W, WIN_H = 1280, 720
 HW, HH = 56, 28
 SPEED = 3.0                      # tiles/s, as Haunted Mansion's PLAYER_SPEED
@@ -79,6 +81,21 @@ def load_archie():
     return stand, walk, meta
 
 
+def load_myrtle():
+    """Myrtle's sprites (tools/make_myrtle.py): {pose: {facing: [frames]}}, meta."""
+    with open(os.path.join(MYRTLE, "myrtle.json")) as f:
+        meta = json.load(f)
+    fw, fh = meta["size"]
+    out = {"stand": {}, "walk": {}, "sit": {}, "lie": {}}
+    for k in meta["facings"]:
+        out["stand"][k] = [pygame.image.load(os.path.join(MYRTLE, f"myrtle_{k}.png")).convert_alpha()]
+        sheet = pygame.image.load(os.path.join(MYRTLE, f"myrtle_{k}_walk.png")).convert_alpha()
+        out["walk"][k] = [sheet.subsurface((i * fw, 0, fw, fh)).copy() for i in range(meta["frames"])]
+        for pose in ("sit", "lie"):
+            out[pose][k] = [pygame.image.load(os.path.join(MYRTLE, f"myrtle_{k}_{pose}.png")).convert_alpha()]
+    return out, meta
+
+
 def _fg_crop(fg):
     """Tight sprite of the ghost walls, and where it sits on the frame."""
     # array_alpha is [x, y]; a full-frame scan once per view at load
@@ -102,6 +119,10 @@ class Game:
         self.small = _font(15)
         self.shadow = pygame.Surface((60, 24), pygame.SRCALPHA)
         pygame.draw.ellipse(self.shadow, (0, 0, 0, 80), self.shadow.get_rect())
+        self.dog_img, self.dog_meta = load_myrtle()
+        self.dog_shadow = pygame.Surface((76, 26), pygame.SRCALPHA)
+        pygame.draw.ellipse(self.dog_shadow, (0, 0, 0, 70), self.dog_shadow.get_rect())
+        self.dog = dogmod.Dog()
         self.room, self.x, self.y, self.facing = "hall", 1.6, 1.2, "N"
         self.flipped = False          # True: camera on the opposite side of every room
         self.view = house.view_for(self.room, self.x)
@@ -168,6 +189,7 @@ class Game:
                 cr = house.stair_crossing(self.room, self.x, self.y)
                 if cr:
                     self.change_room(*cr)
+        self.dog.update(dt, self.room, self.x, self.y, self.moving)
         v = house.view_for(self.room, self.x, self.view)
         if v != self.view:                                   # kitchen <-> dining at the beam
             snap = pygame.Surface((WIN_W, WIN_H), 0, 24)
@@ -226,9 +248,10 @@ class Game:
             lx, y = m["RW"] - lx, m["RD"] - y
         return m["OX"] + (lx - y) * HW, m["OY"] + (lx + y) * HH - z
 
-    def _occlude(self, img, dest, view):
+    def _occlude(self, img, dest, view, at=None, thr=None):
         """Punch the sprite where a closer solid covers it. `dest` is the
-        sprite's top-left on the unshifted view."""
+        sprite's top-left on the unshifted view; `at` the (x, y) it stands on
+        (default Archie); `thr` overrides the depth threshold."""
         depth = self.views[self.vid(view)].get("depth")
         flipped = self.views[self.vid(view)].get("flip")
         if depth is None:
@@ -243,8 +266,9 @@ class Game:
         sub = depth[x0:x1, y0:y1]
         # Archie stands a fraction in front of his back foot so a surface he
         # is touching doesn't swallow him
-        lx = self.x - view[1]
-        thr = np.float16(lx + self.y - 0.04)
+        ax, ay = (self.x, self.y) if at is None else at
+        lx = ax - view[1]
+        thr = np.float16(lx + ay - 0.04 if thr is None else thr)
         # normal view: closer solids have a larger x+y. opposite view: smaller.
         if flipped:
             hide = (sub > 0) & (sub < thr)
@@ -296,8 +320,45 @@ class Game:
         m = self.views[self.vid(view)]
         target.blit(m["bg"], (0, 0))
         if player:
-            self.draw_archie(target, view)
+            # far to near: x + y grows towards the camera (shrinks when flipped)
+            sign = -1 if m.get("flip") else 1
+            actors = [(sign * (self.x - view[1] + self.y), self.draw_archie)]
+            if self.dog_visible(view):
+                actors.append((sign * (self.dog.x - view[1] + self.dog.y), self.draw_dog))
+            for _, fn in sorted(actors, key=lambda a: a[0]):
+                fn(target, view)
         self._blit_fg(target, view)
+
+    def dog_visible(self, view):
+        d = self.dog
+        return d.room == self.room and house.view_for(d.room, d.x, view)[0] == view[0]
+
+    def draw_dog(self, surf, view):
+        d = self.dog
+        pose = d.pose()
+        on_bed = pose == "lie" and d.room == dogmod.BED_ROOM
+        z = dogmod.BED_Z if on_bed else 0
+        gx, gy = self.to_screen(view, d.x, d.y, z)
+        f = d.facing
+        if self.views[self.vid(view)].get("flip"):
+            f = {"E": "W", "W": "E", "S": "N", "N": "S"}[f]      # same way in the room, seen from the other side
+        k = SPRITE[f]
+        frames = self.dog_img[pose][k]
+        if pose == "walk":
+            n = len(frames)
+            img = frames[int(d.dist / self.dog_meta["cycle_tiles"] * n) % n]
+        else:
+            img = frames[0]
+        ax, ay = self.dog_meta["anchor"]
+        body = (round(gx - ax), round(gy - ay))
+        thr = None
+        if on_bed:     # the bed's own block must not hide her
+            x0, y0, x1, y1 = dogmod.BED
+            thr = (x1 + y1 + 0.05) if not self.views[self.vid(view)].get("flip") else (x0 + y0 - 0.05)
+        if not on_bed:
+            sh = (round(gx - self.dog_shadow.get_width() / 2), round(gy - self.dog_shadow.get_height() / 2))
+            surf.blit(self._occlude(self.dog_shadow, sh, view, (d.x, d.y)), sh)
+        surf.blit(self._occlude(img, body, view, (d.x, d.y), thr), body)
 
     def _hud_on(self, target):
         name = house.label(self.room, self.view)

@@ -1,0 +1,18 @@
+{
+ "size": [
+  180,
+  150
+ ],
+ "anchor": [
+  90,
+  118
+ ],
+ "frames": 8,
+ "cycle_tiles": 1.1,
+ "facings": [
+  "se",
+  "sw",
+  "nw",
+  "ne"
+ ]
+}
