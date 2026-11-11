@@ -425,22 +425,11 @@ class Game:
 
 
 def main():
-    pygame.init()
-    screen = pygame.display.set_mode((WIN_W, WIN_H))
-    pygame.display.set_caption("Hide and Seek")
-    g = Game(screen)
-    clock = pygame.time.Clock()
-    while True:
-        dt = min(clock.tick(60) / 1000.0, 0.05)
-        for e in pygame.event.get():
-            if e.type == pygame.QUIT or (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE):
-                pygame.quit()
-                return
-            if e.type == pygame.KEYDOWN and e.key == pygame.K_v:
-                g.toggle_view()
-        g.update(dt, *g.read_input())
-        g.draw()
+    # The title screen, gamepads, full screen under Zen Station and the
+    # first-run build screen live in zen.py
+    import zen
+    return zen.main(Game)
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
