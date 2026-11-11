@@ -86,3 +86,43 @@ and depth sorting stay untouched.
   inside). Face sheets are shrunk with LANCZOS (`iso_paint._fit`) before
   warping, so fine grain no longer aliases into stripes; the larder
   fridge/freezer sheet has a softer sheen and plain side/top/back sheets.
+
+## Kitchen / Dining / Boot Room views (kitchen-views, CACHE_REV 41)
+
+- Boot Room -> Kitchen doorway (looking north): the glimpse drew the kitchen's
+  west wall 0.2 tiles behind the opening, so the doorway showed a blank cream
+  wall. `glimpses.kitchen_from_boot` now runs the slate through the wall,
+  draws the kitchen's south wall with the larders, and the Drawing Room
+  through its door beyond (that is what lines up with this corner doorway).
+  The ceiling-beam ends in the Boot Room's ghost wall (floating white cubes
+  over Archie) are gone.
+- Dining Room -> Hall (looking north): the hall door past the open side was a
+  flat brown rectangle; it is a real doorway onto `glimpses.hall_from_dining`.
+- The ceiling beam at the Kitchen / Dining join was on the ghost layer and lay
+  over the other half as a long white slab; it is gone in both views (the fade
+  marks the join). The Kitchen's garden-wall wall cabinets (backs to the camera,
+  drawn as faint boxes over the peninsula, island and sink) are no longer drawn
+  in the default view.
+- `hc.z_layer(layer)`: the other half of the open-plan room is drawn on its
+  glimpse layer with its own z-buffer (was painter's order, so parts painted
+  over each other). `fade_x(..., zbuf=)` fades by exact room x from that depth,
+  so a tall unit fades as one piece. `_z_drum` writes alpha on such layers.
+- Dining Room looking south: the kitchen beyond is the far side now. It draws
+  the garden wall (with its window), the run's fronts, hood and wall units and
+  the island, all of the kitchen, fading out further away; the south-wall pier
+  and the backs of the larders are no longer floating in the air there.
+- Opposite view everywhere: the dark caps on top of the near walls (the old
+  back walls) were solid on the room and cut across the floor as a dark band;
+  they are on the ghost layer now, faint like the rest of the wall.
+- `hc.FAR_X0 = False` (Kitchen): x = 0 is the open join, so faces there (the
+  peninsula's cupboard doors) are depth-tested furniture, not far-wall
+  backdrop. They were painted under everything, so you saw into the peninsula.
+- `solid_audit.py` now tracks far-wall backdrop faces (painter's order, no depth
+  write): anything drawn after one paints over it whatever its depth. That
+  catches furniture taking the backdrop path (the peninsula) and wall things
+  drawn after furniture: Holly's floor-length curtains were in front of the
+  chest, desk, doll's house and wardrobe, and the Landing's skirting ran across
+  the radiator. Both fixed (drawn in the right order).
+- Caption: "<Room> - Looking North" / "<Room> - Looking South".
+- `tools/view_shot.py` (one in-game shot, player/dog placed, `--hud`),
+  `tools/kd_shots.py` (the reported scenes, both cameras), `tools/contact_sheet.py`.

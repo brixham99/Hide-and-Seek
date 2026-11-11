@@ -275,6 +275,11 @@ def main():
     sash_window("W", *WIN_E, ext, z0=70, z1=198, curtains=CREAM_C)
     sash_window("N", *WIN_S, ext, z0=70, z1=198, curtains=CREAM_C)
     wall_trim()
+    # Curtains hang against the wall, so they go before the furniture: they
+    # are painted as part of the far wall, and drawn later they hung in
+    # front of the chest, desk, doll's house and wardrobe.
+    cream_drapes("W", *WIN_E)
+    cream_drapes("N", *WIN_S)
     white_bed()
     oak_chest()
     pine_desk()
@@ -285,8 +290,6 @@ def main():
     wall_pictures()
     dressing_gown()
     place_sprite("archie", 3.40, 3.15)
-    cream_drapes("W", *WIN_E)
-    cream_drapes("N", *WIN_S)
     ghost_near_walls(WALL,
                      doors_S=[BATH_DOOR],
                      doors_E=[LANDING_DOOR],

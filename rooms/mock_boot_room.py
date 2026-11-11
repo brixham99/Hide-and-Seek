@@ -232,13 +232,13 @@ def main():
     kitchen_leaf(KITCHEN_DOOR[0])
     place_sprite("archie", 3.1, 1.75)
     for hx, hy, hz, hc_ in ((BEAMS[0] - .12, RD - .32, 172, (214, 150, 190)), (BEAMS[0] + .14, RD - .2, 160, (40, 46, 50))):
-        pygame.draw.line(screen, (30, 30, 30), P(hx, hy, hz + 14), P(BEAMS[0], RD - .18, WALL_H - 18), S)
+        pygame.draw.line(screen, (30, 30, 30), P(hx, hy, hz + 14), P(BEAMS[0], RD - .18, WALL_H), S)
         helmet(hx, hy, hz, hc_)
     # near walls: Study door + pantry doorway (y = RD), WC/garage plank door (x = RW)
     WE = lambda u, z: P(RW + .08, u, z)
     wc = plank_door_face(WE, *WC_DOOR, DOOR_H, SAGE_DOOR, KX, hinge="right")
     ghost_near_walls(SAGE_WALL, doors_S=[PANTRY, STUDY], doors_E=[WC_DOOR], cornice=False,
-                     extra_polys=list(wc) + beam_ends())
+                     extra_polys=list(wc))
     img = finish("Hide and Seek - Boot Room (mock-up)", OUT)
     if ARGS:
         return

@@ -183,9 +183,12 @@ def main():
     if not hc.FLIP:
         ext = exterior_layer({"N": front_garden})
         sash_window("N", *WINDOW, ext, curtains=GREY_CURTAIN)
-        radiator(*WINDOW)
         back_opening("W", *SE_BED_DOOR, glimpses.holly_from_landing)
     wall_trim()
+    if not hc.FLIP:
+        # after the trim: the skirting is painted as part of the far wall, so
+        # drawn later it ran across the front of the radiator
+        radiator(*WINDOW)
     balustrade()
     parliament_canvas()
     place_sprite("archie", 2.15, 4.6)

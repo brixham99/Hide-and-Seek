@@ -67,6 +67,7 @@ class Audit:
         self.gsid = np.full((W, H), -1, np.int32)
         self.fg = None                               # the ghost layer, once a ghost face is seen
         self.vwall = np.zeros((W, H), bool)          # painted by ghost_near_walls (the near wall itself)
+        self.bd = np.zeros((W, H), bool)             # last painted by a far-wall backdrop face (no depth write)
         self.decals = {}          # site -> (px, faces) hidden just behind a nearer face
         self._site_ix = {}
         self.scratch = pygame.Surface(size)
@@ -105,7 +106,13 @@ class Audit:
             if m.any():
                 yield x0, y0, m, (w0 * da + w1 * db + w2 * dc) / area
 
-    def drawn(self, pts, near):
+    def drawn(self, pts, near, backdrop=False):
+        """backdrop: a face the usual view paints as part of a far wall
+        (painter's order, no depth write). It covers whatever was drawn
+        before it, and anything drawn later paints over it whatever its
+        depth. A furniture face that wrongly takes this path (it sits in the
+        plane of x = 0 or y = 0 where there is no wall) then shows the solid's
+        hidden faces drawn after it, and gets flagged."""
         if near or hc.screen is not hc._room_screen:
             return
         sid = self.sid()
@@ -118,9 +125,11 @@ class Audit:
                 inside += int(m.sum())
                 behind += int((m & (gap > 1e-3) & (gap < 0.08)).sum())
             vis = self.vis[x0:x0 + w, y0:y0 + h]
-            if hc._zbuf is not None:          # both cameras are z-buffered now
-                m = m & (d >= vis - 1e-3)
+            bd = self.bd[x0:x0 + w, y0:y0 + h]
+            if hc._zbuf is not None and not backdrop:   # both cameras are z-buffered now
+                m = m & ((d >= vis - 1e-3) | bd)
             vis[m] = d[m]
+            bd[m] = backdrop
             self.vid[x0:x0 + w, y0:y0 + h][m] = sid
             self.vwall[x0:x0 + w, y0:y0 + h][m] = self.in_ghost_walls()
             self.unk[x0:x0 + w, y0:y0 + h][m] = False

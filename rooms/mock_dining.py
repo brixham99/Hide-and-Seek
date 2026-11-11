@@ -44,26 +44,65 @@ def side_garden(side, rnd):
     ext_house_shadow(side, -10, 20, depth=1.0)
 
 
+def _hall_beyond(side, rnd):
+    import glimpses
+    glimpses.hall_from_dining()
+
+
+def _gl():
+    """How much of the kitchen is drawn past the open side."""
+    return KD_LEN - RW if hc.FLIP else GL
+
+
 def kitchen_back():
-    """The kitchen's floor and south wall carrying on past the beam (with the hall door, open)."""
-    floor_slate(RW, 0, RW + GL, RD, seed=8)
-    floor_edge_S(RW, RW + GL, SLATE[1])
-    qy(0, RW, RW + GL, 0, WALL_H, shade(OFF_WHITE, KY))
-    qy(.001, RW, RW + GL, 0, 13, shade(WHITE, KY))
-    a, b = F.K_HALL_DOOR
-    qy(.002, a, b, 0, DOOR_H, shade((150, 112, 74), KY * .8))          # the hall beyond
-    qy(.003, a + .05, a + .12, 0, DOOR_H - 3, shade((238, 236, 230), KY))   # the open leaf, edge-on
-    architrave("N", a, b, DOOR_H)
-    poly([P(RW, 0, WALL_H), P(RW + GL, 0, WALL_H), P(RW + GL, -.28, WALL_H), P(RW, -.28, WALL_H)], (60, 58, 54))
+    """The kitchen's floor and far wall carrying on past the open side.
+    Usual view: its south wall, with the open doorway into the Hall (the Hall
+    itself shows through it). Opposite view: the garden wall, with the east
+    window over the bins (glass onto the garden)."""
+    gl = _gl()
+    floor_slate(RW, 0, RW + gl, RD, seed=8)
+    if not hc.FLIP:
+        floor_edge_S(RW, RW + gl, SLATE[1])
+        qy(0, RW, RW + gl, 0, WALL_H, shade(OFF_WHITE, KY))
+        qy(.001, RW, RW + gl, 0, 13, shade(WHITE, KY))
+        a, b = F.K_HALL_DOOR
+        hall = exterior_layer({"N": _hall_beyond}, haze=(196, 190, 204))
+        doorway_back("N", a, b, hall)
+        poly([P(RW, 0, WALL_H), P(RW + gl, 0, WALL_H), P(RW + gl, -.28, WALL_H), P(RW, -.28, WALL_H)], (60, 58, 54))
+        return
+    # opposite view: the garden wall is the far one
+    qy(RD, RW, RW + gl, 0, WALL_H, shade(OFF_WHITE, KY))
+    qy(RD - .001, RW, RW + gl, 0, 13, shade(WHITE, KY))
+    a, b = F.K_WIN2
+    qy(RD - .002, a - .07, b + .07, 105, 215, shade(WHITE, KY))
+    qy(RD - .003, a, b, 112, 208, (150, 182, 206))                  # sky and hedge through the glass
+    qy(RD - .004, a, b, 112, 150, (70, 112, 62))
+    for u in (a, (a + b) / 2 - .02, b - .04):
+        qy(RD - .005, u, u + .04, 112, 208, shade(WHITE, KY))
+    qy(RD - .005, a, b, 158, 162, shade(WHITE, KY))
+    poly([P(RW, RD, WALL_H), P(RW + gl, RD, WALL_H), P(RW + gl, RD + .28, WALL_H), P(RW, RD + .28, WALL_H)], (60, 58, 54))
 
 
 def kitchen_front():
-    F.kitchen_south_wall()
-    F.kitchen_island_and_stools()
+    if not hc.FLIP:
+        F.kitchen_south_wall()
+        F.kitchen_island_and_stools()
+        F.kitchen_run_floor()
+        return
+    # opposite view: the run along the garden wall shows its fronts, the
+    # cabinets, hood and cubbies hang on the wall; the island in front.
+    # The south-wall pier and larders are on the near side, out of shot.
+    F.kitchen_north_wall_front()
     F.kitchen_run_floor()
+    F.kitchen_seen_from_south()
+    F.kitchen_island_and_stools()
 
 
 def beam_polys():
+    # The ceiling beam at the join was drawn on the ghost layer, so it lay
+    # across the other half of the room as a long white slab. The fade marks
+    # the join instead; no beam in either camera.
+    return []
     if hc.FLIP:
         return []
     c = (238, 236, 230)
@@ -103,9 +142,13 @@ def main():
     floor_slate(0, 0, RW, RD, seed=21)
     floor_edge_S(0, RW, SLATE[1])
     back = glimpse_layer()
-    with drawing_on(back), world(X0):
+    zb = z_layer(back)
+    with zb, world(X0):
         kitchen_back()
-    screen.blit(fade_x(back, RW + .4, RW + 3.4), (0, 0))
+    # usual view: the kitchen comes nearer (near-left), faded quickly;
+    # opposite view: it is the far side, so more of it shows
+    fb = (RW + 1.2, RW + 7.6) if hc.FLIP else (RW + .4, RW + 3.4)
+    screen.blit(fade_x(back, *fb, zbuf=zb.zbuf), (0, 0))
     wall_shell(OFF_WHITE)
     wall_trim(cornice=False, col=WHITE, open_E=True)
     ext = exterior_layer({"W": side_garden}, haze=(150, 172, 190))
@@ -118,9 +161,11 @@ def main():
         F.peninsula()
     place_sprite("archie", 5.3, 3.0)
     front = glimpse_layer()
-    with drawing_on(front), world(X0):
+    zf = z_layer(front)
+    with zf, world(X0):
         kitchen_front()
-    screen.blit(fade_x(front, RW + .3, RW + 3.6, z_ref=70), (0, 0))
+    ff = (RW + 1.2, RW + 7.6) if hc.FLIP else (RW + .3, RW + 3.6)
+    screen.blit(fade_x(front, *ff, z_ref=70, zbuf=zf.zbuf), (0, 0))
     if hc.FLIP:
         ghost_near_walls(OFF_WHITE, doors_S=(), cornice=False, open_E=True,
                          extra_polys=beam_polys())

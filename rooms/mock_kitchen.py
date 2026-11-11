@@ -61,6 +61,10 @@ def drawing_room_beyond(side, rnd):
 
 
 def beam_polys():
+    # The ceiling beam at the join was drawn on the ghost layer, so it lay
+    # across the other half of the room as a long white slab. The fade marks
+    # the join instead; no beam in either camera.
+    return []
     # In the opposite view this ceiling beam lands across the room. The open
     # side is already an open edge; the beam is only drawn in the usual view.
     if hc.FLIP:
@@ -127,16 +131,21 @@ def dining_front():
 
 
 def main():
+    # x = 0 is the open join, not a wall: faces there (the peninsula's
+    # kitchen side) are furniture and must be depth-tested, not painted as
+    # a backdrop under everything
+    hc.FAR_X0 = False
     background()
     floor_slate(seed=8)
     floor_slab(SLATE[1])
     back = glimpse_layer()
-    with drawing_on(back):
+    zb = z_layer(back)
+    with zb:
         dining_back()
     if hc.FLIP:
-        screen.blit(_clip_past_east(fade_x(back, -0.25, -2.2)), (0, 0))
+        screen.blit(_clip_past_east(fade_x(back, -1.2, -4.6, zbuf=zb.zbuf)), (0, 0))
     else:
-        screen.blit(fade_x(back, -1.0, -6.5), (0, 0))
+        screen.blit(fade_x(back, -2.0, -8.6, zbuf=zb.zbuf), (0, 0))
     wall_shell(OFF_WHITE, open_W=True)
     hall = exterior_layer({"N": hall_beyond}, haze=(226, 222, 212))
     drawing = exterior_layer({"N": drawing_room_beyond}, haze=shade(GREEN, KY))
@@ -144,12 +153,13 @@ def main():
     doorway_back("N", *DRAWING_DOOR, drawing)
     wall_trim(cornice=False, col=WHITE, open_W=True)
     front = glimpse_layer()
-    with drawing_on(front):
+    zf = z_layer(front)
+    with zf:
         dining_front()
     if hc.FLIP:
-        screen.blit(_clip_past_east(fade_x(front, -0.2, -2.0, z_ref=70)), (0, 0))
+        screen.blit(_clip_past_east(fade_x(front, -1.2, -4.6, z_ref=70, zbuf=zf.zbuf)), (0, 0))
     else:
-        screen.blit(fade_x(front, -1.4, -7.0, z_ref=70), (0, 0))
+        screen.blit(fade_x(front, -2.0, -8.6, z_ref=70, zbuf=zf.zbuf), (0, 0))
     with world(X0):
         F.kitchen_south_wall()
         F.kitchen_island_and_stools()
@@ -162,12 +172,9 @@ def main():
     with world(X0):
         F.kitchen_run_floor()
         F.kitchen_seen_from_south()
-    if not hc.FLIP:
-        hung = glimpse_layer()
-        with drawing_on(hung), world(X0):
-            F.kitchen_run_hung()
-        hung.set_alpha(96)
-        screen.blit(hung, (0, 0))
+    # (Usual view: the wall cabinets on the garden wall are in the ghost wall
+    # with their backs to the camera. Drawn as faint boxes they piled up over
+    # the peninsula, island and sink, so they are left to the opposite view.)
     # In the opposite view these windows are on the far wall, so they are real
     # sashes (garden_windows) rather than holes cut in the ghost wall.
     ghost_near_walls(OFF_WHITE, doors_E=[BOOT_DOOR], windows_S=() if hc.FLIP else [WIN2, WIN1],

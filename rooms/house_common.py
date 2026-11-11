@@ -91,6 +91,8 @@ def init_room(rw, rd, ox=None, oy=None):
     # source alpha into the canvas and the room interior is saved transparent.
     screen = pygame.Surface((WIN_W * S, WIN_H * S), depth=24)
     _room_screen = screen
+    global FAR_X0
+    FAR_X0 = True
     _occluders = []
     # The usual view is z-buffered too (closeness = view-local x + y), so the
     # parts of a piece of furniture can be drawn in any order and nothing
@@ -106,7 +108,7 @@ def _note_occluder(x0, y0, x1, y1, z0, z1):
     Coordinates are whatever `box` was given (world x under `world()`); they are
     stored in the view's local frame, matching game.to_screen.
     """
-    if screen is not _room_screen:
+    if screen is not _room_screen or _NO_OCC:
         return
     x0, x1 = (x0 - X_OFF), (x1 - X_OFF)
     y0, y1 = (y0 - Y_OFF), (y1 - Y_OFF)
@@ -340,6 +342,9 @@ def _near_plane(pts):
     return uspan < 2.05
 
 
+FAR_X0 = True                          # False: the x = 0 side is open (Kitchen: the join onto the dining half)
+
+
 def _on_far_wall(pts):
     """Usual view: a vertical face lying in (or just in front of / inside) a
     far wall, x = 0 or y = 0: the wall itself, its trims, doors, reveals and
@@ -354,7 +359,7 @@ def _on_far_wall(pts):
         return False                      # horizontal: a floor, a shelf, a top
     if min(zs) < -2:
         return False                      # going down a stairwell: a real solid face
-    if max(xs) - min(xs) < 0.02 and max(abs(v) for v in xs) < 0.12:
+    if FAR_X0 and max(xs) - min(xs) < 0.02 and max(abs(v) for v in xs) < 0.12:
         return True
     if max(ys) - min(ys) < 0.02 and max(abs(v) for v in ys) < 0.12:
         return True
@@ -418,7 +423,7 @@ def poly(pts, col, outline=None, w=1):
         if outline:
             pygame.draw.polygon(screen, outline, pts, max(1, int(w * S)))
         if _AUDIT is not None:
-            _AUDIT.drawn(pts, False)
+            _AUDIT.drawn(pts, False, backdrop=True)
         return
     if _flip_draw():
         near = FLIP and _near_plane(pts) and _fg_surf is not None
@@ -654,6 +659,10 @@ def _z_drum(x, y, w, h, xc, c_axis, r, col):
     rgb = pygame.surfarray.pixels3d(screen)
     rgb[x0:x1, y0:y1][m] = tuple(int(c) for c in col[:3])
     del rgb
+    if screen.get_flags() & pygame.SRCALPHA:        # a glimpse layer (z_layer): make it show
+        aa = pygame.surfarray.pixels_alpha(screen)
+        aa[x0:x1, y0:y1][m] = 255
+        del aa
 
 
 def cone(cx, cy, r0, r1, z0, z1, col):
@@ -721,6 +730,13 @@ def wall_trim(cornice=True, skirting=True, col=None, open_E=False, open_W=False)
             Q(0, n, WALL_H - 12, WALL_H - 10, shade(WHITE_, k * 0.82))
     cap = (60, 58, 54)
     t = 0.28
+    if FLIP and _flip_draw() and _fg_surf is not None:
+        # Opposite view: these walls are the near ones. Their dark caps lay
+        # across the floor as a solid band; put them on the ghost layer, faint
+        # like the rest of the near wall.
+        poly = lambda pts, col: _fill_poly(_fg_surf, pts, col, 88, zwrite=False)
+    else:
+        poly = globals()["poly"]
     poly([P(0, 0, WALL_H), P(RW, 0, WALL_H), P(RW, -t, WALL_H), P(-t, -t, WALL_H)], cap)
     if not open_E:     # the wall's cut end (an open-plan room's wall carries on instead)
         poly([P(RW, 0, WALL_H), P(RW, -t, WALL_H), P(RW, -t, -SLAB), P(RW, 0, -SLAB)], shade(cap, 0.55))
@@ -771,6 +787,32 @@ def wall_pt(side, u, z, n=0.0):
     if side == "E":
         return P(RW - n, u, z)
     return P(n, u, z)
+
+
+class z_layer:
+    """with z_layer(layer): ... -> draw on a glimpse layer (glimpse_layer())
+    depth-tested against its own fresh z-buffer, like the room itself, so the
+    parts of the next half of an open-plan room can't paint over each other
+    in the wrong order. Nothing drawn here goes on the ghost layer or into
+    the room's occluders."""
+    def __init__(self, surf):
+        self.surf = surf
+
+    def __enter__(self):
+        global screen, _room_screen, _zbuf, _fg_surf, _NO_OCC
+        self.prev = (screen, _room_screen, _zbuf, _fg_surf, _NO_OCC)
+        screen = _room_screen = self.surf
+        _zbuf = np.full(self.surf.get_size(), -1e9, np.float32)   # (the next room can lie at negative closeness)
+        _fg_surf = None
+        _NO_OCC = True
+
+    def __exit__(self, *a):
+        global screen, _room_screen, _zbuf, _fg_surf, _NO_OCC
+        self.zbuf = _zbuf                  # keep it: fade_x(zbuf=...) reads exact depth from it
+        screen, _room_screen, _zbuf, _fg_surf, _NO_OCC = self.prev
+
+
+_NO_OCC = False
 
 
 class drawing_on:
@@ -1897,8 +1939,11 @@ def glimpse_layer():
     return pygame.Surface(screen.get_size(), pygame.SRCALPHA)
 
 
-def _fade_content(layer, z_ref, tone):
-    """Multiply the alpha of the non-empty part of `layer`. `tone(sx, sy) -> t`."""
+def _fade_content(layer, z_ref, tone, zbuf=None):
+    """Multiply the alpha of the non-empty part of `layer`. `tone(sx, sy) -> t`.
+    zbuf: the layer's own depth (z_layer); where it was written, room x is
+    exact (closeness = x + y, screen column = x - y), so a tall solid fades as
+    one piece instead of its top going before its base."""
     w, h = layer.get_size()
     a = pygame.surfarray.pixels_alpha(layer)
     cols = np.flatnonzero(a.any(axis=1))
@@ -1912,10 +1957,19 @@ def _fade_content(layer, z_ref, tone):
     sy = (np.arange(y0, y1)[None, :] / S - OY + z_ref) / HH
     xd = (sx + sy) / 2
     if FLIP:
-        # the layer was drawn through the spun projection, so recover room x
-        xe = RW - xd
+        # the layer was drawn through the spun projection, so recover room x.
+        # As in the usual view, a pixel up the far wall (y = RD now) would
+        # pass for distant floor; its screen column gives the better guess.
+        xe = RW - np.maximum(xd, np.broadcast_to(sx, (x1 - x0, y1 - y0)))
     else:
         xe = np.maximum(xd, np.broadcast_to(sx, (x1 - x0, y1 - y0)))
+    if zbuf is not None:
+        c = zbuf[x0:x1, y0:y1]
+        ok = c > -1e8
+        xz = (c + sx) / 2
+        if FLIP:
+            xz = RW - xz
+        xe = np.where(ok, xz, xe)
     t = np.clip(tone(xe), 0, 1)
     t = t * t * (3 - 2 * t)
     a[x0:x1, y0:y1] = (a[x0:x1, y0:y1] * t).astype(np.uint8)
@@ -1923,11 +1977,11 @@ def _fade_content(layer, z_ref, tone):
     return layer
 
 
-def fade_x(layer, x_opaque, x_gone, z_ref=0):
+def fade_x(layer, x_opaque, x_gone, z_ref=0, zbuf=None):
     """Fade a layer by room x: fully there at x_opaque, gone at x_gone (either
     direction), using the same per-pixel x estimate as fade_beyond_E, taking
     floor pixels to be at height z_ref (use ~table height for furniture)."""
-    return _fade_content(layer, z_ref, lambda xe: (xe - x_gone) / (x_opaque - x_gone))
+    return _fade_content(layer, z_ref, lambda xe: (xe - x_gone) / (x_opaque - x_gone), zbuf)
 
 
 def fade_beyond_E(layer, xa, xb):

@@ -182,7 +182,25 @@ def _open(here, there, draw):
 
 
 kitchen_from_hall = _open(HALL, KD, lambda: kitchen_zone(6.2, 0.0, 13.8, 8.4))
-kitchen_from_boot = _open(BOOT, KD, lambda: kitchen_zone(9.8, 0.0, 16.4, 8.2))
+def kitchen_from_boot():
+    """The Boot Room's kitchen doorway sits at the kitchen's south-west corner,
+    so looking in you see the slate floor (it runs through the wall's
+    thickness, no west wall in the way), the kitchen's south wall with the
+    larder fridge + freezer, and the Drawing Room through its door beyond."""
+    with _at(BOOT, KD):
+        with hc.placed(-9.15, 7.8):                  # drawing room, lined up as in kitchen_from_drawing
+            drawing_zone()
+        _floor("slate", 9.8, 0.0, 16.62, 8.4, seed=8)
+        _wall_y(0.0, 9.8, 14.9, CREAM)
+        _wall_y(0.0, 16.15, 16.62, CREAM)
+        import kd_furniture as F
+        F.larder(12.55, 13.53, hinge="right")
+        F.larder(13.57, 14.55, hinge="left")
+        w = hc.shade((244, 242, 236), hc.KY)        # white architrave round the drawing door
+        hc.qy(0.01, 14.82, 14.9, 0, hc.DOOR_H + 6, w)
+        hc.qy(0.01, 16.15, 16.23, 0, hc.DOOR_H + 6, w)
+        hc.qy(0.01, 14.82, 16.23, hc.DOOR_H, hc.DOOR_H + 6, w)
+        hc.qx(14.9, -0.2, 0.0, 0, hc.DOOR_H, hc.shade(CREAM, hc.KX * 0.9))   # reveal
 
 
 def kitchen_from_drawing():
@@ -192,6 +210,7 @@ def kitchen_from_drawing():
     with hc.placed(14.9 - 5.75, 0.0 - 7.8):
         kitchen_zone(12.0, 0.0, 16.4, 8.4)
 hall_from_kitchen = _open(KITCHEN_VIEW, HALL, hall_zone)
+hall_from_dining = _open(KD, HALL, hall_zone)
 hall_from_sitting = _open(SITTING, HALL, lambda: hall_zone(east_wall=False))
 hall_from_drawing = _open(DRAWING, HALL, hall_zone)
 sitting_from_hall = _open(HALL, SITTING, sitting_zone)
