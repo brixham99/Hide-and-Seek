@@ -58,6 +58,37 @@ and depth sorting stay untouched.
   Simulated off-screen; drawn only in the room on screen, depth-sorted with
   Archie, under the ghost walls, both cameras. `dog_test.py` checks the states.
 
+## Bunty (the tabby cat)
+- Sprites: `tools/make_bunty.py`, the same SDF ray-march as Myrtle (imports her
+  primitives and camera), a small slim cat about 45 cm nose to rump, so about
+  half Myrtle's size on screen. The coat is painted on the model: grey-brown
+  ground, dark tabby bands running round each part (body, legs, tail rings,
+  M-lines on the brow), warped by noise into blotches, a dark dorsal stripe,
+  paler belly; white chin and whisker pads, white front toes, white hind legs
+  up to the hock (as the reference photo, which stays out of the repo); green
+  eyes, pink nose. Output in `assets/bunty/`: standing (tail up), an 8-frame
+  walk, sitting (tail round her feet), asleep (curled), mid-hop, in the four
+  facings. About 70 s to build.
+- Behaviour (`cat.py`): mostly asleep (about 70% of the time) on one of
+  `SPOTS`: Archie's, Holly's or the Master bed, or the Drawing Room sofa. She
+  picks one at the start; each time she goes back there is a 30% chance she
+  picks another. Naps of 1.5-4 min, then a slow wander (1.05 tiles/s) to 1-3
+  random rooms anywhere in the house, through the doorways, up / down the
+  stairs and the landing arch, sitting a few seconds in each, then back to
+  her spot. She hops up onto / down off furniture (0.45 s arc, the jump pose)
+  from a clear floor point beside it. She ignores people, except: when the
+  player is in the Kitchen and she is in it or next door (Hall, Drawing Room,
+  Boot Room) she trots over after a second or two, hops onto the island
+  (z 96) and sits facing them; 1.5 s after they leave the Kitchen she hops
+  down and goes back to bed. Grid paths on her own smaller footprint (0.14),
+  straight runs checked along their length so she doesn't shave corners;
+  wander targets only in the part of a room joined to its doorways. On
+  furniture she is drawn with an occlusion threshold half a tile in front of
+  her, so the top she is on doesn't hide her but a nearer headboard or sofa
+  back does (looking south she is hidden behind the sofa back, as she would
+  be). `Cat(seed=..., spot=...)` for tests; `cat_test.py` checks it all;
+  `tools/bunty_shots.py` makes the screenshots.
+
 ## Closed solids (closed-solids, CACHE_REV 39)
 
 - Both cameras are now depth-tested. The default view used to rely on draw order

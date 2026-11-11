@@ -21,6 +21,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import numpy as np  # noqa: E402
 import pygame  # noqa: E402
 
+import cat as catmod  # noqa: E402
 import dog as dogmod  # noqa: E402
 import house  # noqa: E402
 
@@ -28,6 +29,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "cache")
 HM_CHARS = os.path.join(HERE, "assets", "characters")
 MYRTLE = os.path.join(HERE, "assets", "myrtle")
+BUNTY = os.path.join(HERE, "assets", "bunty")
 WIN_W, WIN_H = 1280, 720
 HW, HH = 56, 28
 SPEED = 3.0                      # tiles/s, as Haunted Mansion's PLAYER_SPEED
@@ -96,6 +98,21 @@ def load_myrtle():
     return out, meta
 
 
+def load_bunty():
+    """Bunty's sprites (tools/make_bunty.py): {pose: {facing: [frames]}}, meta."""
+    with open(os.path.join(BUNTY, "bunty.json")) as f:
+        meta = json.load(f)
+    fw, fh = meta["size"]
+    out = {"stand": {}, "walk": {}, "sit": {}, "sleep": {}, "jump": {}}
+    for k in meta["facings"]:
+        out["stand"][k] = [pygame.image.load(os.path.join(BUNTY, f"bunty_{k}.png")).convert_alpha()]
+        sheet = pygame.image.load(os.path.join(BUNTY, f"bunty_{k}_walk.png")).convert_alpha()
+        out["walk"][k] = [sheet.subsurface((i * fw, 0, fw, fh)).copy() for i in range(meta["frames"])]
+        for pose in ("sit", "sleep", "jump"):
+            out[pose][k] = [pygame.image.load(os.path.join(BUNTY, f"bunty_{k}_{pose}.png")).convert_alpha()]
+    return out, meta
+
+
 def _fg_crop(fg):
     """Tight sprite of the ghost walls, and where it sits on the frame."""
     # array_alpha is [x, y]; a full-frame scan once per view at load
@@ -123,6 +140,10 @@ class Game:
         self.dog_shadow = pygame.Surface((76, 26), pygame.SRCALPHA)
         pygame.draw.ellipse(self.dog_shadow, (0, 0, 0, 70), self.dog_shadow.get_rect())
         self.dog = dogmod.Dog()
+        self.cat_img, self.cat_meta = load_bunty()
+        self.cat_shadow = pygame.Surface((40, 14), pygame.SRCALPHA)
+        pygame.draw.ellipse(self.cat_shadow, (0, 0, 0, 64), self.cat_shadow.get_rect())
+        self.cat = catmod.Cat()
         self.room, self.x, self.y, self.facing = "hall", 1.6, 1.2, "N"
         self.flipped = False          # True: camera on the opposite side of every room
         self.view = house.view_for(self.room, self.x)
@@ -190,6 +211,7 @@ class Game:
                 if cr:
                     self.change_room(*cr)
         self.dog.update(dt, self.room, self.x, self.y, self.moving)
+        self.cat.update(dt, self.room, self.x, self.y, self.moving)
         v = house.view_for(self.room, self.x, self.view)
         if v != self.view:                                   # kitchen <-> dining at the beam
             snap = pygame.Surface((WIN_W, WIN_H), 0, 24)
@@ -325,6 +347,8 @@ class Game:
             actors = [(sign * (self.x - view[1] + self.y), self.draw_archie)]
             if self.dog_visible(view):
                 actors.append((sign * (self.dog.x - view[1] + self.dog.y), self.draw_dog))
+            if self.cat_visible(view):
+                actors.append((sign * (self.cat.x - view[1] + self.cat.y), self.draw_cat))
             for _, fn in sorted(actors, key=lambda a: a[0]):
                 fn(target, view)
         self._blit_fg(target, view)
@@ -359,6 +383,39 @@ class Game:
             sh = (round(gx - self.dog_shadow.get_width() / 2), round(gy - self.dog_shadow.get_height() / 2))
             surf.blit(self._occlude(self.dog_shadow, sh, view, (d.x, d.y)), sh)
         surf.blit(self._occlude(img, body, view, (d.x, d.y), thr), body)
+
+    def cat_visible(self, view):
+        c = self.cat
+        return c.room == self.room and house.view_for(c.room, c.x, view)[0] == view[0]
+
+    def draw_cat(self, surf, view):
+        c = self.cat
+        pose = c.pose()
+        flipped = self.views[self.vid(view)].get("flip")
+        gx, gy = self.to_screen(view, c.x, c.y, c.z)
+        f = c.facing
+        if flipped:
+            f = {"E": "W", "W": "E", "S": "N", "N": "S"}[f]
+        frames = self.cat_img[pose][SPRITE[f]]
+        if pose == "walk":
+            n = len(frames)
+            img = frames[int(c.dist / self.cat_meta["cycle_tiles"] * n) % n]
+        else:
+            img = frames[0]
+        ax, ay = self.cat_meta["anchor"]
+        body = (round(gx - ax), round(gy - ay))
+        thr = None
+        if c.z > 8:
+            # up on a bed, the sofa or the island: the top she sits on must not
+            # swallow her, but its far side (a headboard, the sofa back seen
+            # from the front of the room) still can
+            lx = c.x - view[1]
+            thr = lx + c.y + (-0.5 if flipped else 0.5)
+        else:
+            sx, sy = self.to_screen(view, c.x, c.y)
+            sh = (round(sx - self.cat_shadow.get_width() / 2), round(sy - self.cat_shadow.get_height() / 2))
+            surf.blit(self._occlude(self.cat_shadow, sh, view, (c.x, c.y)), sh)
+        surf.blit(self._occlude(img, body, view, (c.x, c.y), thr), body)
 
     def _hud_on(self, target):
         name = house.label(self.room, self.view)

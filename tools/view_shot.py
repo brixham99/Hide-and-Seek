@@ -9,7 +9,8 @@ pygame.init(); scr = pygame.display.set_mode((1280, 720))
 import game, house
 
 
-def shot(out, room, x, y, flip=False, dog=None, facing="N", g=None, hud=False):
+def shot(out, room, x, y, flip=False, dog=None, facing="N", g=None, hud=False, cat=None):
+    """`cat` = (x, y, z, state, facing) puts Bunty in the room; default she is out of shot."""
     g = g or game.Game(scr)
     g.room, g.x, g.y, g.facing, g.flipped = room, x, y, facing, flip
     g.view = house.view_for(room, x)
@@ -17,6 +18,12 @@ def shot(out, room, x, y, flip=False, dog=None, facing="N", g=None, hud=False):
         g.dog.room, g.dog.x, g.dog.y = room, dog[0], dog[1]
     else:
         g.dog.room = "nowhere"
+    if cat:
+        c = g.cat
+        c.room, c.x, c.y, c.z, c.state, c.facing = room, *cat
+        c.moving = False
+    else:
+        g.cat.room = "nowhere"
     g._paint_view(g.frame, g.view)
     if hud:
         g._hint = g._make_hint()
