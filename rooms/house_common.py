@@ -143,8 +143,10 @@ def raster_depth():
     """
     buf = np.zeros((WIN_W, WIN_H), np.float32)
     for x0, y0, x1, y1, z0, z1 in _occluders:
-        _stamp_face(buf, [(x0, y1, z0), (x1, y1, z0), (x1, y1, z1), (x0, y1, z1)], "y", y1)
-        _stamp_face(buf, [(x1, y0, z0), (x1, y1, z0), (x1, y1, z1), (x1, y0, z1)], "x", x1)
+        # the faces the camera sees: x1 / y1 normally, x0 / y0 from the opposite side
+        fy, fx = (y0, x0) if FLIP else (y1, x1)
+        _stamp_face(buf, [(x0, fy, z0), (x1, fy, z0), (x1, fy, z1), (x0, fy, z1)], "y", fy)
+        _stamp_face(buf, [(fx, y0, z0), (fx, y1, z0), (fx, y1, z1), (fx, y0, z1)], "x", fx)
         _stamp_face(buf, [(x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)], "z", z1)
     return buf
 
@@ -200,7 +202,9 @@ def _stamp_face(buf, corners, kind, val):
     else:
         d = 2 * val - (gx - OX) / HW
     region = buf[x0:x1, y0:y1]
-    region[:] = np.where(m & (d > region), d, region)
+    # keep the nearest surface: larger x + y normally, smaller from the opposite side
+    nearer = ((region == 0) | (d < region)) if FLIP else (d > region)
+    region[:] = np.where(m & nearer & (d > 0), d, region)
 
 
 X_OFF = 0.0                            # world -> local x shift while drawing in world coords (see world())
