@@ -68,37 +68,56 @@ def _role_for_x(front, x_is_east):
     return "side"
 
 
+def face_quad(face, x0, y0, x1, y1, z0, z1):
+    """Corners (A = sheet top-left, B = top-right, C = bottom-left, D) of one
+    WORLD face, laid out as seen from outside that face, so a sheet reads
+    the same way round whichever camera looks at it (no mirroring when the
+    view turns 180 degrees)."""
+    if face == "+y":      # north face (garden side): seen looking south, west (+x) on the right
+        return P(x0, y1, z1), P(x1, y1, z1), P(x0, y1, z0), P(x1, y1, z0)
+    if face == "-y":      # south face: seen looking north, west on the left
+        return P(x1, y0, z1), P(x0, y0, z1), P(x1, y0, z0), P(x0, y0, z0)
+    if face == "+x":      # west face: seen looking east, north (+y) on the left
+        return P(x1, y1, z1), P(x1, y0, z1), P(x1, y1, z0), P(x1, y0, z0)
+    if face == "-x":      # east face: seen looking west, north on the right
+        return P(x0, y0, z1), P(x0, y1, z1), P(x0, y0, z0), P(x0, y1, z0)
+    return P(x0, y0, z1), P(x1, y0, z1), P(x0, y1, z1), P(x1, y1, z1)   # top, fixed to the room
+
+
+_FRONT_NORMAL = {"N": "+y", "S": "-y", "E": "-x", "W": "+x"}
+_OPPOSITE = {"+y": "-y", "-y": "+y", "+x": "-x", "-x": "+x"}
+
+
+def face_role(front, face):
+    """Which sheet a world face carries: the same answer in every camera."""
+    if face == "top":
+        return "top"
+    f = _FRONT_NORMAL[front]
+    if face == f:
+        return "front"
+    if face == _OPPOSITE[f]:
+        return "back"
+    return "side"
+
+
 def paint_box(x0, y0, x1, y1, z0, z1, kind, front="S", col=(90, 70, 50), shade_k=None, faces="xyz"):
     """Textured box on the existing footprint. `front` is the face with the
-    front sheet (S/N/E/W in house axes)."""
+    front sheet (S/N/E/W in house axes: S = y0 side, N = y1, E = x0, W = x1).
+    Each world face carries one sheet, oriented by the face itself; the
+    camera only decides which faces are visible."""
     sheets = kind_sheets(kind)
     box(x0, y0, x1, y1, z0, z1, col, top=shade(col, 1.04), ol=False, faces=faces)
-    y_face, x_face = (y0, x0) if hc.FLIP else (y1, x1)
     sk = shade_k or {"y": 1.0, "x": 0.88, "z": 1.06}
-    # +y / -y face
-    y_tex = sheets.get(_role_for_y(front, y_face == y0))
-    if y_tex is not None and "y" in faces:
-        A = P(x0, y_face, z1)
-        B = P(x1, y_face, z1)
-        C = P(x0, y_face, z0)
-        D = P(x1, y_face, z0)
-        paint_quad(y_tex, A, B, C, sk["y"], D=D)
-    # +x / -x face
-    x_tex = sheets.get(_role_for_x(front, x_face == x0))
-    if x_tex is not None and "x" in faces:
-        A = P(x_face, y1, z1)
-        B = P(x_face, y0, z1)
-        C = P(x_face, y1, z0)
-        D = P(x_face, y0, z0)
-        paint_quad(x_tex, A, B, C, sk["x"], D=D)
-    # top
-    z_tex = sheets.get("top")
-    if z_tex is not None and "z" in faces:
-        A = P(x0, y0, z1)
-        B = P(x1, y0, z1)
-        C = P(x0, y1, z1)
-        D = P(x1, y1, z1)
-        paint_quad(z_tex, A, B, C, sk["z"], D=D)
+    for axis, pair in (("y", ("+y", "-y")), ("x", ("+x", "-x")), ("z", ("top",))):
+        if axis not in faces:
+            continue
+        for face in pair:
+            if face != "top" and not hc.sees(face):
+                continue
+            tex = sheets.get(face_role(front, face))
+            if tex is not None:
+                A, B, C, D = face_quad(face, x0, y0, x1, y1, z0, z1)
+                paint_quad(tex, A, B, C, sk[axis], D=D)
 
 
 _FIT = {}
@@ -131,6 +150,11 @@ def _fit(tex, A, B, C):
 def paint_quad(tex, A, B, C, shade=1.0, pad=3, D=None):
     """Map `tex` onto the parallelogram A, B, C (image origin, +u, +v)."""
     A_pt, B_pt, C_pt = A, B, C
+    if hc._XCLIP is not None:            # open-plan pass: keep by the face's centre
+        infs = [hc._pinf.get(p) for p in (A, B, C, D) if p is not None]
+        if infs and all(i is not None for i in infs):
+            if not hc.clip_keeps(sum(i[0] for i in infs) / len(infs)):
+                return
     tex = _fit(tex, A, B, C)
     A = np.array(A, dtype=np.float64)
     B = np.array(B, dtype=np.float64)
@@ -139,7 +163,7 @@ def paint_quad(tex, A, B, C, shade=1.0, pad=3, D=None):
     D_pt = D if D is not None else (float(Dn[0]), float(Dn[1]))
     pts = [A_pt, B_pt, D_pt, C_pt]
     if hc._flip_draw() and hc.FLIP:
-        _paint_quad_z(tex, A, B, C, Dn, pts, shade)
+        _paint_quad_z(tex, A_pt, B_pt, C_pt, D_pt, pts, shade)
         if hc._AUDIT is not None:
             hc._AUDIT.drawn(pts, hc._near_plane(pts) and hc._fg_surf is not None)
         return
@@ -216,7 +240,7 @@ def _warp(tex, A, B, C, shade, pad):
         return _WARP[key]
     a = np.asarray(tex).astype(np.float32)
     if shade != 1.0:
-        a[..., :3] *= shade
+        a[..., :3] = np.clip(a[..., :3] * shade, 0, 255)   # (unclipped, >255 wrapped to cyan/black speckle)
     a = np.pad(a, ((pad, pad), (pad, pad), (0, 0)), mode="edge")
     src = Image.fromarray(a.clip(0, 255).astype(np.uint8), "RGBA")
     As = A - (minx, miny)
@@ -257,7 +281,7 @@ def _paint_quad_z(tex, A, B, C, D, pts, shade):
     tw, th = tex.size
     a = np.asarray(tex).astype(np.float32)
     if shade != 1.0:
-        a[..., :3] *= shade
+        a[..., :3] = np.clip(a[..., :3] * shade, 0, 255)   # (unclipped, >255 wrapped to cyan/black speckle)
     # two triangles covering the parallelogram
     # A(0,0), B(tw,0), D(tw,th) and A(0,0), D(tw,th), C(0,th)
     uvs = (

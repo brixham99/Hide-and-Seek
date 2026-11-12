@@ -423,3 +423,9 @@ master_from_dressing = _open(DRESSING, MASTER, master_zone)
 ensuite_from_dressing = _open(DRESSING, ENSUITE, ensuite_zone)
 dressing_from_ensuite = _open(ENSUITE, DRESSING, dressing_zone)
 
+
+
+# Kitchen + Dining Room doorways, in WORLD tiles (both views draw the room's
+# openings inside hc.world(view_x0), so one glimpse serves either half).
+hall_from_kd = hall_from_dining
+drawing_from_kd = _open(KD, DRAWING, drawing_zone)

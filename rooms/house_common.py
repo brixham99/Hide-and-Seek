@@ -116,6 +116,15 @@ def _note_occluder(x0, y0, x1, y1, z0, z1):
         x0, x1 = x1, x0
     if y1 < y0:
         y0, y1 = y1, y0
+    if _XCLIP is not None:
+        if not _box_kept(x0, x1):
+            return
+        if _XCLIP[2]:                      # only the part inside this view hides a character
+            x0, x1 = max(x0, _XCLIP[0]), min(x1, _XCLIP[1])
+    if _OCC_WIN is not None:               # a glimpse lying over the room: its nearly opaque part hides a character too
+        if x1 <= _OCC_WIN[0] or x0 >= _OCC_WIN[1]:
+            return
+        x0, x1 = max(x0, _OCC_WIN[0]), min(x1, _OCC_WIN[1])
     w, d, h = x1 - x0, y1 - y0, z1 - z0
     if w < 0.08 or d < 0.08:
         return
@@ -126,6 +135,14 @@ def _note_occluder(x0, y0, x1, y1, z0, z1):
     if x1 < -0.4 or y1 < -0.4 or x0 > RW + 0.6 or y0 > RD + 0.6:
         return
     _occluders.append((x0, y0, x1, y1, z0, z1))
+
+
+def _box_kept(xl0, xl1):
+    """Does any of the local x span [xl0, xl1] survive the active x_clip?"""
+    lo, hi, inside = _XCLIP
+    if inside:
+        return xl1 > lo and xl0 < hi
+    return xl0 < lo or xl1 > hi
 
 
 def occlude(x0, y0, x1, y1, z0, z1):
@@ -232,6 +249,139 @@ def end_flip():
     _pinf = {}
     if screen is not None:
         _zbuf = np.full(screen.get_size(), -1e9, np.float32)
+
+
+# ------------------------------------------------------------ camera-facing queries
+# Room content is described once, by WORLD faces; what the current camera can
+# see is worked out here, so drawing code never asks "which view is this?".
+# Faces are named by their outward normal in engine axes: "+y" faces the
+# garden/north (y = RD side), "-y" the south wall, "+x" the west (x = RW),
+# "-x" the east (x = 0). Walls by engine side: "N" y = 0, "S" y = RD,
+# "W" x = 0, "E" x = RW (as wall_pt).
+_CAM = {False: {"+x", "+y"}, True: {"-x", "-y"}}
+
+
+def sees(normal):
+    """True when the camera sees faces with this outward normal."""
+    return normal in _CAM[FLIP]
+
+
+_WALL_NORMAL = {"N": "+y", "S": "-y", "W": "+x", "E": "-x"}   # the wall's room-facing side
+
+
+def wall_is_far(side):
+    """A wall whose room side faces the camera is a far (solid, back) wall;
+    otherwise it is a near wall, drawn as a ghost."""
+    return sees(_WALL_NORMAL[side])
+
+
+class facing:
+    """with facing("-y"): ... -> details painted on a face with that outward
+    normal (cupboard fronts, a drawer run) are only drawn when the camera can
+    see that face; otherwise they are skipped, as the solid in front would
+    hide them anyway. Replaces per-view `if FLIP:` around face details."""
+    def __init__(self, normal):
+        self.normal = normal
+
+    def __enter__(self):
+        global _CULL
+        self.prev = _CULL
+        _CULL = _CULL or not sees(self.normal)
+        return not _CULL
+
+    def __exit__(self, *a):
+        global _CULL
+        _CULL = self.prev
+
+
+_CULL = False
+
+
+def on_wall(side):
+    """Decorator for things hung flat on one wall (cabinets, a plate rack, a
+    clock): drawn when that wall is a far wall; on a near (ghost) wall their
+    backs would pile up over the room, so they are left out. The camera
+    decides, not the room code."""
+    def wrap(fn):
+        def go(*a, **k):
+            if wall_is_far(side):
+                return fn(*a, **k)
+        go.__name__, go.__doc__ = fn.__name__, fn.__doc__
+        return go
+    return wrap
+
+# ------------------------------------------------------------ open-plan clipping
+# An open-plan room is drawn as ONE scene in world coordinates. Each view
+# draws it twice: the part inside the view's own x range (the room) and the
+# part beyond its open side (a faded glimpse), so the two halves can never
+# describe the same furniture differently. _XCLIP = (lo, hi, inside) in
+# view-local x; geometry is cut at x = lo / x = hi.
+_XCLIP = None
+
+
+class x_clip:
+    """with x_clip(lo, hi, inside=True): ... -> only geometry with view-local
+    x in [lo, hi] is drawn (inside=False: only geometry outside it)."""
+    def __init__(self, lo, hi, inside=True):
+        self.c = (lo, hi, inside)
+
+    def __enter__(self):
+        global _XCLIP
+        self.prev, _XCLIP = _XCLIP, self.c
+
+    def __exit__(self, *a):
+        global _XCLIP
+        _XCLIP = self.prev
+
+
+def clip_keeps(xl):
+    """Is view-local x kept by the active x_clip?"""
+    if _XCLIP is None:
+        return True
+    lo, hi, inside = _XCLIP
+    return (lo <= xl <= hi) if inside else (xl < lo or xl > hi)
+
+
+def clip_keeps_world(x):
+    return clip_keeps(x - X_OFF)
+
+
+def _clip_half(vs, k, keep_below):
+    """Sutherland-Hodgman against x = k on (xl, yl, z) vertices."""
+    out = []
+    n = len(vs)
+    for i in range(n):
+        a, b = vs[i], vs[(i + 1) % n]
+        ina = (a[0] <= k) if keep_below else (a[0] >= k)
+        inb = (b[0] <= k) if keep_below else (b[0] >= k)
+        if ina:
+            out.append(a)
+        if ina != inb and b[0] != a[0]:
+            t = (k - a[0]) / (b[0] - a[0])
+            out.append((k, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t))
+    return out
+
+
+def _clip_pts(pts):
+    """Cut a screen polygon (made of P() points) to the active x_clip.
+    Returns a list of screen polygons (unchanged when wholly kept)."""
+    infs = [_pinf.get(p) for p in pts]
+    if any(i is None for i in infs):
+        return [pts]
+    xs = [i[0] for i in infs]
+    if all(clip_keeps(x) for x in xs):
+        return [pts]
+    lo, hi, inside = _XCLIP
+    vs = [(i[0], i[1], i[2]) for i in infs]
+    if inside:
+        pieces = [_clip_half(_clip_half(vs, lo, False), hi, True)]
+    else:
+        pieces = [_clip_half(vs, lo, True), _clip_half(vs, hi, False)]
+    out = []
+    for vv in pieces:
+        if len(vv) >= 3:
+            out.append([P(x + X_OFF, y + Y_OFF, z) for x, y, z in vv])
+    return out
 
 
 def _flip_draw():
@@ -419,6 +569,18 @@ def _fill_poly(target, pts, col, alpha, zwrite=True):
 
 
 def poly(pts, col, outline=None, w=1):
+    if _CULL:
+        return
+    if _XCLIP is not None:
+        pieces = _clip_pts(pts)
+        if len(pieces) != 1 or pieces[0] is not pts:
+            for pp in pieces:
+                _poly(pp, col, outline, w)
+            return
+    _poly(pts, col, outline, w)
+
+
+def _poly(pts, col, outline=None, w=1):
     if _flip_draw() and not FLIP and _on_far_wall(pts):
         # usual view: x = 0 / y = 0 are the far walls. They and whatever is
         # hung on them (doors, reveals, pictures, glimpses) stay painter's
@@ -475,6 +637,19 @@ def _z_outline(pts, col, width):
 
 
 def line(a, b, col, w=1):
+    if _CULL:
+        return
+    if _XCLIP is not None:
+        ka, kb = clip_keeps_world(a[0]), clip_keeps_world(b[0])
+        if not (ka or kb):
+            return
+        if ka != kb:
+            lo, hi, _ = _XCLIP
+            xa, xb = a[0] - X_OFF, b[0] - X_OFF
+            k = lo if (min(xa, xb) < lo < max(xa, xb)) else hi
+            t = (k - xa) / (xb - xa)
+            m = tuple(a[i] + (b[i] - a[i]) * t for i in range(3))
+            a, b = (a, m) if ka else (m, b)
     if _flip_draw():
         _z_segment(P(*a), P(*b), col, max(1, int(w * S)))
         return
@@ -499,6 +674,8 @@ KY, KX, KT = 0.90, 0.72, 1.04          # light: +y faces brighter than +x faces
 
 def box(x0, y0, x1, y1, z0, z1, col, top=None, ol=True, faces="xyz"):
     o = (lambda c: shade(c, 0.55)) if ol else (lambda c: None)
+    if _XCLIP is not None and not _box_kept(min(x0, x1) - X_OFF, max(x0, x1) - X_OFF):
+        return                             # wholly outside this pass of an open-plan room
     if _AUDIT is not None:
         _AUDIT.solid(x0, y0, x1, y1, z0, z1, faces)
     # The opposite view looks at the faces the usual camera never sees.
@@ -566,6 +743,8 @@ def fl_ellipse(cx, cy, rx, ry, col, z=0.0, n=24, ol=None):
 
 def cyl(cx, cy, r, z0, z1, col, top=None):
     """Upright cylinder / cone-less drum."""
+    if _CULL or (_XCLIP is not None and not clip_keeps_world(cx)):
+        return                             # round solids are kept or dropped whole by an open-plan pass
     n = 24
     bot = [P(cx + r * math.cos(a), cy + r * math.sin(a), z0) for a in (2 * math.pi * i / n for i in range(n))]
     tp = [P(cx + r * math.cos(a), cy + r * math.sin(a), z1) for a in (2 * math.pi * i / n for i in range(n))]
@@ -671,6 +850,8 @@ def _z_drum(x, y, w, h, xc, c_axis, r, col):
 
 def cone(cx, cy, r0, r1, z0, z1, col):
     """Lampshade: radius r0 at the bottom, r1 at the top (screen-space trapezoid + ellipses)."""
+    if _CULL or (_XCLIP is not None and not clip_keeps_world(cx)):
+        return                             # round solids are kept or dropped whole by an open-plan pass
     n = 24
     b = [P(cx + r0 * math.cos(a), cy + r0 * math.sin(a), z0) for a in (2 * math.pi * i / n for i in range(n))]
     t = [P(cx + r1 * math.cos(a), cy + r1 * math.sin(a), z1) for a in (2 * math.pi * i / n for i in range(n))]
@@ -793,38 +974,55 @@ def wall_pt(side, u, z, n=0.0):
     return P(n, u, z)
 
 
+_OCC_WIN = None                        # (lo, hi) local x: a z_layer whose solids there count as occluders
+
+
 class z_layer:
     """with z_layer(layer): ... -> draw on a glimpse layer (glimpse_layer())
     depth-tested against its own fresh z-buffer, like the room itself, so the
     parts of the next half of an open-plan room can't paint over each other
     in the wrong order. Nothing drawn here goes on the ghost layer or into
     the room's occluders."""
-    def __init__(self, surf):
+    def __init__(self, surf, occ_window=None):
         self.surf = surf
+        self.occ_window = occ_window       # (lo, hi): solids there still hide a character (see _OCC_WIN)
 
     def __enter__(self):
-        global screen, _room_screen, _zbuf, _fg_surf, _NO_OCC
-        self.prev = (screen, _room_screen, _zbuf, _fg_surf, _NO_OCC)
+        global screen, _room_screen, _zbuf, _fg_surf, _NO_OCC, _OCC_WIN
+        self.prev = (screen, _room_screen, _zbuf, _fg_surf, _NO_OCC, _OCC_WIN)
+        self.room = _room_screen
         screen = _room_screen = self.surf
         _zbuf = np.full(self.surf.get_size(), -1e9, np.float32)   # (the next room can lie at negative closeness)
         _fg_surf = None
-        _NO_OCC = True
+        _NO_OCC = self.occ_window is None
+        _OCC_WIN = self.occ_window
 
     def __exit__(self, *a):
-        global screen, _room_screen, _zbuf, _fg_surf, _NO_OCC
+        global screen, _room_screen, _zbuf, _fg_surf, _NO_OCC, _OCC_WIN
         self.zbuf = _zbuf                  # keep it: fade_x(zbuf=...) reads exact depth from it
-        screen, _room_screen, _zbuf, _fg_surf, _NO_OCC = self.prev
+        screen, _room_screen, _zbuf, _fg_surf, _NO_OCC, _OCC_WIN = self.prev
 
 
 _NO_OCC = False
 
 
-def paste_glimpse(layer, zbuf=None):
+def paste_glimpse(layer, zbuf=None, depth_test=False):
     """Paste a finished glimpse layer (z_layer + fade_x) onto the room. It goes
     over whatever the room has so far, whatever its depth, so call it at the
     point in the drawing order where the other half belongs: before the
     room's furniture when it lies beyond it, after when it is nearer. The
     solid audit is told, so a layer pasted over nearer furniture is flagged."""
+    if depth_test and zbuf is not None and _zbuf is not None:
+        # Only where the glimpse is nearer than what the room has painted
+        # (or the room painted nothing that writes depth: floor, backdrop):
+        # occlusion comes from the 3D positions, not from where in the
+        # drawing order this call sits.
+        empty = 0.0 if FLIP else -1e8
+        ok = (zbuf > -1e8) & ((_zbuf <= empty) | (zbuf >= _zbuf - 1e-3))
+        ok |= zbuf <= -1e8                 # painter-drawn parts of the glimpse (its far walls, floor)
+        a = pygame.surfarray.pixels_alpha(layer)
+        a[~ok] = 0
+        del a
     screen.blit(layer, (0, 0))
     if _AUDIT is not None and screen is _room_screen:
         _AUDIT.pasted(layer, zbuf)

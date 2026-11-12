@@ -104,8 +104,7 @@ def fireplace_front():
     y = RD - d               # the breast's own south face, so it reads as a solid chimney
     qy(y, x0 - 0.04, x1 + 0.04, 0, WALL_H, shade(WALL, KY * 0.9))
     tex = iso_paint.kind_sheets("holly_fire")["front"]
-    A, B = P(x0 - 0.04, y - 0.01, WALL_H), P(x1 + 0.04, y - 0.01, WALL_H)
-    C, D = P(x0 - 0.04, y - 0.01, 0), P(x1 + 0.04, y - 0.01, 0)
+    A, B, C, D = iso_paint.face_quad("-y", x0 - 0.04, y - 0.01, x1 + 0.04, y - 0.01, 0, WALL_H)
     iso_paint.paint_quad(tex, A, B, C, KY, D=D)
     # mantel shelf (a flat band on the wall plus a shallow box)
     qy(y - 0.01, x0 - 0.06, x1 + 0.06, 96, 110, shade(WHITE_, KY * 1.02))

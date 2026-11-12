@@ -125,23 +125,23 @@ def island(x0, y0, x1, y1, h=96):
     box(x0 + .08, y0 + .08, x1 - .08, y1 - .08, 0, 8, (110, 112, 110), ol=False)
     iso_paint.paint_box(x0 + .05, y0 + .05, x1 - .05, y1 - .05, 8, h - 12, "kitchen_island", front="N", col=PALE_GREY, faces="x")
     Y = y1 - .049
-    if hc.FLIP:
-        # tongue-and-groove on the south end, the face this camera sees: a
-        # whole panel first, so the gaps between boards are not see-through
-        qy(y0 + 0.05, x0 + .05, x1 - .05, 8, h - 12, shade(PALE_GREY, KY * 0.92))
-        yy = y0 + 0.04      # boards proud of the panel
-        u = x0 + 0.2
-        while u < x1 - 0.2:
-            qy(yy, u, u + 0.05, 16, h - 20, shade(PALE_GREY, KY * 0.82))
-            u += 0.16
+    # Both long faces are drawn in every camera; the z-buffer keeps whichever
+    # faces the camera and hides the other behind it.
+    # South face: tongue-and-groove, a whole panel first so the gaps between
+    # boards are not see-through.
+    qy(y0 + 0.05, x0 + .05, x1 - .05, 8, h - 12, shade(PALE_GREY, KY * 0.92))
+    yy = y0 + 0.04      # boards proud of the panel
+    u = x0 + 0.2
+    while u < x1 - 0.2:
+        qy(yy, u, u + 0.05, 16, h - 20, shade(PALE_GREY, KY * 0.82))
+        u += 0.16
     v = y0 + .05
     while v < y1 - .05:
         line((x1 - .049, v, 10), (x1 - .049, v, h - 14), shade(PALE_GREY, KX * .8), 1)
         v += .17
     n = 4
     w = (x1 - x0 - .3) / n
-    if not hc.FLIP:       # the north face, closed behind its drawers and shelves
-        qy(y1 - .05, x0 + .05, x1 - .05, 8, h - 12, shade(PALE_GREY, KY * 0.92))
+    qy(y1 - .05, x0 + .05, x1 - .05, 8, h - 12, shade(PALE_GREY, KY * 0.92))   # north face, behind its drawers and shelves
     qy(Y, x0 + .15, x1 - .15, 12, h - 38, shade((96, 98, 96), KY))
     for i in range(n):
         a, b = x0 + .15 + i * w + .02, x0 + .15 + (i + 1) * w - .02
@@ -214,37 +214,38 @@ def _shaker(x0, x1, y, z0, z1, n=None):
 
 
 def kitchen_seen_from_south():
-    """Fronts of the floor-standing run, which the usual camera sees from behind.
-    Wall-hung pieces are drawn later, after the garden wall itself."""
-    if not hc.FLIP:
-        return
+    """Fronts of the floor-standing run (they face south, -y) and the things
+    on the west wall facing into the room (-x). Each group is tagged with the
+    face it is painted on; the camera decides whether it shows."""
     y = RUN - 0.02
-    # shaker doors on the base run, in the spans the units already occupy
-    _shaker(8.22, 9.45, y, 12, 78)                # under the east window, up to the drawer unit
-    _shaker(10.35, 10.90, y, 12, 78)              # between the drawer unit and the range
-    _shaker(12.58, 13.6, y, 12, 78, n=1)          # the bay beside the sink: dishwasher
-    qy(y - 0.015, 12.85, 13.4, 28, 62, shade((186, 190, 192), KY))
-    _shaker(14.7, 16.25, y, 12, 78)
-    # burgundy range: two oven doors and a handle, on its existing front
-    rx0, rx1 = 10.95, 12.55
-    mid = (rx0 + rx1) / 2
-    for a, b in ((rx0 + 0.1, mid - 0.05), (mid + 0.05, rx1 - 0.1)):
-        qy(y, a, b, 8, 72, shade((120, 28, 36), KY))
-        qy(y - 0.012, a + 0.08, b - 0.08, 16, 64, shade((28, 26, 28), KY))
-        fl_ellipse((a + b) / 2, y - 0.02, 0.04, 0.02, (190, 176, 140), 36)
-    # sage cupboard on the west wall, doors facing into the room
-    a, b, x = 3.3, 4.6, KD_LEN - 0.04
-    qx(x, a, b, 4, 148, shade((148, 174, 162), KX))
-    midy = (a + b) / 2
-    qx(x - 0.012, a + 0.1, midy - 0.05, 16, 136, shade((176, 196, 184), KX))
-    qx(x - 0.012, midy + 0.05, b - 0.1, 16, 136, shade((176, 196, 184), KX))
-    fl_ellipse(x - 0.02, midy - 0.14, 0.02, 0.04, (60, 60, 64), 78)
-    fl_ellipse(x - 0.02, midy + 0.14, 0.02, 0.04, (60, 60, 64), 78)
-    # extinguisher by the boot door, and the white ledged door standing open
-    cyl(KD_LEN - 0.16, 1.7, 0.07, 14, 70, (176, 36, 34))
-    qx(KD_LEN - 0.55, 0.28, 1.42, 4, 172, shade((244, 242, 236), KX))
-    for zz in (28, 78, 128):
-        qx(KD_LEN - 0.57, 0.36, 1.34, zz, zz + 7, shade((228, 224, 214), KX))
+    with hc.facing("-y"):
+        # shaker doors on the base run, in the spans the units already occupy
+        _shaker(8.22, 9.45, y, 12, 78)                # under the east window, up to the drawer unit
+        _shaker(10.35, 10.90, y, 12, 78)              # between the drawer unit and the range
+        _shaker(12.58, 13.6, y, 12, 78, n=1)          # the bay beside the sink: dishwasher
+        qy(y - 0.015, 12.85, 13.4, 28, 62, shade((186, 190, 192), KY))
+        _shaker(14.7, 16.25, y, 12, 78)
+        # burgundy range: two oven doors and a handle, on its existing front
+        rx0, rx1 = 10.95, 12.55
+        mid = (rx0 + rx1) / 2
+        for a, b in ((rx0 + 0.1, mid - 0.05), (mid + 0.05, rx1 - 0.1)):
+            qy(y, a, b, 8, 72, shade((120, 28, 36), KY))
+            qy(y - 0.012, a + 0.08, b - 0.08, 16, 64, shade((28, 26, 28), KY))
+            fl_ellipse((a + b) / 2, y - 0.02, 0.04, 0.02, (190, 176, 140), 36)
+    with hc.facing("-x"):
+        # sage cupboard on the west wall, doors facing into the room
+        a, b, x = 3.3, 4.6, KD_LEN - 0.04
+        qx(x, a, b, 4, 148, shade((148, 174, 162), KX))
+        midy = (a + b) / 2
+        qx(x - 0.012, a + 0.1, midy - 0.05, 16, 136, shade((176, 196, 184), KX))
+        qx(x - 0.012, midy + 0.05, b - 0.1, 16, 136, shade((176, 196, 184), KX))
+        fl_ellipse(x - 0.02, midy - 0.14, 0.02, 0.04, (60, 60, 64), 78)
+        fl_ellipse(x - 0.02, midy + 0.14, 0.02, 0.04, (60, 60, 64), 78)
+        # extinguisher by the boot door, and the white ledged door standing open
+        cyl(KD_LEN - 0.16, 1.7, 0.07, 14, 70, (176, 36, 34))
+        qx(KD_LEN - 0.55, 0.28, 1.42, 4, 172, shade((244, 242, 236), KX))
+        for zz in (28, 78, 128):
+            qx(KD_LEN - 0.57, 0.36, 1.34, zz, zz + 7, shade((228, 224, 214), KX))
 
 
 def _metro(x0, x1, z0, z1, y):
@@ -315,6 +316,8 @@ def _pans(x0, x1, z=116):
 def _west_clock(y=6.95, z=164, r=0.48):
     """Large grey wall clock on the west wall, at the far (north) end."""
     x = KD_LEN - 0.02
+    if not hc.clip_keeps_world(x):
+        return
     rz = r * 60
     ring = [P(x, y + r * math.cos(a), z + rz * math.sin(a)) for a in (i * math.pi / 16 for i in range(32))]
     face = [P(x - 0.004, y + r * 0.82 * math.cos(a), z + rz * 0.82 * math.sin(a)) for a in (i * math.pi / 16 for i in range(32))]
@@ -328,12 +331,11 @@ def _west_clock(y=6.95, z=164, r=0.48):
     pygame.draw.line(hc.screen, (30, 30, 32), c, P(x - 0.01, y + r * 0.42, z - rz * 0.12), max(1, int(S)))
 
 
+@hc.on_wall("S")
 def kitchen_north_wall_front():
-    """What the opposite camera sees on the garden wall: shaker cabinets, the
+    """Hung on the garden wall (engine side S, y = RD): shaker cabinets, the
     hood, cubbies, metro tiles, and the plate rack at the far (west) end.
-    Drawn after that wall, flush on it."""
-    if not hc.FLIP:
-        return
+    Drawn whenever that wall faces the camera, flush on it."""
     y = RD - 0.012
     # splashback on the wall, behind the worktop, stopping at the windows
     _metro(9.50, 13.42, CH + 1, 144, y)          # between the two windows
@@ -460,6 +462,11 @@ def dining_east_wall_items(ext):
     """On the east wall (back-left of the dining view): sash window with cream curtains
     over a radiator cover; chest of drawers with mirror, green lamp and plants."""
     hc.sash_window("W", *D_SASH, ext, curtains=(226, 218, 196))
+    dining_east_wall_furniture()
+
+
+def dining_east_wall_furniture():
+    """Radiator cover under the sash, chest of drawers with mirror, lamp and plants."""
     a, b = D_SASH
     box(0, a - .2, .38, b + .2, 0, 64, (240, 238, 232))
     for i in range(12):
