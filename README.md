@@ -1,5 +1,7 @@
 # Hide and Seek
 
+![Hide and Seek screenshot](docs/screenshot.png)
+
 **Anderson Family - Gaming Creations**
 
 A walkable prototype of the downstairs of our house, built with pygame on the
